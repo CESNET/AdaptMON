@@ -1,0 +1,17 @@
+# syntax=docker/dockerfile:1.4
+
+ARG OS_DISTRO=oraclelinux
+ARG OS_RELEASE=9
+
+FROM $OS_DISTRO:$OS_RELEASE as default
+
+RUN cp /etc/skel/.bash_profile /root && \
+    cp /etc/skel/.bashrc /root
+
+COPY prepare-machine /prepare-machine
+
+RUN /prepare-machine dev-docker && \
+	dnf clean all && \
+	rm -rf /var/cache/dnf/
+
+ENTRYPOINT ["/bin/bash", "-l", "-c"]

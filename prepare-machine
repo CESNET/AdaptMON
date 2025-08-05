@@ -1,0 +1,99 @@
+#!/bin/bash
+set -euo pipefail
+
+usage() {
+    echo "Usage: ./prepare-machine [ ARGS ] <ROLE>"
+    echo
+    echo "ARGS:"
+    echo "  -h, --help    ... Print help"
+    echo "  -v, --verbose ... Verbose mode"
+    echo
+    echo "ROLE: dev-docker | dev-machine"
+}
+
+ROLE=dev-machine
+while [ $# != 0 ]; do
+    case "$1" in
+    dev-docker)
+        ROLE=dev-docker
+        shift
+        ;;
+    dev-machine)
+        ROLE=dev-machine
+        shift
+        ;;
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    -v|--verbose)
+        set -x
+        shift
+        ;;
+    *)
+        echo "Unknown parameter '$1'"
+        usage
+        exit 1
+    esac
+done
+
+
+case "$ROLE" in
+dev-machine)
+    ;;
+dev-docker)
+    GCC_TOOLSET_AUTOENABLE=true
+    ;;
+esac
+
+
+OS_ID="$(grep ^ID= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+OS_ID_LIKE="$(grep ^ID_LIKE= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+OS_VERSION="$(grep ^VERSION= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+
+echo "=== Setting up development environment ==="
+echo "Selected role: $ROLE"
+
+echo
+echo "*** Installing common tools ***"
+dnf install -y sudo git
+
+echo
+echo "*** Enabling extra repositories (epel/crb) ***"
+dnf install -y 'dnf-command(config-manager)'
+dnf install -y epel-release
+
+if [[ "$OS_ID" =~ fedora|rhel || "$OS_ID_LIKE" =~ fedora|rhel ]] && [[ "$OS_VERSION" = 8.* ]] && [ "$OS_ID" != ol ]; then
+    # PowerTools repository is enabled (CentOS/Rocky/etc. 8)
+    echo "Detected OS: RHEL-like 8"
+    dnf config-manager --set-enabled powertools
+elif [[ "$OS_ID" =~ fedora|rhel || "$OS_ID_LIKE" =~ fedora|rhel ]] && [[ "$OS_VERSION" = 9.* ]] && [ "$OS_ID" != ol ]; then
+    # CodeReady Builder repository is enabled (CentOS/Rocky/etc. 9+)
+    echo "Detected OS: RHEL-like 9"
+    dnf config-manager --set-enabled crb
+elif [ "$OS_ID" = ol ]; then
+    # CodeReady Builder repository is enabled (Oracle Linux)
+    echo "Detected OS: Oracle Linux"
+    dnf config-manager --set-enabled "ol${OS_VERSION%%.*}_codeready_builder"
+fi
+
+echo
+echo "*** Setting up CPP development dependencies ***"
+USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
+GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-14}
+GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-false}
+
+dnf install -y \
+    cmake make rpm-build \
+    gcc gcc-c++ \
+    cppcheck clang-tools-extra \
+    doxygen
+
+if [ "$USE_GCC_TOOLSET" = true ]; then
+    dnf install -y "gcc-toolset-${GCC_TOOLSET_VERSION}"
+fi
+
+if [ "$GCC_TOOLSET_AUTOENABLE" = true ]; then
+    echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" > "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+    chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+fi
