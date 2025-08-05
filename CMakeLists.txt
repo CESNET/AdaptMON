@@ -9,6 +9,8 @@ project(adaptmon
     VERSION ${VERSION}
     LANGUAGES CXX C)
 
+option(ENABLE_DOXYGEN  "Enable build of code documentation"    OFF)
+
 set(DEFAULT_BUILD_TYPE "Release")
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS
@@ -44,4 +46,5 @@ add_compile_options(
 )
 
 add_subdirectory(apps)
+add_subdirectory(doc)
 add_subdirectory(lib)
