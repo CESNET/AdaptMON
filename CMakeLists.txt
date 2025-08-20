@@ -45,6 +45,9 @@ add_compile_options(
     $<${is_release}:-Werror>
 )
 
+# Add external dependencies
+include(cmake/spdlog.cmake)
+
 add_subdirectory(apps)
 add_subdirectory(doc)
 add_subdirectory(lib)
