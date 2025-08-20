@@ -31,6 +31,8 @@ SortIncludes: true
 IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: '^"(.*)"$'
+    Priority: 0
+  - Regex: "^<amon/(.*)>$"
     Priority: 1
   - Regex: '^<[^>]*\.(h|hpp)>$'
     Priority: 3
