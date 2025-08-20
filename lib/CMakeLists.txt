@@ -3,6 +3,7 @@ add_library(amon-lib
     src/Logger.cpp
     src/Stacktrace.cpp
     src/Error.cpp
+    src/SignalHandler.cpp
 )
 
 target_include_directories(amon-lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
