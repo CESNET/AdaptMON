@@ -47,6 +47,7 @@ target_link_libraries(amon-lib
         doctest
         libbacktrace
         spdlog::spdlog
+        yaml-cpp
     PUBLIC
         PkgConfig::libpcap
 )
