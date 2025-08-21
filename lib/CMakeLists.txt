@@ -23,6 +23,7 @@ add_library(amon-lib
     src/util/numeric.cpp
     src/Packet.cpp
     src/util/ArgvList.cpp
+    src/util/getopt.cpp
 )
 
 target_include_directories(amon-lib
