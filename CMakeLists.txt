@@ -41,6 +41,7 @@ add_compile_options(
     -Wsign-conversion
     $<${is_debug}:-g>
     $<${is_debug}:-ggdb3>
+    -fdebug-prefix-map=${PROJECT_SOURCE_DIR}=.
     $<${is_release}:-O3>
     $<${is_release}:-Werror>
 )
