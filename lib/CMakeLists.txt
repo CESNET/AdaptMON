@@ -5,6 +5,7 @@ add_library(amon-lib
     src/Error.cpp
     src/SignalHandler.cpp
     src/layers/LayerView.cpp
+    src/types/UIntBE.cpp
 )
 
 target_include_directories(amon-lib
