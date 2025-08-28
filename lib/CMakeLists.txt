@@ -4,6 +4,7 @@ add_library(amon-lib
     src/Stacktrace.cpp
     src/Error.cpp
     src/SignalHandler.cpp
+    src/layers/LayerView.cpp
 )
 
 target_include_directories(amon-lib
