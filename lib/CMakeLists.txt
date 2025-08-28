@@ -5,6 +5,7 @@ add_library(amon-lib
     src/Error.cpp
     src/SignalHandler.cpp
     src/layers/LayerView.cpp
+    src/layers/Ethernet.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
