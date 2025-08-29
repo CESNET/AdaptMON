@@ -86,7 +86,7 @@ GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-false}
 dnf install -y \
     cmake make rpm-build \
     gcc gcc-c++ \
-    cppcheck clang-tools-extra \
+    clang-tools-extra \
     doxygen
 
 if [ "$USE_GCC_TOOLSET" = true ]; then
