@@ -22,6 +22,13 @@ docker [Oracle Linux 9]:
     OS_RELEASE: "9"
     DOCKER_TAG: "ol9"
 
+docker [Oracle Linux 10]:
+  extends: .docker
+  variables:
+    OS_DISTRO: "oraclelinux"
+    OS_RELEASE: "10"
+    DOCKER_TAG: "ol10"
+
 docker-rebuild [Oracle Linux 8]:
   extends: "docker [Oracle Linux 8]"
   variables:
@@ -30,6 +37,12 @@ docker-rebuild [Oracle Linux 8]:
 
 docker-rebuild [Oracle Linux 9]:
   extends: "docker [Oracle Linux 9]"
+  variables:
+    DOCKER_OPTS: --no-cache
+  when: manual
+
+docker-rebuild [Oracle Linux 10]:
+  extends: "docker [Oracle Linux 10]"
   variables:
     DOCKER_OPTS: --no-cache
   when: manual

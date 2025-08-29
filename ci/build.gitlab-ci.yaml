@@ -20,3 +20,9 @@ build [Oracle Linux 9]:
   variables: { DOCKER_TAG: ol9 }
   needs:
     - docker [Oracle Linux 9]
+
+build [Oracle Linux 10]:
+  extends: .build
+  variables: { DOCKER_TAG: ol10 }
+  needs:
+    - docker [Oracle Linux 10]
