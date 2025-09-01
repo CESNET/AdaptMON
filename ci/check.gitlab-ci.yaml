@@ -22,7 +22,7 @@ editorconfig:
 .check:
   stage: check
   needs:
-    - docker [Oracle Linux 9]
+    - docker [Oracle Linux 10]
   image: $DOCKER_IMAGE:$DOCKER_TAG
   cache:
     - key: cache-$DOCKER_IMAGE:$DOCKER_TAG
@@ -30,8 +30,8 @@ editorconfig:
         - build/_deps
   variables:
     OS_DISTRO: "oraclelinux"
-    OS_RELEASE: "9"
-    DOCKER_TAG: "ol9"
+    OS_RELEASE: "10"
+    DOCKER_TAG: "ol10"
 
 clang-tidy:
   extends: .check
