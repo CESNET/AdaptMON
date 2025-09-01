@@ -12,7 +12,7 @@ workflow:
     - if: $CI_PIPELINE_SOURCE != "push"
 
 default:
-  image: $DOCKER_IMAGE:ol9
+  image: $DOCKER_IMAGE:ol10
   tags: [$DOCKER_IMAGE_TAG]
   interruptible: true
 
