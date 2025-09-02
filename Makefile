@@ -75,3 +75,18 @@ commitlint:
 	docker run --rm -v .:/w --workdir /w --entrypoint /bin/sh registry.hub.docker.com/commitlint/commitlint:latest -c \
 		"git config --global --add safe.directory /w && commitlint --from=$$BASE --to=$$HEAD"
 .PHONY: commitlint
+
+atomic-commits:
+	if [ -n "$${CI_MERGE_REQUEST_DIFF_BASE_SHA}" ] && [ -n "${CI_COMMIT_SHA}" ]; then \
+		BASE="$${CI_MERGE_REQUEST_DIFF_BASE_SHA}"; \
+		HEAD="$${CI_COMMIT_SHA}"; \
+	else \
+		BASE="$$(git log --pretty=format:"%H%d" | grep -E "^\w+ " | tail -n+2 | head -n1 | cut -d" " -f1)"; \
+		HEAD="$$(git rev-parse HEAD)"; \
+	fi; \
+	branch="$$(git branch --show-current)"; \
+	git stash store "$$(git stash create)" && did_stash=1 && git reset --hard HEAD; \
+	git rev-list --reverse $${BASE}..$${HEAD} | xargs -I{} sh -c "echo; echo @@@@@@@@@@@@@@@@@@@@ {} @@@@@@@@@@@@@@@@@@@@; echo; git checkout {} && make; echo"; \
+	if [ -n "$$branch" ]; then git checkout "$$branch"; fi; \
+	if [ -n "$$did_stash" ]; then git stash pop; fi;
+.PHONY: atomic-commits
