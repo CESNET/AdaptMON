@@ -49,7 +49,7 @@ doxygen:
 .PHONY: doxygen
 
 doxygen-strict:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug -DDOXYGEN_WARN_AS_ERROR=YES .. && make doxygen
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug -DDOXYGEN_WARN_AS_ERROR=FAIL_ON_WARNINGS .. && make doxygen
 .PHONY: doxygen-strict
 
 editorconfig:
