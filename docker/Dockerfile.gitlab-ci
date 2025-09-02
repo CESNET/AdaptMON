@@ -5,6 +5,11 @@ ARG OS_RELEASE=10
 
 FROM $OS_DISTRO:$OS_RELEASE as default
 
+ARG USER=root
+ARG GROUP=root
+ARG USERID=0
+ARG GROUPID=0
+
 RUN cp /etc/skel/.bash_profile /root && \
     cp /etc/skel/.bashrc /root
 
@@ -13,5 +18,12 @@ COPY prepare-machine /prepare-machine
 RUN /prepare-machine dev-docker && \
 	dnf clean all && \
 	rm -rf /var/cache/dnf/
+
+RUN if [ $USERID != 0 ]; then \
+        groupadd -g $GROUPID $GROUP; \
+        useradd -u $USERID -g $GROUP $USER; \
+    fi
+
+USER $USERID:$GROUPID
 
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
