@@ -63,3 +63,15 @@ dev-container:
 	@echo "Hint:"
 	@echo "  docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash"
 .PHONY: dev-docker
+
+commitlint:
+	if [ -n "$${CI_MERGE_REQUEST_DIFF_BASE_SHA}" ] && [ -n "${CI_COMMIT_SHA}" ]; then \
+		BASE="$${CI_MERGE_REQUEST_DIFF_BASE_SHA}"; \
+		HEAD="$${CI_COMMIT_SHA}"; \
+	else \
+		BASE="$$(git log --pretty=format:"%H%d" | grep -E "^\w+ " | tail -n+2 | head -n1 | cut -d" " -f1)"; \
+		HEAD="$$(git rev-parse HEAD)"; \
+	fi; \
+	docker run --rm -v .:/w --workdir /w --entrypoint /bin/sh registry.hub.docker.com/commitlint/commitlint:latest -c \
+		"git config --global --add safe.directory /w && commitlint --from=$$BASE --to=$$HEAD"
+.PHONY: commitlint
