@@ -54,7 +54,7 @@ atomic-commits:
     - if: $CI_MERGE_REQUEST_DIFF_BASE_SHA
 
 doxygen:
-  stage: check
+  extends: .check
   script:
     - "make doxygen-strict"
   artifacts:
