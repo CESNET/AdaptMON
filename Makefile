@@ -1,4 +1,5 @@
-BUILD_TYPE=$(or $(file < build/BUILD_TYPE),release-build)
+BUILD_TYPE = $(or $(file < build/BUILD_TYPE),release-build)
+BUILD_DIR := $(or ${BUILD_DIR},build)
 
 all: build
 .PHONY: all
@@ -7,19 +8,19 @@ build: $(BUILD_TYPE)
 .PHONY: build
 
 release-build:
-	mkdir -p build && cd build && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j $(shell nproc)
 .PHONY: release-build
 
 debug-build:
-	mkdir -p build && cd build && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
 .PHONY: debug-build
 
 debug-build-strict:
-	mkdir -p build && cd build && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
 .PHONY: debug-build-strict
 
 clean:
-	rm -rf build
+	rm -rf $(BUILD_DIR)
 .PHONY: clean
 
 clean-build: clean build
@@ -34,21 +35,21 @@ format-fix:
 .PHONY: format-fix
 
 tidy:
-	mkdir -p build && cd build && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-	run-clang-tidy -p build -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+	run-clang-tidy -p $(BUILD_DIR) -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
 .PHONY: tidy
 
 tidy-fix:
-	mkdir -p build && cd build && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-	run-clang-tidy -p build -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+	run-clang-tidy -p $(BUILD_DIR) -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
 .PHONY: tidy-fix
 
 doxygen:
-	mkdir -p build && cd build && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug .. && make doxygen
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug .. && make doxygen
 .PHONY: doxygen
 
 doxygen-strict:
-	mkdir -p build && cd build && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug -DDOXYGEN_WARN_AS_ERROR=YES .. && make doxygen
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug -DDOXYGEN_WARN_AS_ERROR=YES .. && make doxygen
 .PHONY: doxygen-strict
 
 editorconfig:
