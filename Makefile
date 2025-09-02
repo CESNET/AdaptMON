@@ -54,3 +54,12 @@ doxygen-strict:
 editorconfig:
 	docker run --rm -v $(shell pwd):/check mstruebing/editorconfig-checker
 .PHONY: editorconfig
+
+dev-container:
+	docker build -f docker/Dockerfile.gitlab-ci -t adaptmon-dev-container \
+		--build-arg USERID=$(shell id -u) --build-arg GROUPID=$(shell id -g) \
+		--build-arg USER=$(shell whoami) --build-arg GROUP=$(shell getent group "$$(id -u)" | cut -d: -f1 ) \
+		.
+	@echo "Hint:"
+	@echo "  docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash"
+.PHONY: dev-docker
