@@ -1,0 +1,3 @@
+#!/bin/sh
+make dev-container >/dev/null 2>/dev/null && exec docker run --rm -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container "make $*"
+
