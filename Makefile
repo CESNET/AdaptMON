@@ -1,19 +1,21 @@
+BUILD_TYPE=$(or $(file < build/BUILD_TYPE),release-build)
+
 all: build
 .PHONY: all
 
-build: release-build
+build: $(BUILD_TYPE)
 .PHONY: build
 
 release-build:
-	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j $(shell nproc)
+	mkdir -p build && cd build && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j $(shell nproc)
 .PHONY: release-build
 
 debug-build:
-	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
+	mkdir -p build && cd build && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
 .PHONY: debug-build
 
 debug-build-strict:
-	mkdir -p build && cd build && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
+	mkdir -p build && cd build && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $(shell nproc)
 .PHONY: debug-build-strict
 
 clean:

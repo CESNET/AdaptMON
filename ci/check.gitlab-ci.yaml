@@ -46,7 +46,7 @@ clang-format:
 atomic-commits:
   extends: .check
   script:
-    - git rev-list --reverse ${CI_MERGE_REQUEST_DIFF_BASE_SHA}..HEAD | xargs -n1 -I{} sh -c "git checkout {} && make"
+    - git rev-list --reverse ${CI_MERGE_REQUEST_DIFF_BASE_SHA}..HEAD | xargs -I{} sh -c "git checkout {} && make"
   variables:
     GIT_STRATEGY: clone
     GIT_DEPTH: 0

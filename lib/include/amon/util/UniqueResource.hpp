@@ -1,0 +1,187 @@
+/**
+ * @file
+ * @author Michal Sedlak <sedlakm@cesnet.cz>
+ * @brief Unique resource utility class implementation
+ * @copyright Copyright (c) 2025 CESNET, z.s.p.o.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#pragma once
+
+#include <cassert>
+#include <optional>
+#include <stdexcept>
+#include <type_traits>
+
+#include <unistd.h>
+
+namespace amon::util {
+
+namespace deleters {
+
+/**
+ * @brief Deleter for file descriptors using close().
+ */
+struct Close {
+    /**
+     * @brief Closes the file descriptor.
+     * @param fd File descriptor to close.
+     */
+    void operator()(int fd) { ::close(fd); }
+};
+
+} // namespace deleters
+
+/**
+ * @brief Manages a unique resource with a custom deleter.
+ *
+ * This class provides ownership semantics for a resource (such as a file descriptor)
+ * and ensures proper cleanup using the specified deleter when the resource is released
+ * or the object is destroyed.
+ *
+ * @tparam ValueType Type of the resource.
+ * @tparam Deleter Callable type used to release the resource.
+ */
+template <typename ValueType, typename Deleter>
+class UniqueResource {
+public:
+    /**
+     * @brief Default constructor. No resource is owned.
+     */
+    UniqueResource() = default;
+
+    /**
+     * @brief Construct with a resource value.
+     * @param value Resource to manage.
+     */
+    UniqueResource(ValueType value)
+        : m_resource(std::move(value))
+    {
+    }
+
+    UniqueResource(const UniqueResource&) = delete;
+    UniqueResource& operator=(const UniqueResource&) = delete;
+
+    /**
+     * @brief Move constructor. Transfers ownership from another UniqueResource.
+     * @param other Resource to move from.
+     */
+    UniqueResource(UniqueResource&& other) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
+    {
+        if (other.hasValue()) {
+            reset(other.unsafeRelease());
+        }
+    }
+
+    /**
+     * @brief Move assignment operator. Transfers ownership from another UniqueResource.
+     * @param other Resource to move from.
+     * @return Reference to this object.
+     */
+    UniqueResource&
+    operator=(UniqueResource&& other) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
+    {
+        if (&other != this) {
+            if (other.hasValue()) {
+                reset(other.unsafeRelease());
+            } else {
+                reset();
+            }
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Assign a new resource value. Releases any currently held resource.
+     * @param value New resource to manage.
+     * @return Reference to this object.
+     */
+    UniqueResource&
+    operator=(ValueType value) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
+    {
+        reset(std::move(value));
+        return *this;
+    }
+
+    /**
+     * @brief Replace the managed resource. Releases any currently held resource.
+     * @param value New resource to manage.
+     */
+    void reset(ValueType value)
+    {
+        if (hasValue()) {
+            Deleter {}(get());
+        }
+        m_resource = std::move(value);
+    }
+
+    /**
+     * @brief Release the managed resource, if any.
+     */
+    void reset()
+    {
+        if (hasValue()) {
+            Deleter {}(get());
+        }
+        m_resource = std::nullopt;
+    }
+
+    /**
+     * @brief Check if a resource is currently managed.
+     * @return True if a resource is held, false otherwise.
+     */
+    bool hasValue() const { return m_resource.has_value(); }
+
+    /**
+     * @brief Get a const reference to the managed resource.
+     * @return Reference to the resource.
+     * @throw logic_error if no resource is held.
+     */
+    const ValueType& get() const
+    {
+        if (!m_resource.has_value()) {
+            throw std::logic_error("get() called on UniqueResource that holds no value");
+        }
+        return m_resource.value();
+    }
+
+    /**
+     * @brief Release ownership of the resource.
+     * @return The released resource.
+     * @throw logic_error if no resource is held.
+     */
+    ValueType release()
+    {
+        if (!m_resource.has_value()) {
+            throw std::logic_error("release() called on UniqueResource that holds no value");
+        }
+        return unsafeRelease();
+    }
+
+    /**
+     * @brief Destructor. Releases the resource if held.
+     */
+    ~UniqueResource()
+    {
+        if (hasValue()) {
+            Deleter {}(get());
+        }
+    }
+
+private:
+    std::optional<ValueType> m_resource;
+
+    ValueType unsafeRelease() noexcept(std::is_nothrow_move_constructible_v<ValueType>)
+    {
+        ValueType value = std::move(*m_resource);
+        m_resource = std::nullopt;
+        return std::move(value);
+    }
+};
+
+/**
+ * @brief Type alias for UniqueResource managing a file descriptor.
+ */
+using UniqueFd = UniqueResource<int, deleters::Close>;
+} // namespace amon::util
