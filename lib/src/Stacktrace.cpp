@@ -98,7 +98,7 @@ static int backtraceFullCallback(
 
         if (function != nullptr) {
             frame.function = function;
-            demangle(frame.filename);
+            demangle(frame.function);
         }
 
         if (filename != nullptr) {
