@@ -1,0 +1,176 @@
+/**
+ * @file
+ * @author Michal Sedlak <sedlakm@cesnet.cz>
+ * @brief Pcap file reading and writing utilities
+ * @copyright Copyright (c) 2025 CESNET, z.s.p.o.
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#include <amon/Error.hpp>
+#include <amon/util/Pcap.hpp>
+
+#include <cassert>
+
+#include <pcap/pcap.h>
+
+namespace amon::util {
+
+namespace {
+
+struct FClose {
+    void operator()(std::FILE* file) const noexcept { std::fclose(file); }
+};
+
+} // namespace
+
+static constexpr const uint64_t MICROSECS_IN_SEC = 1'000'000;
+static constexpr const uint64_t NANOSECS_IN_SEC = 1'000'000'000;
+
+static types::Timestamp timestampFromTimevalWithNanos(const timeval& tv)
+{
+    if (tv.tv_sec < 0 || tv.tv_usec < 0) {
+        throw amon::Error("Unexpected negative timestamp in packet");
+    }
+
+    const auto secU64 = numeric::safeCast<uint64_t>(tv.tv_sec);
+    const auto nsecU64 = numeric::safeCast<uint64_t>(tv.tv_usec);
+
+    uint64_t nanos;
+    nanos = types::Timestamp::from<types::TimeUnit::SECONDS>(secU64).nanoseconds();
+    nanos = numeric::safeAdd(nanos, nsecU64);
+    return amon::types::Timestamp {nanos};
+}
+
+static timeval timestampToTimevalWithNanos(const types::Timestamp& ts)
+{
+    const uint64_t nanos = ts.nanoseconds();
+
+    timeval tv;
+    tv.tv_sec = numeric::safeCast<decltype(tv.tv_sec)>(nanos / NANOSECS_IN_SEC);
+    tv.tv_usec = numeric::safeCast<decltype(tv.tv_usec)>(nanos % NANOSECS_IN_SEC);
+    return tv;
+}
+
+PcapReader::PcapReader(const std::string& filename, PcapTimestampPrecision precision)
+    : m_precision(precision)
+{
+    char errBuf[PCAP_ERRBUF_SIZE];
+    m_pcap.reset(pcap_open_offline_with_tstamp_precision(
+        filename.c_str(),
+        static_cast<u_int>(precision),
+        errBuf));
+    if (m_pcap == nullptr) {
+        throw Error(
+            "pcap_open_offline_with_tstamp_precision(\"{}\", {}) failed: {}",
+            filename,
+            precision,
+            errBuf);
+    }
+}
+
+std::optional<PcapPacket> PcapReader::readPacket()
+{
+    struct pcap_pkthdr* hdr;
+    const u_char* data;
+
+    const int ret = pcap_next_ex(m_pcap.get(), &hdr, &data);
+    if (ret == PCAP_ERROR_BREAK) { // No more packets in file
+        return std::nullopt;
+    }
+    if (ret == PCAP_ERROR) {
+        const char* err = pcap_geterr(m_pcap.get());
+        throw Error("pcap_next_ex() failed: {}", err);
+    }
+    if (ret != 1) {
+        // Other errors should never happen in case of a file
+        throw amon::Error("pcap_next_ex() returned an unexpected value {}", ret);
+    }
+
+    PcapPacket packet;
+
+    if (m_precision == PcapTimestampPrecision::MICRO) {
+        packet.timestamp = amon::types::Timestamp::fromTimeval(hdr->ts);
+
+    } else {
+        assert(m_precision == PcapTimestampPrecision::NANO);
+        // In case precision is NANO, the tv_usec part represents nanoseconds despite its
+        // name...
+        packet.timestamp = timestampFromTimevalWithNanos(hdr->ts);
+    }
+
+    packet.data
+        = std::span<const std::byte> {reinterpret_cast<const std::byte*>(data), hdr->caplen};
+    packet.lengthOnWire = hdr->len;
+
+    return packet;
+}
+
+int PcapReader::linkLayerType() const
+{
+    const int ret = pcap_datalink(m_pcap.get());
+    // We open the file in constructor, a valid PcapReader
+    // should never have the file not open
+    assert(ret != PCAP_ERROR_NOT_ACTIVATED);
+    return ret;
+}
+
+PcapWriter::PcapWriter(
+    const std::string& filename,
+    PcapTimestampPrecision precision,
+    int linkLayerType)
+    : m_precision(precision)
+{
+    // We need to use pcap_dump_fopen to be able to check for write errors.
+    // Unfortunately pcap_dump does not return any value to indicate errors, so we have to check
+    // the FILE* directly to detect write errors. fopen is done by us, fclose is done by
+    // pcap_dump_close.
+    std::unique_ptr<std::FILE, FClose> fp(std::fopen(filename.c_str(), "wb"));
+    if (!fp) {
+        throw ErrnoError("fopen", filename);
+    }
+
+    m_pcap.reset(pcap_open_dead_with_tstamp_precision(
+        linkLayerType,
+        std::numeric_limits<uint16_t>::max(),
+        static_cast<u_int>(m_precision)));
+    if (!m_pcap) {
+        throw Error("pcap_open_dead_with_tstamp_precision() failed");
+    }
+
+    m_pcapDumper.reset(pcap_dump_fopen(m_pcap.get(), fp.get()));
+    if (!m_pcapDumper) {
+        const char* err = pcap_geterr(m_pcap.get());
+        throw Error("pcap_dump_fopen() failed: {}", err);
+    }
+    m_fp = fp.release();
+}
+
+void PcapWriter::writePacket(
+    std::span<const std::byte> data,
+    types::Timestamp timestamp,
+    std::optional<uint32_t> lengthOnWire)
+{
+    pcap_pkthdr hdr;
+    hdr.caplen = numeric::safeCast<bpf_u_int32>(data.size());
+    hdr.len = numeric::safeCast<bpf_u_int32>(lengthOnWire.value_or(data.size()));
+
+    if (m_precision == PcapTimestampPrecision::MICRO) {
+        hdr.ts = timestamp.toTimeval();
+    } else {
+        assert(m_precision == PcapTimestampPrecision::NANO);
+        // In case precision is NANO, the tv_usec part represents nanoseconds despite its
+        // name...
+        hdr.ts = timestampToTimevalWithNanos(timestamp);
+    }
+
+    pcap_dump(
+        reinterpret_cast<u_char*>(m_pcapDumper.get()),
+        &hdr,
+        reinterpret_cast<const u_char*>(data.data()));
+    if (std::ferror(m_fp) != 0) {
+        throw Error("pcap_dump() failed: error writing to file");
+    }
+}
+
+} // namespace amon::util
