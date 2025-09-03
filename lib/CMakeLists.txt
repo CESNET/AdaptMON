@@ -36,6 +36,8 @@ target_link_libraries(amon-lib
         spdlog::spdlog
         libbacktrace
         doctest
+    PUBLIC
+        PkgConfig::libpcap
 )
 
 if (ENABLE_TESTS)

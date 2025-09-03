@@ -89,7 +89,7 @@ elif [ "$OS_ID" = ol ] && [ "$OS_VERSION_MAJOR" = 10 ]; then
 fi
 
 echo
-echo "*** Setting up CPP development dependencies ***"
+echo "*** Setting up CPP development tools ***"
 USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
 GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-14}
 GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-false}
@@ -108,3 +108,7 @@ if [ "$GCC_TOOLSET_AUTOENABLE" = true ]; then
     echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" > "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
     chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
 fi
+
+echo "*** Installing library dependencies ***"
+dnf install -y \
+    libpcap-devel

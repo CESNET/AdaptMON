@@ -56,6 +56,7 @@ endif()
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
 include(cmake/doctest.cmake)
+include(cmake/libpcap.cmake)
 
 add_subdirectory(apps)
 add_subdirectory(doc)
