@@ -49,6 +49,7 @@ add_compile_options(
 # Add external dependencies
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
+include(cmake/doctest.cmake)
 
 add_subdirectory(apps)
 add_subdirectory(doc)
