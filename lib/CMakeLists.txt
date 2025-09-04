@@ -14,4 +14,22 @@ target_link_libraries(amon-lib
     PRIVATE
         spdlog::spdlog
         libbacktrace
+        doctest
 )
+
+if (ENABLE_TESTS)
+    add_executable(amon-lib-tests)
+
+    target_compile_definitions(amon-lib-tests PRIVATE AMON_ENABLE_TESTS)
+
+    get_target_property(srcs amon-lib SOURCES)
+    target_sources(amon-lib-tests PRIVATE ${srcs} src/TestWithMain.cpp)
+
+    get_target_property(libs amon-lib LINK_LIBRARIES)
+    target_link_libraries(amon-lib-tests PRIVATE ${libs})
+
+    get_target_property(incs amon-lib INCLUDE_DIRECTORIES)
+    target_include_directories(amon-lib-tests PRIVATE ${incs})
+
+    doctest_discover_tests(amon-lib-tests)
+endif()
