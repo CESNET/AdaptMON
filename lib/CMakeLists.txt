@@ -9,6 +9,7 @@ add_library(amon-lib
     src/layers/IPv4.cpp
     src/layers/IPv6.cpp
     src/layers/UDP.cpp
+    src/layers/TCP.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
