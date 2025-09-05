@@ -21,6 +21,7 @@ add_library(amon-lib
     src/types/Timestamp.cpp
     src/types/UIntBE.cpp
     src/util/numeric.cpp
+    src/Packet.cpp
 )
 
 target_include_directories(amon-lib
