@@ -7,6 +7,7 @@ add_library(amon-lib
     src/layers/LayerView.cpp
     src/layers/Ethernet.cpp
     src/layers/IPv4.cpp
+    src/layers/IPv6.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
