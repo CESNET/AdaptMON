@@ -24,6 +24,7 @@ SpaceAfterTemplateKeyword: true
 SpaceInEmptyBlock: false
 SpacesInContainerLiterals: false
 PointerAlignment: Left
+QualifierAlignment: Left
 TabWidth: "4"
 UseTab: Never
 
