@@ -6,6 +6,7 @@ add_library(amon-lib
     src/SignalHandler.cpp
     src/layers/LayerView.cpp
     src/types/ByteArray.cpp
+    src/types/MACAddress.cpp
     src/types/UIntBE.cpp
 )
 
