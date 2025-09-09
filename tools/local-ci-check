@@ -1,0 +1,53 @@
+#!/bin/bash
+
+RED="\033[31m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+ENDCOLOR="\033[0m"
+
+make dev-container >/dev/null 2>/dev/null
+if [ $? != 0 ]; then
+    echo "FATAL: could not setup dev-container"
+    exit 1
+fi
+
+passed_failed() {
+    if [ $? = 0 ]; then
+        echo -e "${GREEN}PASSED${ENDCOLOR}"
+    else
+        echo -e "${RED}FAILED${ENDCOLOR}"
+        echo -e "${YELLOW}================================================================================${ENDCOLOR}"
+        cat log.txt
+        echo -e "${YELLOW}================================================================================${ENDCOLOR}"
+    fi
+}
+
+echo -n "build ... "
+docker run --rm -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container "make" >log.txt 2>&1
+passed_failed
+echo
+
+echo -n "clang-format ... "
+docker run --rm -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container "make format"  >log.txt 2>&1
+passed_failed
+echo
+
+echo -n "clang-tidy ... "
+docker run --rm -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container "make tidy" >log.txt 2>&1
+passed_failed
+echo
+
+echo -n "commitlint ... "
+make commitlint >log.txt 2>&1
+passed_failed
+echo
+
+echo -n "editorconfig ... "
+make editorconfig >log.txt 2>&1
+passed_failed
+echo
+
+echo -n "atomic-commits ... "
+docker run --rm -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container "make atomic-commits" >log.txt 2>&1
+passed_failed
+echo
