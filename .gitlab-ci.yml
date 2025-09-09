@@ -3,6 +3,7 @@ stages:
   - prepare
   - check
   - build
+  - test
 
 workflow:
   rules:
@@ -20,6 +21,7 @@ include:
   - local: "ci/prepare.gitlab-ci.yaml"
   - local: "ci/check.gitlab-ci.yaml"
   - local: "ci/build.gitlab-ci.yaml"
+  - local: "ci/test.gitlab-ci.yaml"
 
 variables:
   GIT_STRATEGY: clone
