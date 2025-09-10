@@ -14,6 +14,7 @@ add_library(amon-lib
     src/layers/VLAN.cpp
     src/Logger.cpp
     src/Packet.cpp
+    src/PacketParser.cpp
     src/SignalHandler.cpp
     src/Stacktrace.cpp
     src/types/ByteArray.cpp
