@@ -6,7 +6,9 @@ add_library(amon-lib
     src/SignalHandler.cpp
 )
 
-target_include_directories(amon-lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
+target_include_directories(amon-lib
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/public
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/private)
 
 target_link_libraries(amon-lib
     PRIVATE
