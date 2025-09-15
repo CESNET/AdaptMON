@@ -24,6 +24,7 @@ add_library(amon-lib
     src/Packet.cpp
     src/util/ArgvList.cpp
     src/util/getopt.cpp
+    src/util/ArgParser.cpp
 )
 
 target_include_directories(amon-lib
