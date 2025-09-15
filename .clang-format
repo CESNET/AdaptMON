@@ -35,6 +35,8 @@ IncludeCategories:
     Priority: 0
   - Regex: "^<amon/(.*)>$"
     Priority: 1
+  - Regex: "^<amon-internal/(.*)>$"
+    Priority: 1
   - Regex: '^<[^>]*\.(h|hpp)>$'
     Priority: 3
   - Regex: "^<.*>$"
