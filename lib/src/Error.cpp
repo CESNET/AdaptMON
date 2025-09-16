@@ -11,6 +11,7 @@
 #undef _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L // NOLINT
 
+#include <amon-internal/Test.hpp>
 #include <amon/Error.hpp>
 
 #include <array>
@@ -27,6 +28,13 @@ std::string errnoToString(int errNum)
         return "<unknown>";
     }
     return std::string {buf.data()};
+}
+
+TEST_CASE("ErrnoError")
+{
+    CHECK_THROWS_WITH(
+        [] { throw ErrnoError(int(0), "fopen", "thing.xml"); }(),
+        "fopen(\"thing.xml\") has failed: Success (0)");
 }
 
 } // namespace amon

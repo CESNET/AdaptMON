@@ -10,6 +10,7 @@ project(adaptmon
     LANGUAGES CXX C)
 
 option(ENABLE_DOXYGEN  "Enable build of code documentation"    OFF)
+option(ENABLE_TESTS    "Enable building of tests"              OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -46,9 +47,15 @@ add_compile_options(
     $<${is_release}:-Werror>
 )
 
+if (ENABLE_TESTS)
+    include(CTest)
+    enable_testing()
+endif()
+
 # Add external dependencies
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
+include(cmake/doctest.cmake)
 
 add_subdirectory(apps)
 add_subdirectory(doc)
