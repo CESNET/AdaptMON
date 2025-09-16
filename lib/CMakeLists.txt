@@ -11,6 +11,7 @@ add_library(amon-lib
     src/layers/MPLS.cpp
     src/layers/UDP.cpp
     src/layers/TCP.cpp
+    src/layers/VLAN.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
