@@ -8,6 +8,7 @@ add_library(amon-lib
     src/layers/Ethernet.cpp
     src/layers/IPv4.cpp
     src/layers/IPv6.cpp
+    src/layers/MPLS.cpp
     src/layers/UDP.cpp
     src/layers/TCP.cpp
     src/types/ByteArray.cpp
