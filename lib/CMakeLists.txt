@@ -6,6 +6,7 @@ add_library(amon-lib
     src/SignalHandler.cpp
     src/layers/LayerView.cpp
     src/layers/Ethernet.cpp
+    src/layers/ICMP.cpp
     src/layers/IPv4.cpp
     src/layers/IPv6.cpp
     src/layers/MPLS.cpp
