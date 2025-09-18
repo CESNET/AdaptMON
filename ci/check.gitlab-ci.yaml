@@ -5,6 +5,8 @@ commitlint:
   image:
     name: registry.hub.docker.com/commitlint/commitlint:latest
     entrypoint: [""]
+  variables:
+    GIT_DEPTH: 0
   script:
     # Uncomment the next line if you are extending the @commitlint/config-nx-scopes in your commitlint configuration
     # - npm i -g nx@$(node -pe "require('./package.json').devDependencies.nx")
