@@ -91,7 +91,9 @@ atomic-commits:
 	fi; \
 	branch="$$(git branch --show-current)"; \
 	git stash store "$$(git stash create)" && did_stash=1 && git reset --hard HEAD; \
-	git rev-list --reverse $${BASE}..$${HEAD} | xargs -I{} sh -c "echo; echo @@@@@@@@@@@@@@@@@@@@ {} @@@@@@@@@@@@@@@@@@@@; echo; git checkout {} && make; echo"; \
+	git rev-list --reverse $${BASE}..$${HEAD} | xargs -I{} sh -c "set -e; echo; echo @@@@@@@@@@@@@@@@@@@@ {} @@@@@@@@@@@@@@@@@@@@; echo; git checkout {}; make; echo"; \
+	EC=$$?; \
 	if [ -n "$$branch" ]; then git checkout "$$branch"; fi; \
-	if [ -n "$$did_stash" ]; then git stash pop; fi;
+	if [ -n "$$did_stash" ]; then git stash pop; fi; \
+	exit $${EC}
 .PHONY: atomic-commits
