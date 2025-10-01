@@ -7,6 +7,7 @@ add_library(amon-lib
     src/layers/LayerView.cpp
     src/layers/Ethernet.cpp
     src/layers/ICMP.cpp
+    src/layers/ICMPv6.cpp
     src/layers/IPv4.cpp
     src/layers/IPv6.cpp
     src/layers/MPLS.cpp
