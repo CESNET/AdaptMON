@@ -19,6 +19,7 @@ add_library(amon-lib
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
     src/types/UIntBE.cpp
+    src/util/numeric.cpp
 )
 
 target_include_directories(amon-lib
