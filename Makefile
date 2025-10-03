@@ -40,12 +40,12 @@ format-fix:
 
 tidy:
 	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-	run-clang-tidy -p $(BUILD_DIR) -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
+	run-clang-tidy -p $(BUILD_DIR) -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
 .PHONY: tidy
 
 tidy-fix:
 	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-	run-clang-tidy -p $(BUILD_DIR) -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
+	run-clang-tidy -p $(BUILD_DIR) -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
 .PHONY: tidy-fix
 
 doxygen:
