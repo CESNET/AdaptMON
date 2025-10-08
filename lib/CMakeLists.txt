@@ -4,6 +4,24 @@ add_library(amon-lib
     src/Stacktrace.cpp
     src/Error.cpp
     src/SignalHandler.cpp
+    src/layers/LayerView.cpp
+    src/layers/Ethernet.cpp
+    src/layers/ICMP.cpp
+    src/layers/ICMPv6.cpp
+    src/layers/IPv4.cpp
+    src/layers/IPv6.cpp
+    src/layers/MPLS.cpp
+    src/layers/UDP.cpp
+    src/layers/TCP.cpp
+    src/layers/VLAN.cpp
+    src/layers/GRE.cpp
+    src/types/ByteArray.cpp
+    src/types/IPAddress.cpp
+    src/types/MACAddress.cpp
+    src/types/Timestamp.cpp
+    src/types/UIntBE.cpp
+    src/util/numeric.cpp
+    src/Packet.cpp
 )
 
 target_include_directories(amon-lib
