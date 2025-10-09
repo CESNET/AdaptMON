@@ -22,6 +22,9 @@ add_library(amon-lib
     src/types/UIntBE.cpp
     src/util/numeric.cpp
     src/Packet.cpp
+    src/util/ArgvList.cpp
+    src/util/getopt.cpp
+    src/util/ArgParser.cpp
 )
 
 target_include_directories(amon-lib
