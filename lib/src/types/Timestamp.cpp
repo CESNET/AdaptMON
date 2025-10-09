@@ -111,4 +111,36 @@ TEST_CASE("Timestamp fromTimeval with negative throws")
     CHECK_THROWS_AS(Timestamp::fromTimeval(tv3), std::invalid_argument);
 }
 
+TEST_CASE("Timestamp::convertTo nanoseconds")
+{
+    const Timestamp t(123456789);
+    CHECK(t.convertTo(TimeUnit::NANOSECONDS) == 123456789);
+    CHECK(t.convertTo<TimeUnit::NANOSECONDS>() == 123456789);
+}
+
+TEST_CASE("Timestamp::convertTo microseconds")
+{
+    const Timestamp t(123456789);
+    CHECK(t.convertTo(TimeUnit::MICROSECONDS) == 123456);
+    CHECK(t.convertTo<TimeUnit::MICROSECONDS>() == 123456);
+}
+
+TEST_CASE("Timestamp::convertTo milliseconds")
+{
+    const Timestamp t(123456789);
+    CHECK(t.convertTo(TimeUnit::MILLISECONDS) == 123);
+    CHECK(t.convertTo<TimeUnit::MILLISECONDS>() == 123);
+}
+
+TEST_CASE("Timestamp::convertTo seconds")
+{
+    const Timestamp t(123456789);
+    CHECK(t.convertTo(TimeUnit::SECONDS) == 0);
+    CHECK(t.convertTo<TimeUnit::SECONDS>() == 0);
+
+    const Timestamp t2(3'000'000'000ULL);
+    CHECK(t2.convertTo(TimeUnit::SECONDS) == 3);
+    CHECK(t2.convertTo<TimeUnit::SECONDS>() == 3);
+}
+
 } // namespace amon::types

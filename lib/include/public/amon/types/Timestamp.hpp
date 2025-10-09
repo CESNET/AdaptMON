@@ -131,6 +131,36 @@ public:
         return ss.str();
     }
 
+    /**
+     * @brief Convert timestamp to the specified time unit.
+     * @tparam PrintUnit Target time unit for conversion.
+     * @return Timestamp value in the specified unit.
+     */
+    template <TimeUnit PrintUnit>
+    constexpr uint64_t convertTo() const noexcept
+    {
+        if constexpr (PrintUnit == TimeUnit::NANOSECONDS) {
+            return m_nanosec;
+        }
+        constexpr uint64_t divisor
+            = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(PrintUnit);
+        return m_nanosec / divisor;
+    }
+
+    /**
+     * @brief Convert timestamp to the specified time unit.
+     * @param unit Target time unit for conversion.
+     * @return Timestamp value in the specified unit.
+     */
+    uint64_t convertTo(TimeUnit unit) const noexcept
+    {
+        if (unit == TimeUnit::NANOSECONDS) {
+            return m_nanosec;
+        }
+        const uint64_t divisor = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(unit);
+        return m_nanosec / divisor;
+    }
+
 private:
     uint64_t m_nanosec = 0; ///< Nanoseconds since the Unix epoch
 
