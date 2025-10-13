@@ -113,7 +113,9 @@ public:
     {
         std::stringstream ss;
 
-        if constexpr (PrintUnit > TimeUnit::NANOSECONDS) {
+        if constexpr (PrintUnit == TimeUnit::NANOSECONDS) {
+            ss << m_nanosec;
+        } else {
             const uint64_t divisor
                 = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(PrintUnit);
 
@@ -123,9 +125,6 @@ public:
             const int decimalPlaces = (int(PrintUnit) - int(TimeUnit::NANOSECONDS)) * 3;
 
             ss << whole << "." << std::setfill('0') << std::setw(decimalPlaces) << decimal;
-
-        } else {
-            ss << m_nanosec;
         }
 
         return ss.str();
