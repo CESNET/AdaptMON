@@ -68,7 +68,7 @@ public:
     template <TimeUnit SourceUnit>
     static Timestamp from(uint64_t value)
     {
-        const unsigned multiplier
+        const uint64_t multiplier
             = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(SourceUnit);
         const uint64_t nanosec = safeMul(value, multiplier);
         return {nanosec};
@@ -113,8 +113,10 @@ public:
     {
         std::stringstream ss;
 
-        if constexpr (PrintUnit > TimeUnit::NANOSECONDS) {
-            const unsigned divisor
+        if constexpr (PrintUnit == TimeUnit::NANOSECONDS) {
+            ss << m_nanosec;
+        } else {
+            const uint64_t divisor
                 = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(PrintUnit);
 
             const uint64_t value = m_nanosec;
@@ -123,12 +125,39 @@ public:
             const int decimalPlaces = (int(PrintUnit) - int(TimeUnit::NANOSECONDS)) * 3;
 
             ss << whole << "." << std::setfill('0') << std::setw(decimalPlaces) << decimal;
-
-        } else {
-            ss << m_nanosec;
         }
 
         return ss.str();
+    }
+
+    /**
+     * @brief Convert timestamp to the specified time unit.
+     * @tparam PrintUnit Target time unit for conversion.
+     * @return Timestamp value in the specified unit.
+     */
+    template <TimeUnit PrintUnit>
+    constexpr uint64_t convertTo() const noexcept
+    {
+        if constexpr (PrintUnit == TimeUnit::NANOSECONDS) {
+            return m_nanosec;
+        }
+        constexpr uint64_t divisor
+            = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(PrintUnit);
+        return m_nanosec / divisor;
+    }
+
+    /**
+     * @brief Convert timestamp to the specified time unit.
+     * @param unit Target time unit for conversion.
+     * @return Timestamp value in the specified unit.
+     */
+    uint64_t convertTo(TimeUnit unit) const noexcept
+    {
+        if (unit == TimeUnit::NANOSECONDS) {
+            return m_nanosec;
+        }
+        const uint64_t divisor = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(unit);
+        return m_nanosec / divisor;
     }
 
 private:
@@ -139,7 +168,7 @@ private:
      * @param unit Time unit (e.g., NANOSECONDS, MICROSECONDS).
      * @return Number of units in one second.
      */
-    static constexpr unsigned unitsInSecond(TimeUnit unit)
+    static constexpr uint64_t unitsInSecond(TimeUnit unit)
     {
         switch (unit) {
         case TimeUnit::SECONDS:
