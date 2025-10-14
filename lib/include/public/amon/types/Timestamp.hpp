@@ -68,7 +68,7 @@ public:
     template <TimeUnit SourceUnit>
     static Timestamp from(uint64_t value)
     {
-        const unsigned multiplier
+        const uint64_t multiplier
             = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(SourceUnit);
         const uint64_t nanosec = safeMul(value, multiplier);
         return {nanosec};
@@ -114,7 +114,7 @@ public:
         std::stringstream ss;
 
         if constexpr (PrintUnit > TimeUnit::NANOSECONDS) {
-            const unsigned divisor
+            const uint64_t divisor
                 = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(PrintUnit);
 
             const uint64_t value = m_nanosec;
@@ -139,7 +139,7 @@ private:
      * @param unit Time unit (e.g., NANOSECONDS, MICROSECONDS).
      * @return Number of units in one second.
      */
-    static constexpr unsigned unitsInSecond(TimeUnit unit)
+    static constexpr uint64_t unitsInSecond(TimeUnit unit)
     {
         switch (unit) {
         case TimeUnit::SECONDS:
