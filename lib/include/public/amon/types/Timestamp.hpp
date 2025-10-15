@@ -183,6 +183,17 @@ public:
         return m_nanosec / divisor;
     }
 
+    /**
+     * @brief Subtract two timestamps to get the difference in nanoseconds.
+     * @param other Timestamp to get difference to.
+     * @return Absolute difference in nanoseconds.
+     */
+    uint64_t difference(const Timestamp& other) const noexcept
+    {
+        const bool cmp = m_nanosec > other.m_nanosec;
+        return cmp ? m_nanosec - other.m_nanosec : other.m_nanosec - m_nanosec;
+    }
+
 private:
     uint64_t m_nanosec = 0; ///< Nanoseconds since the Unix epoch
 
