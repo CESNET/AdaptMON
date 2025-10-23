@@ -31,19 +31,6 @@ std::expected<IPv6View, LayerError> IPv6View::create(std::span<const std::byte> 
     return view;
 }
 
-std::expected<IPv6ExtensionView, LayerError>
-IPv6ExtensionView::create(std::span<const std::byte> data) noexcept
-{
-    if (data.size() < sizeof(IPv6ExtensionHeader)) {
-        return std::unexpected(LayerError::HEADER_SHORT);
-    }
-    auto view = IPv6ExtensionView(data);
-    if (data.size() < view.headerLength()) {
-        return std::unexpected(LayerError::BAD_LEN_FIELD);
-    }
-    return view;
-}
-
 std::expected<IPv6FragmentView, LayerError>
 IPv6FragmentView::create(std::span<const std::byte> data) noexcept
 {
