@@ -1,6 +1,7 @@
 /**
  * @file
  * @author Jan Sobol <sobol@cesnet.cz>
+ * @author Michal Sedlak <sedlakm@cesnet.cz>
  * @brief Utils for numeric operations.
  * @copyright Copyright (c) 2025 CESNET, z.s.p.o.
  *
@@ -60,6 +61,54 @@ TEST_CASE("safeMul overflow")
     DOCTEST_CHECK_THROWS_AS(
         safeMul(std::numeric_limits<uint64_t>::max(), std::numeric_limits<uint64_t>::max()),
         std::overflow_error);
+}
+
+TEST_CASE("safeCast unsigned to unsigned, no overflow")
+{
+    const uint8_t val = 42;
+    CHECK(safeCast<uint16_t>(val) == 42);
+}
+
+TEST_CASE("safeCast signed to signed, no overflow")
+{
+    const int8_t val = -42;
+    CHECK(safeCast<int16_t>(val) == -42);
+}
+
+TEST_CASE("safeCast unsigned to signed, within range")
+{
+    const uint8_t val = 127;
+    CHECK(safeCast<int8_t>(val) == 127);
+}
+
+TEST_CASE("safeCast unsigned to signed, overflow")
+{
+    const uint16_t val = 300;
+    CHECK_THROWS_AS(safeCast<int8_t>(val), std::overflow_error);
+}
+
+TEST_CASE("safeCast signed to unsigned, negative value")
+{
+    const int8_t val = -1;
+    CHECK_THROWS_AS(safeCast<uint8_t>(val), std::overflow_error);
+}
+
+TEST_CASE("safeCast signed to unsigned, positive value")
+{
+    const int8_t val = 42;
+    CHECK(safeCast<uint8_t>(val) == 42);
+}
+
+TEST_CASE("safeCast value exceeds OutputT max")
+{
+    const int32_t val = std::numeric_limits<int16_t>::max() + 1;
+    CHECK_THROWS_AS(safeCast<int16_t>(val), std::overflow_error);
+}
+
+TEST_CASE("safeCast value below OutputT min")
+{
+    const int32_t val = std::numeric_limits<int16_t>::min() - 1;
+    CHECK_THROWS_AS(safeCast<int16_t>(val), std::overflow_error);
 }
 
 } // namespace amon::util::numeric
