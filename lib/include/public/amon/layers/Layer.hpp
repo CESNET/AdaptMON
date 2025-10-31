@@ -16,6 +16,7 @@
 
 namespace amon::layers {
 
+static constexpr uint16_t LAYERTYPE_LINK = 0x1000; ///< Link layers (e.g. first layer in pcap)
 static constexpr uint16_t LAYERTYPE_L2 = 0x2000; ///< Layer 2 type base
 static constexpr uint16_t LAYERTYPE_L3 = 0x3000; ///< Layer 3 type base
 static constexpr uint16_t LAYERTYPE_L4 = 0x4000; ///< Layer 4 type base
@@ -27,6 +28,9 @@ enum class LayerType : uint16_t {
     ERROR = 0x00,
     UNKNOWN = 0x01,
     PAYLOAD = 0x02,
+
+    RAW = LAYERTYPE_LINK | 0x01, // DLT_RAW (packet starts with IPv4 or IPv6)
+
     ETHERNET = LAYERTYPE_L2 | 0x01,
     MPLS = LAYERTYPE_L2 | 0x02,
     VLAN = LAYERTYPE_L2 | 0x03,
@@ -62,6 +66,8 @@ constexpr std::string_view layerTypeToString(LayerType type)
         return "UNKNOWN";
     case LayerType::PAYLOAD:
         return "PAYLOAD";
+    case LayerType::RAW:
+        return "RAW";
     case LayerType::ETHERNET:
         return "ETHERNET";
     case LayerType::IPV4:
