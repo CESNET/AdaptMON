@@ -108,6 +108,17 @@ constexpr std::string_view layerTypeToString(LayerType type)
 }
 
 /**
+ * @brief Get the base type of a LayerType – first byte (e.g. LAYERTYPE_L2, LAYERTYPE_L3, ...).
+ * @param type LayerType value.
+ * @return Base type of the layer.
+ */
+constexpr uint16_t layerTypeBase(LayerType type) noexcept
+{
+    static_assert(sizeof(LayerType) == 2, "LayerType must be uint16_t.");
+    return static_cast<uint16_t>(type) & 0xF000;
+}
+
+/**
  * @brief Enumeration of possible layer errors.
  */
 enum class LayerError : uint16_t {
