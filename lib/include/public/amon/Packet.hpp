@@ -85,8 +85,8 @@ struct Packet {
     std::optional<LayerVariant>
     findLayer(LayerType layerType, uint8_t startPos, uint8_t endPos) const
     {
-        if (startPos >= layers.size() || endPos >= layers.size() || startPos > endPos) {
-            throw std::invalid_argument("Start or end index out of layers bounds.");
+        if (endPos > layers.size() || startPos > endPos) {
+            throw std::out_of_range("Bad start or end position.");
         }
         const auto* begin = layers.begin() + startPos;
         const auto* end = layers.begin() + endPos;
