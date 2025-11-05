@@ -123,6 +123,7 @@ constexpr uint16_t layerTypeBase(LayerType type) noexcept
  */
 enum class LayerError : uint16_t {
     NONE, // Layer is valid
+    LAYER_VECTOR_FULL,
 
     // Global errors
     HEADER_SHORT,
@@ -147,6 +148,8 @@ constexpr std::string_view layerErrorToString(LayerError err)
     switch (err) {
     case LayerError::NONE:
         return "NONE";
+    case LayerError::LAYER_VECTOR_FULL:
+        return "LAYER_VECTOR_FULL";
     case LayerError::HEADER_SHORT:
         return "HEADER_SHORT";
     case LayerError::BAD_PAYLOAD_LEN:
