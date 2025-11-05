@@ -11,6 +11,7 @@
 
 #include <amon/layers/Layer.hpp>
 #include <amon/layers/LayerView.hpp>
+#include <amon/layers/TCPOptions.hpp>
 #include <amon/types/UIntBE.hpp>
 
 #include <expected>
@@ -113,6 +114,12 @@ public:
      * @return Flags byte.
      */
     uint8_t flags() const noexcept { return header().flags; }
+
+    /**
+     * @brief Get the TCP options as a TCPOptionRange.
+     * @return TCPOptionRange for iterating over TCP options.
+     */
+    TCPOptionRange optionsRange() const noexcept { return TCPOptionRange(options()); }
 
     /**
      * @brief Get the TCP options.

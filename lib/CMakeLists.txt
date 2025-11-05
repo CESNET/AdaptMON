@@ -10,6 +10,7 @@ add_library(amon-lib
     src/layers/LayerView.cpp
     src/layers/MPLS.cpp
     src/layers/TCP.cpp
+    src/layers/TCPOptions.cpp
     src/layers/UDP.cpp
     src/layers/VLAN.cpp
     src/Logger.cpp
