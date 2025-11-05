@@ -27,7 +27,8 @@ static constexpr uint16_t LAYERTYPE_L4 = 0x4000; ///< Layer 4 type base
 enum class LayerType : uint16_t {
     ERROR = 0x00,
     UNKNOWN = 0x01,
-    PAYLOAD = 0x02,
+    PAYLOAD_APP = 0x02,
+    PAYLOAD_IP_FRAGMENT = 0x03,
 
     RAW = LAYERTYPE_LINK | 0x01, // DLT_RAW (packet starts with IPv4 or IPv6)
 
@@ -64,8 +65,10 @@ constexpr std::string_view layerTypeToString(LayerType type)
         return "ERROR";
     case LayerType::UNKNOWN:
         return "UNKNOWN";
-    case LayerType::PAYLOAD:
-        return "PAYLOAD";
+    case LayerType::PAYLOAD_APP:
+        return "PAYLOAD_APP";
+    case LayerType::PAYLOAD_IP_FRAGMENT:
+        return "PAYLOAD_IP_FRAGMENT";
     case LayerType::RAW:
         return "RAW";
     case LayerType::ETHERNET:
