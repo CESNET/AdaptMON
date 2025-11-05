@@ -19,6 +19,13 @@
 namespace amon::util::numeric {
 
 /**
+ * @brief Concept that matches integral types except bool.
+ * @tparam T The type to check.
+ */
+template <typename T>
+concept Integral = std::integral<T> && !std::same_as<bool, T>;
+
+/**
  * @brief Safely add two uint64_t values, throwing on overflow.
  * @param a First value.
  * @param b Second value.
@@ -95,6 +102,19 @@ inline OutputT safeCast(InputT value)
     }
 
     return static_cast<OutputT>(value);
+}
+
+/**
+ * @brief Computes the absolute difference between two integral values.
+ * @tparam Integer An integral type.
+ * @param a The first value.
+ * @param b The second value.
+ * @return The absolute difference between a and b.
+ */
+template <Integral Integer>
+inline Integer absDiff(Integer a, Integer b)
+{
+    return a > b ? a - b : b - a;
 }
 
 } // namespace amon::util::numeric
