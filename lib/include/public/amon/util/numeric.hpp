@@ -1,15 +1,18 @@
 /**
  * @file
  * @author Jan Sobol <sobol@cesnet.cz>
+ * @author Michal Sedlak <sedlakm@cesnet.cz>
  * @brief Utils for numeric operations.
  * @copyright Copyright (c) 2025 CESNET, z.s.p.o.
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#include <concepts>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
 namespace amon::util::numeric {
 
@@ -41,6 +44,55 @@ inline uint64_t safeMul(uint64_t a, uint64_t b)
         throw std::overflow_error("multiplication would overflow");
     }
     return a * b;
+}
+
+/**
+ * @brief Safely casts an integral value from one type to another.
+ *
+ * Performs compile-time checks to avoid unnecessary runtime checks when possible.
+ * Throws std::overflow_error if the value cannot be represented in the target type.
+ *
+ * @tparam OutputT The target integral type.
+ * @tparam InputT The source integral type.
+ * @param value The value to cast.
+ * @return OutputT The safely casted value.
+ * @throws std::overflow_error If the value overflows or underflows the target type.
+ */
+template <typename OutputT, typename InputT>
+    requires(std::integral<OutputT> && !std::same_as<bool, OutputT>)
+    && (std::integral<InputT> && !std::same_as<bool, InputT>)
+inline OutputT safeCast(InputT value)
+{
+    // Constexpr-time optimizations to ensure that no runtime checks happen if not necessary
+    if constexpr (
+        std::unsigned_integral<InputT> && std::unsigned_integral<OutputT>
+        && sizeof(InputT) <= sizeof(OutputT)) {
+        return static_cast<OutputT>(value);
+    }
+
+    if constexpr (
+        std::signed_integral<InputT> && std::signed_integral<OutputT>
+        && sizeof(InputT) <= sizeof(OutputT)) {
+        return static_cast<OutputT>(value);
+    }
+
+    if constexpr (
+        std::unsigned_integral<InputT>
+        && std::cmp_greater_equal(
+            std::numeric_limits<OutputT>::max(),
+            std::numeric_limits<InputT>::max())) {
+        return static_cast<OutputT>(value);
+    }
+
+    if (std::cmp_greater(value, std::numeric_limits<OutputT>::max())) {
+        throw std::overflow_error("cast would overflow");
+    }
+
+    if (std::cmp_less(value, std::numeric_limits<OutputT>::min())) {
+        throw std::overflow_error("cast would underflow");
+    }
+
+    return static_cast<OutputT>(value);
 }
 
 } // namespace amon::util::numeric

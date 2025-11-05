@@ -91,6 +91,29 @@ public:
     }
 
     /**
+     * @brief Converts the timestamp to a POSIX timeval structure.
+     *
+     * The timeval structure contains seconds and microseconds since the epoch.
+     * This method returns a timeval representation of the timestamp using microsecond precision.
+     *
+     * If the timestamp precision is higher than would be representable in the timeval, the
+     * resulting value is rounded down to the nearest microsecond.
+     *
+     * @return timeval structure representing the timestamp.
+     */
+    timeval toTimeval() const
+    {
+        const uint64_t micros = convertTo<types::TimeUnit::MICROSECONDS>();
+
+        timeval tv;
+        tv.tv_sec = util::numeric::safeCast<decltype(tv.tv_sec)>(
+            micros / unitsInSecond(TimeUnit::MICROSECONDS));
+        tv.tv_usec = util::numeric::safeCast<decltype(tv.tv_usec)>(
+            micros % unitsInSecond(TimeUnit::MICROSECONDS));
+        return tv;
+    }
+
+    /**
      * @brief Get timestamp in nanoseconds (since the Unix epoch).
      * @return Timestamp value in nanoseconds.
      */

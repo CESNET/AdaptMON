@@ -25,6 +25,7 @@ add_library(amon-lib
     src/util/ArgvList.cpp
     src/util/getopt.cpp
     src/util/ArgParser.cpp
+    src/util/Pcap.cpp
 )
 
 target_include_directories(amon-lib
@@ -36,6 +37,8 @@ target_link_libraries(amon-lib
         spdlog::spdlog
         libbacktrace
         doctest
+    PUBLIC
+        PkgConfig::libpcap
 )
 
 if (ENABLE_TESTS)
