@@ -10,6 +10,7 @@
 #include <amon-internal/Test.hpp>
 #include <amon/types/IPAddress.hpp>
 
+#include <cassert>
 #include <cstring>
 #include <stdexcept>
 #include <type_traits>
@@ -84,6 +85,23 @@ std::string IPAddress::toString() const
     }
 
     return {buffer.data()};
+}
+
+std::optional<IPv4> types::IPAddress::toIPv4() const noexcept
+{
+    if (!isIPv4()) {
+        return std::nullopt;
+    }
+    IPv4 ip;
+    *reinterpret_cast<uint32_t*>(ip.data()) = u32()[3];
+    return ip;
+}
+
+IPv6 types::IPAddress::toIPv6() const noexcept
+{
+    IPv6 ip;
+    std::memcpy(ip.data(), data(), 16);
+    return ip;
 }
 
 static_assert(std::is_standard_layout<IPv4>(), "Unexpected data type layout for IPv4");
@@ -168,6 +186,53 @@ TEST_CASE("IPAddress construct from IPv6")
     CHECK(ip.isIPv6());
     CHECK(!ip.isIPv4());
     CHECK(ip.toString() == "2001:db8::1");
+}
+
+TEST_CASE("IPAddress::toIPv4 returns IPv4 for IPv4 address")
+{
+    const IPAddress ip("192.168.1.1");
+    auto opt = ip.toIPv4();
+    REQUIRE(opt.has_value());
+    if (opt.has_value()) { // make clang-tidy happy
+        const IPv4 v = *opt;
+        const uint8_t expect[4] = {192, 168, 1, 1};
+        CHECK(std::memcmp(v.data(), expect, 4) == 0);
+    }
+}
+
+TEST_CASE("IPAddress::toIPv4 returns std::nullopt for native IPv6")
+{
+    const IPAddress ip("2001:db8::1");
+    CHECK(!ip.toIPv4().has_value());
+}
+
+TEST_CASE("IPAddress::toIPv4 accepts IPv4-mapped IPv6")
+{
+    const IPAddress ip("::ffff:192.168.1.1");
+    auto opt = ip.toIPv4();
+    REQUIRE(opt.has_value());
+    if (opt.has_value()) { // make clang-tidy happy
+        const IPv4 v = *opt;
+        const uint8_t expect[4] = {192, 168, 1, 1};
+        CHECK(std::memcmp(v.data(), expect, 4) == 0);
+    }
+}
+
+TEST_CASE("IPAddress::toIPv6 returns full IPv6 for both IPv6 and IPv4-mapped addresses")
+{
+    // IPv6 input -> identical 16 bytes
+    const IPAddress ip6("2001:db8::1");
+    IPv6 out6 = ip6.toIPv6();
+    const uint8_t expect6[16] = {0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+    CHECK(std::memcmp(out6.data(), expect6, 16) == 0);
+
+    // IPv4 input -> IPv4-mapped IPv6
+    const IPAddress ip4("192.168.1.1");
+    IPv6 out6m = ip4.toIPv6();
+    const uint8_t expect4[4] = {192, 168, 1, 1};
+    CHECK(std::memcmp(out6m.data() + 12, expect4, 4) == 0);
+    CHECK(out6m.data()[10] == std::byte {0xff});
+    CHECK(out6m.data()[11] == std::byte {0xff});
 }
 
 } // namespace amon::types
