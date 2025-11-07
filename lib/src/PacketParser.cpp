@@ -373,7 +373,8 @@ TEST_CASE("PacketParser simple packet parsing")
 
     Packet packet;
     packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-    PacketParser::parse(packet, LayerType::ETHERNET);
+    PacketParser parser;
+    parser.parse(packet, LayerType::ETHERNET);
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
@@ -406,7 +407,8 @@ TEST_CASE("PacketParser IP in IP parsing")
 
         Packet packet;
         packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-        PacketParser::parse(packet, LayerType::ETHERNET);
+        PacketParser parser;
+        parser.parse(packet, LayerType::ETHERNET);
 
         CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
         CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
@@ -435,7 +437,8 @@ TEST_CASE("PacketParser IP in IP parsing")
 
         Packet packet;
         packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-        PacketParser::parse(packet, LayerType::ETHERNET);
+        PacketParser parser;
+        parser.parse(packet, LayerType::ETHERNET);
 
         CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
         CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
@@ -464,7 +467,8 @@ TEST_CASE("PacketParser SYN TCP parsing")
 
     Packet packet;
     packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-    PacketParser::parse(packet, LayerType::ETHERNET);
+    PacketParser parser;
+    parser.parse(packet, LayerType::ETHERNET);
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
