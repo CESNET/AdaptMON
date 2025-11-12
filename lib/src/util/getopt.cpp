@@ -98,7 +98,7 @@ Result getOpt(const std::vector<Opt>& opts, int argc, const char* const* argv)
     const std::lock_guard<std::mutex> guard {getoptMutex}; // getopt_long is not thread safe
 
     Result res;
-    optind = 1;
+    optind = 0;
     for (;;) {
         // NOLINTBEGIN(concurrency-mt-unsafe)
         const int ret = getopt_long(
