@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <string>
 
 namespace amon::types {
@@ -87,6 +88,20 @@ public:
      * @throws std::runtime_error If the conversion fails.
      */
     std::string toString() const;
+
+    /**
+     * @brief Converts the IP address to an IPv4 address if it is IPv4.
+     * @return Optional IPv4 address; std::nullopt if the IP address is not IPv4.
+     */
+    std::optional<IPv4> toIPv4() const noexcept;
+
+    /**
+     * @brief Converts the IP address to an IPv6 address.
+     * @return IPv6 address.
+     *
+     * @note If the IP address is IPv4, it is returned as IPv4-mapped IPv6 address.
+     */
+    IPv6 toIPv6() const noexcept;
 
 private:
     /* Get pointer to the address as array of 32-bit unsigned integers. */
