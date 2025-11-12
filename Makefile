@@ -97,3 +97,7 @@ atomic-commits:
 	if [ -n "$$did_stash" ]; then git stash pop; fi; \
 	exit $${EC}
 .PHONY: atomic-commits
+
+pragma-once:
+	@tools/check-pragma-once
+.PHONY: pragma-once
