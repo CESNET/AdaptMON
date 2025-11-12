@@ -41,6 +41,14 @@ target_link_libraries(amon-lib
         PkgConfig::libpcap
 )
 
+add_custom_command(TARGET amon-lib PRE_LINK
+    COMMAND sh -c '${PROJECT_SOURCE_DIR}/tools/generate-export-map > ${CMAKE_BINARY_DIR}/export.map'
+    COMMENT "Generating export map for namespace amon"
+)
+target_link_options(amon-lib PRIVATE
+    -Wl,--version-script=${CMAKE_BINARY_DIR}/export.map
+)
+
 if (ENABLE_SANITIZERS)
     target_link_libraries(amon-lib PRIVATE asan ubsan)
     target_compile_options(amon-lib PRIVATE -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all)
