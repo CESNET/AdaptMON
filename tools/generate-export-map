@@ -1,0 +1,18 @@
+#!/bin/bash
+
+amon_symbols()
+{
+    for f in $(find . -iname '*.o'); do
+        out="$(nm -g --defined-only $f | cut -d' ' -f3)"
+        paste <(echo "$out") <(echo "$out" | c++filt) | grep '[[:space:]]amon::' | cut -f1
+    done
+}
+
+echo '{'
+echo '  global:'
+for sym in $(amon_symbols); do
+    echo "    $sym;"
+done
+echo '  local:'
+echo '    *;'
+echo '};'
