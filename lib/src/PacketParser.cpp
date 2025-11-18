@@ -194,11 +194,76 @@ PacketParser::processMPLS(Packet& packet, const uint16_t offset, PacketParserEth
         return mplsOrError.error();
     }
     if (mplsOrError->bottomOfStack()) {
-        // it is expected IPv4 or IPv6 continuing
-        return processIPFromPayload(packet, offset + mplsOrError->headerLength());
+        return processMPLSBottomOfStack(packet, offset + mplsOrError->headerLength());
     }
     // propagating MPLS or MPLS_MULTICAST
     return processEthertype(packet, offset + mplsOrError->headerLength(), ethertype);
+}
+
+LayerError PacketParser::processMPLSBottomOfStack(Packet& packet, uint16_t offset)
+{
+    auto nextLayerIndex = packet.layers.size();
+    std::optional<LayerType> nextLayerType = std::nullopt;
+
+    switch (m_config.mplsMode) {
+    case PacketParserConfig::MPLSMode::AUTO:
+    case PacketParserConfig::MPLSMode::IP_ONLY: {
+        // normally it is expected IPv4 or IPv6 continuing
+        const LayerError ipError = processIPFromPayload(packet, offset);
+        if (m_config.mplsMode == PacketParserConfig::MPLSMode::IP_ONLY) {
+            // do not try another protocols other than IP
+            return ipError;
+        }
+
+        if (nextLayerIndex < packet.layers.size()) {
+            nextLayerType = std::visit(
+                [](auto&& arg) -> auto { return arg.type; },
+                packet.layers[nextLayerIndex]);
+        }
+        // Check if packet was successfully parsed as IP (LayerError::NONE) or as IP packet trimmed
+        // somewhere after IP header (LayerError::HEADER_SHORT).
+        if ((ipError == LayerError::NONE || ipError == LayerError::HEADER_SHORT) && nextLayerType
+            && nextLayerType != LayerType::UNKNOWN) {
+            // successful parsing as IP (4 or 6)
+            return ipError;
+        }
+        // else rollback (pop invalid layers after actual index) and fallthrough
+        while (nextLayerIndex != packet.layers.size()) {
+            packet.layers.popBack();
+        }
+        [[fallthrough]];
+    }
+    case PacketParserConfig::MPLSMode::PW_AUTO: {
+        // pseudo-wire continues, auto check control word
+
+        // From RFC 4448 – Encapsulation Methods for Transport of Ethernet over MPLS Networks:
+        //     The control word is defined as follows:
+        //     0                   1                   2                   3
+        //     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+        //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        //    |0 0 0 0|   Reserved            |       Sequence Number         |
+        //    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+        //    In the above diagram, the first 4 bits MUST be set to 0 to indicate
+        //    PW data.  The rest of the first 16 bits are reserved for future use.
+        //    They MUST be set to 0 when transmitting, and MUST be ignored upon
+        //    receipt.
+
+        const auto data = packet.data.subspan(offset);
+        if (data.size() >= 4) {
+            // Reserved bits are checked to avoid confusion with MAC address starting with 0,
+            // addresses starting with 00:00 still cause false positives.
+            if (static_cast<uint8_t>(data[0]) == 0 && static_cast<uint8_t>(data[1]) == 0) {
+                // skip control word
+                offset += 4;
+            }
+        }
+        [[fallthrough]];
+    }
+    case PacketParserConfig::MPLSMode::PW_NOCW:
+        // pseudo-wire without control word
+        return processEthernet(packet, offset);
+    }
+    std::unreachable();
 }
 
 LayerError PacketParser::processIPFromPayload(Packet& packet, const uint16_t offset)

@@ -147,7 +147,27 @@ static constexpr LayerTypeVariant layerTypeToVariant(layers::LayerType type) noe
 /**
  * @brief Configuration structure for PacketParser.
  */
-struct PacketParserConfig {};
+struct PacketParserConfig {
+    /**
+     * @brief Choice of MPLS parsing mode.
+     */
+    enum class MPLSMode {
+        /// Try parse payload as IP (4 or 6), on fail data is treated as pseudo-wire with or without
+        /// control word
+        AUTO,
+        /// Payload could be only IP (4 or 6). If not, return parsing error
+        IP_ONLY,
+        /// Parse payload as pseudo-wire with or without control word
+        PW_AUTO,
+        /// Parse data as pseudo-wire without control word
+        PW_NOCW,
+    };
+
+    /**
+     * @brief Mode of parsing data which continues after MPLS labels.
+     */
+    MPLSMode mplsMode = MPLSMode::AUTO;
+};
 
 /**
  * @brief Packet parser class.
@@ -271,6 +291,7 @@ private:
     layers::LayerError processVLAN(Packet& packet, uint16_t offset);
     layers::LayerError
     processMPLS(Packet& packet, uint16_t offset, PacketParserEtherType ethertype);
+    layers::LayerError processMPLSBottomOfStack(Packet& packet, uint16_t offset);
     layers::LayerError processIPFromPayload(Packet& packet, uint16_t offset);
     layers::LayerError processIPv4(Packet& packet, uint16_t offset);
     layers::LayerError processIPv6(Packet& packet, uint16_t offset);
