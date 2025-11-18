@@ -9,8 +9,9 @@ project(adaptmon
     VERSION ${VERSION}
     LANGUAGES CXX C)
 
-option(ENABLE_DOXYGEN  "Enable build of code documentation"    OFF)
-option(ENABLE_TESTS    "Enable building of tests"              OFF)
+option(ENABLE_DOXYGEN    "Enable build of code documentation"            OFF)
+option(ENABLE_TESTS      "Enable building of tests"                      OFF)
+option(ENABLE_SANITIZERS "Enable building with sanitizers (ASAN, UBSAN)" OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
