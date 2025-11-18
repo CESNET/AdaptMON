@@ -109,6 +109,16 @@ if [ "$GCC_TOOLSET_AUTOENABLE" = true ]; then
     chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
 fi
 
+echo
 echo "*** Installing library dependencies ***"
+libasan=libasan
+libubsan=libubsan
+if [ "$USE_GCC_TOOLSET" = true ]; then
+    libasan="gcc-toolset-${GCC_TOOLSET_VERSION}-libasan-devel"
+    libubsan="gcc-toolset-${GCC_TOOLSET_VERSION}-libubsan-devel"
+fi
+
 dnf install -y \
-    libpcap-devel
+    libpcap-devel \
+    "$libasan" \
+    "$libubsan"
