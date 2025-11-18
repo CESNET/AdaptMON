@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+#
+# CMakeLists.txt formatting tool
+#
+# Author: Michal Sedlak <sedlakm@cesnet.cz>
+# Copyright (c) 2025 CESNET, z.s.p.o.
+# SPDX-License-Identifier: BSD-3-Clause
+
+from pathlib import Path
+import argparse
+import difflib
+import glob
+import re
+import sys
+
+
+def sort_lines(s: str) -> str:
+    lines = s.splitlines()
+    extras = [i for i, line in enumerate(lines) if re.match(r"^\s*(#.*)?$", line)]
+    new_lines = list(sorted((line for i, line in enumerate(lines) if i not in extras), key=str.casefold))
+    for i in extras:
+        new_lines.insert(i, lines[i])
+    return "\n".join(new_lines)
+
+
+def sort_arglist_3(m: re.Match) -> str:
+    before, args, after = m.groups()
+    return f"{before}{sort_lines(args)}{after}"
+
+
+def sort_arglist_5(m: re.Match) -> str:
+    before, args1, mid, args2, after = m.groups()
+    return f"{before}{sort_lines(args1)}{mid}{sort_lines(args2)}{after}"
+
+
+def print_diff(old: str, new: str) -> None:
+    for line in list(difflib.unified_diff(old.splitlines(), new.splitlines()))[2:]:
+        if line.startswith("-"):
+            print(f"\033[31m{line}\033[0m")
+        elif line.startswith("+"):
+            print(f"\033[32m{line}\033[0m")
+        elif line.startswith("@"):
+            print(f"\033[37m{line}\033[0m")
+        else:
+            print(line)
+
+
+def main() -> int:
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("-c", "--check", action="store_true")
+    argparser.add_argument("-i", "--input", default="./**/CMakeLists.txt")
+    args = argparser.parse_args()
+
+    exit_code = 0
+    for file in glob.glob(args.input, recursive=True):
+        file = Path(file)
+        content = file.read_text()
+        new_content = content
+        new_content = re.sub(r"(add_library\(\S+\s*(?:STATIC|SHARED|MODULE|)\s*\n)([^)]+)(\n\))", sort_arglist_3, new_content)
+        new_content = re.sub(r"(add_executable\(\S+\s*\n)([^)]+)(\n\))", sort_arglist_3, new_content)
+        new_content = re.sub(r"(target_link_libraries\(\S+\s*(?:PRIVATE|PUBLIC|INTERFACE)\s*\n)((?:(?!PRIVATE|PUBLIC|INTERFACE)[\s\S])*)(\n\s*(?:PRIVATE|PUBLIC|INTERFACE)\s*\n)([^)]*)(\n\))", sort_arglist_5, new_content)
+        new_content = re.sub(r"(target_link_libraries\(\S+\s*(?:PRIVATE|PUBLIC|INTERFACE)\s*\n)((?:(?!PRIVATE|PUBLIC|INTERFACE)[^)])*)(\n\))", sort_arglist_3, new_content)
+        if args.check:
+            if content != new_content:
+                print(f"\033[33m{file} is not formatted\033[0m")
+                print_diff(content, new_content)
+                exit_code = 1
+        else:
+            if content != new_content:
+                print(f"\033[33m{file} has been formatted\033[0m")
+                print_diff(content, new_content)
+            file.write_text(new_content)
+
+    return exit_code
+
+
+sys.exit(main())
