@@ -135,7 +135,10 @@ public:
      * @brief Get the IP flags.
      * @return IP flags value in 3 least significant bits of byte.
      */
-    uint8_t ipFlags() const noexcept { return (header().flagsFragmentOffset & 0xE000) >> 13; }
+    uint8_t ipFlags() const noexcept
+    {
+        return static_cast<uint8_t>((header().flagsFragmentOffset & 0xE000) >> 13);
+    }
 };
 
 } // namespace amon::layers
