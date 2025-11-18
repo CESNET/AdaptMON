@@ -55,6 +55,11 @@ atomic-commits:
   rules:
     - if: $CI_MERGE_REQUEST_DIFF_BASE_SHA
 
+pragma-once:
+  extends: .check
+  script:
+    - "make pragma-once"
+
 doxygen:
   extends: .check
   script:
