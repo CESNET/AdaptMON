@@ -1,30 +1,30 @@
 add_library(amon-lib
-    src/hello.cpp
-    src/Logger.cpp
-    src/Stacktrace.cpp
     src/Error.cpp
-    src/SignalHandler.cpp
-    src/layers/LayerView.cpp
+    src/hello.cpp
     src/layers/Ethernet.cpp
+    src/layers/GRE.cpp
     src/layers/ICMP.cpp
     src/layers/ICMPv6.cpp
     src/layers/IPv4.cpp
     src/layers/IPv6.cpp
+    src/layers/LayerView.cpp
     src/layers/MPLS.cpp
-    src/layers/UDP.cpp
     src/layers/TCP.cpp
+    src/layers/UDP.cpp
     src/layers/VLAN.cpp
-    src/layers/GRE.cpp
+    src/Logger.cpp
+    src/Packet.cpp
+    src/SignalHandler.cpp
+    src/Stacktrace.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
     src/types/Timestamp.cpp
     src/types/UIntBE.cpp
-    src/util/numeric.cpp
-    src/Packet.cpp
+    src/util/ArgParser.cpp
     src/util/ArgvList.cpp
     src/util/getopt.cpp
-    src/util/ArgParser.cpp
+    src/util/numeric.cpp
     src/util/Pcap.cpp
 )
 
@@ -34,9 +34,9 @@ target_include_directories(amon-lib
 
 target_link_libraries(amon-lib
     PRIVATE
-        spdlog::spdlog
-        libbacktrace
         doctest
+        libbacktrace
+        spdlog::spdlog
     PUBLIC
         PkgConfig::libpcap
 )
