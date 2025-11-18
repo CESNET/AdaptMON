@@ -67,3 +67,8 @@ doxygen:
   artifacts:
     paths: [build/doc/doxygen/html]
     expire_in: 1 week
+
+cmake-format:
+  extends: .check
+  script:
+    - "make format-cmake"
