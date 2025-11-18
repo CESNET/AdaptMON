@@ -12,11 +12,11 @@ release-build:
 .PHONY: release-build
 
 debug-build:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 .. && make -j $(shell nproc)
 .PHONY: debug-build
 
 debug-build-strict:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 .. && make -j $(shell nproc)
 .PHONY: debug-build-strict
 
 test: $(if $(filter debug-build%,$(BUILD_TYPE)),$(BUILD_TYPE),debug-build)
