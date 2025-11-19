@@ -48,6 +48,14 @@ tidy-fix:
 	run-clang-tidy -p $(BUILD_DIR) -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
 .PHONY: tidy-fix
 
+format-cmake:
+	tools/format-cmake --check
+.PHONY: format-cmake
+
+format-cmake-fix:
+	tools/format-cmake
+.PHONY: format-cmake-fix
+
 doxygen:
 	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug .. && make doxygen
 .PHONY: doxygen
