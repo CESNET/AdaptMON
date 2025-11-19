@@ -41,10 +41,18 @@ target_link_libraries(amon-lib
         PkgConfig::libpcap
 )
 
+if (ENABLE_SANITIZERS)
+    target_link_libraries(amon-lib PRIVATE asan ubsan)
+    target_compile_options(amon-lib PRIVATE -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all)
+endif()
+
 if (ENABLE_TESTS)
     add_executable(amon-lib-tests)
 
     target_compile_definitions(amon-lib-tests PRIVATE AMON_ENABLE_TESTS)
+
+    get_target_property(opts amon-lib COMPILE_OPTIONS)
+    target_compile_options(amon-lib-tests PRIVATE ${opts})
 
     get_target_property(srcs amon-lib SOURCES)
     target_sources(amon-lib-tests PRIVATE ${srcs} src/TestWithMain.cpp)
