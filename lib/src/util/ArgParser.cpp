@@ -249,6 +249,7 @@ std::string ArgParser::optsStr(const KwArg& kwArg)
                           : "";
 }
 
+// NOLINTNEXTLINE(readability-function-cognitive-complexity)
 ParsedArgs ArgParser::doParse(
     int argc,
     const char* const* argv,
@@ -265,6 +266,10 @@ ParsedArgs ArgParser::doParse(
         throw ArgParserError(e.what());
     }
 
+    // Check if there is any parameter marked "special" provided. If so, skip errors.
+    const bool skipErrors
+        = std::ranges::any_of(kwArgs, [](const auto& kwArg) { return kwArg.m_special; });
+
     // Check that all requires kw args were provided, provide default values for optional
     for (const auto& kwArg : kwArgs) {
         const auto count = std::ranges::count_if(res.m_kwArgs, [&](const auto& p) {
@@ -272,9 +277,15 @@ ParsedArgs ArgParser::doParse(
                 || (kwArg.m_longOpt && p.first.m_longOpt == kwArg.m_longOpt);
         });
         if (count == 0 && kwArg.m_required) {
+            if (skipErrors) {
+                continue;
+            }
             throw ArgParserError("missing required option \"{}\"", optsStr(kwArg));
         }
         if (count > 1 && !kwArg.m_allowMultiple) {
+            if (skipErrors) {
+                continue;
+            }
             throw ArgParserError("option \"{}\" defined multiple times", optsStr(kwArg));
         }
         if (count == 0 && kwArg.m_defaultValue) {
@@ -293,6 +304,9 @@ ParsedArgs ArgParser::doParse(
 
         // Handle undefined arguments
         if (posArg.m_required) {
+            if (skipErrors) {
+                continue;
+            }
             throw ArgParserError("missing required positional argument \"{}\"", posArg.m_name);
         }
         if (!posArg.m_required && posArg.m_defaultValue) {
@@ -313,7 +327,7 @@ ParsedArgs ArgParser::parse(int argc, const char* const* argv) const
         });
         if (it == m_kwArgs.end()) {
             kwArgsCopy.push_back(
-                KwArg('h', "help").required(false).help("Print this help message"));
+                KwArg('h', "help").required(false).special(true).help("Print this help message"));
         } else {
             if (it->m_hasArg || (it->m_longOpt && it->m_longOpt != "help")) {
                 throw amon::Error("auto-help must be disabled when -h is not a help option");

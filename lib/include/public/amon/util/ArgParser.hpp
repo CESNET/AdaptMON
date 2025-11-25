@@ -28,7 +28,8 @@
  *             .help("The anonymization key, 32 characters long"),
  *         KwArg('h', "help")
  *             .required(false)
- *             .help("Print this help"),
+ *             .help("Print this help")
+ *             .special(true),
  *     });
  *
  * auto args = argParser.parse(argc, argv);
@@ -243,6 +244,22 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Set the special flag for the keyword argument.
+     *
+     * When an option with this flag set is encountered in parsing, parsing does not end with an
+     * error even if an error condition (e.g. missing required option) happens. This is intended for
+     * special flags like --version or --help that should take priority.
+     *
+     * @param value The value.
+     * @return Reference to this KwArg.
+     */
+    KwArg& special(bool value)
+    {
+        m_special = value;
+        return *this;
+    }
+
 private:
     friend class ArgParser;
     friend class ParsedArgs;
@@ -252,6 +269,7 @@ private:
     bool m_required = false;
     bool m_hasArg = false;
     bool m_allowMultiple = false;
+    bool m_special = false;
     std::optional<std::string> m_metaVar = std::nullopt;
     std::optional<std::string> m_defaultValue = std::nullopt;
     std::string m_help;
