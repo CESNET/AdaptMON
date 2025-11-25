@@ -106,6 +106,10 @@ public:
 
     /**
      * @brief Get the TCP flags.
+     *
+     * Returns the raw TCP flags byte as defined in the TCP header.
+     * Individual flags can be interpreted using the @ref amon::types::TCPFlags enumeration.
+     *
      * @return Flags byte.
      */
     uint8_t flags() const noexcept { return header().flags; }
