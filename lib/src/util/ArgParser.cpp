@@ -336,6 +336,26 @@ std::vector<KwArg> ArgParser::getKwArgsWithAutoArgs() const
         }
     }
 
+    if (m_version) {
+        auto it = std::ranges::find_if(m_kwArgs, [](const auto& kwArg) {
+            return kwArg.m_shortOpt == 'V' || kwArg.m_longOpt == "version";
+        });
+        if (it == m_kwArgs.end()) {
+            kwArgsCopy.push_back(
+                KwArg('V', "version").required(false).special(true).help("Print the version"));
+        } else {
+            if (it->m_hasArg || (it->m_longOpt && it->m_longOpt != "version")) {
+                throw amon::Error("auto-version must be disabled when -V is not a version option");
+            }
+            if (!it->m_special) {
+                throw amon::Error(
+                    "auto-version must be disabled when version opt ({}) is not marked as "
+                    "special",
+                    optsStr(*it));
+            }
+        }
+    }
+
     return kwArgsCopy;
 }
 
@@ -348,6 +368,11 @@ ParsedArgs ArgParser::parse(int argc, const char* const* argv) const
 
         if (m_autoHelp && res["-h"]) {
             std::cerr << usage(argv[0]) << std::flush;
+            std::exit(0); // NOLINT(concurrency-mt-unsafe)
+        }
+
+        if (m_version && res["-V"]) {
+            std::cerr << version() << "\n" << std::flush;
             std::exit(0); // NOLINT(concurrency-mt-unsafe)
         }
 

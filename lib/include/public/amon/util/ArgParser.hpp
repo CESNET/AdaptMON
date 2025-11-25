@@ -376,6 +376,18 @@ public:
     }
 
     /**
+     * @brief Sets the version string for the argument parser and enables "auto-version".
+     *
+     * @param version The version string to set.
+     * @return Reference to this ArgParser instance.
+     */
+    ArgParser& setVersion(std::string version)
+    {
+        m_version = std::move(version);
+        return *this;
+    }
+
+    /**
      * @brief Parse command-line arguments.
      *
      * When auto-help is enabled (default):
@@ -386,6 +398,11 @@ public:
      * When auto-help is disabled:
      *   - Help options become regular arguments
      *   - Parsing errors throw ArgParserError instead of exiting
+     *
+     * When version is set:
+     *   - Options '-V' and '--version' are automatically added if not present.
+     *   - If such option is provided, it is automatically handled by printing the version and
+     *     exiting with status 0
      *
      * @param argc Argument count from main()
      * @param argv Argument vector from main()
@@ -401,12 +418,22 @@ public:
      */
     std::string usage(const std::string& programName) const;
 
+    /**
+     * @brief Returns the version string.
+     *
+     * If the version is not set, returns an empty string.
+     *
+     * @return std::string The version string or empty string if not set.
+     */
+    std::string version() const { return m_version.value_or(""); }
+
 private:
     std::vector<PosArg> m_posArgs;
     std::vector<KwArg> m_kwArgs;
     bool m_autoHelp = true;
     std::optional<std::string> m_prologue;
     std::optional<std::string> m_epilogue;
+    std::optional<std::string> m_version;
 
     std::vector<KwArg> getKwArgsWithAutoArgs() const;
 
