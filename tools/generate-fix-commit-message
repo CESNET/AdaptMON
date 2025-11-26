@@ -1,0 +1,14 @@
+#!/bin/bash
+# Generates a commit message in a format that is expected for a "fix: " commit
+
+if [ $# = 0 ]; then
+    echo "usage: $0 <commit hash> [message]"
+    exit 1
+fi
+
+commit=$1
+shift
+echo "fix:" "$@"
+echo
+git show --pretty=format:'Fixes: %h ("%s")' "$commit" | head -n1
+
