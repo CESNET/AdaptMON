@@ -408,6 +408,8 @@ private:
     std::optional<std::string> m_prologue;
     std::optional<std::string> m_epilogue;
 
+    std::vector<KwArg> getKwArgsWithAutoArgs() const;
+
     static ParsedArgs parseWithGetOpt(
         int argc,
         const char* const* argv,

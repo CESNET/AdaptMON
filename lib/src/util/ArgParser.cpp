@@ -134,10 +134,11 @@ std::string ArgParser::usage(const std::string& programName) const
     }
 
     // Print keyword arguments
-    if (!m_kwArgs.empty()) {
+    auto kwArgs = getKwArgsWithAutoArgs();
+    if (!kwArgs.empty()) {
         std::format_to(ins, "\n");
         std::format_to(ins, "Keyword arguments (ARGS):\n");
-        for (const auto& kwArg : m_kwArgs) {
+        for (const auto& kwArg : kwArgs) {
             std::string tmp;
             {
                 auto ins = std::back_inserter(tmp);
@@ -317,7 +318,7 @@ ParsedArgs ArgParser::doParse(
     return res;
 }
 
-ParsedArgs ArgParser::parse(int argc, const char* const* argv) const
+std::vector<KwArg> ArgParser::getKwArgsWithAutoArgs() const
 {
     auto kwArgsCopy = m_kwArgs;
 
@@ -335,8 +336,15 @@ ParsedArgs ArgParser::parse(int argc, const char* const* argv) const
         }
     }
 
+    return kwArgsCopy;
+}
+
+ParsedArgs ArgParser::parse(int argc, const char* const* argv) const
+{
+    auto kwArgs = getKwArgsWithAutoArgs();
+
     try {
-        ParsedArgs res = doParse(argc, argv, kwArgsCopy, m_posArgs);
+        ParsedArgs res = doParse(argc, argv, kwArgs, m_posArgs);
 
         if (m_autoHelp && res["-h"]) {
             std::cerr << usage(argv[0]) << std::flush;
