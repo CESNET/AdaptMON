@@ -87,6 +87,18 @@ public:
     uint16_t dstPort() const noexcept { return header().destinationPort; }
 
     /**
+     * @brief Get the sequence number from the TCP header.
+     * @return Sequence number.
+     */
+    uint32_t sequenceNumber() const noexcept { return header().sequenceNumber; }
+
+    /**
+     * @brief Get the acknowledge number from the TCP header.
+     * @return Acknowledge number.
+     */
+    uint32_t acknowledgeNumber() const noexcept { return header().acknowledgeNumber; }
+
+    /**
      * @brief Get the window size from the TCP header.
      * @return Window size.
      */
