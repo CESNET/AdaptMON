@@ -12,6 +12,7 @@ project(adaptmon
 option(ENABLE_DOXYGEN    "Enable build of code documentation"            OFF)
 option(ENABLE_TESTS      "Enable building of tests"                      OFF)
 option(ENABLE_SANITIZERS "Enable building with sanitizers (ASAN, UBSAN)" OFF)
+option(BUILD_SHARED_LIBS "Enable building as shared library"             OFF)
 
 set(DEFAULT_BUILD_TYPE "Release")
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -53,11 +54,21 @@ if (ENABLE_TESTS)
     enable_testing()
 endif()
 
+if (BUILD_SHARED_LIBS)
+    set(AMON_BUILD_SHARED ON)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(BUILD_SHARED_LIBS OFF)
+endif()
+
 # Add external dependencies
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
 include(cmake/doctest.cmake)
 include(cmake/libpcap.cmake)
+
+if (AMON_BUILD_SHARED)
+    set(BUILD_SHARED_LIBS ON)
+endif()
 
 add_subdirectory(apps)
 add_subdirectory(doc)
