@@ -145,12 +145,24 @@ static constexpr LayerTypeVariant layerTypeToVariant(layers::LayerType type) noe
 }
 
 /**
+ * @brief Configuration structure for PacketParser.
+ */
+struct PacketParserConfig {};
+
+/**
  * @brief Packet parser class.
  *
  * Provides method to parse raw packet data and populate Packet structure.
  */
 class PacketParser {
 public:
+    /**
+     * @brief Constructor with configuration.
+     * @param config Packet parser configuration. If not defined, default values are used.
+     */
+    explicit PacketParser(const PacketParserConfig& config = PacketParserConfig())
+        : m_config(config) {};
+
     /**
      * @brief Parse raw packet data and populate Packet structure.
      * @param packet Packet object to populate with parsed data.
@@ -271,6 +283,8 @@ private:
     layers::LayerError processESP(Packet& packet, uint16_t offset);
     layers::LayerError processAH(Packet& packet, uint16_t offset);
     static layers::LayerError processUnknown(Packet& packet, uint16_t offset);
+
+    PacketParserConfig m_config;
 };
 
 } // namespace amon
