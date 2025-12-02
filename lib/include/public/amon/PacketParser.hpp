@@ -12,6 +12,7 @@
 #include <amon/Packet.hpp>
 #include <amon/layers/Layer.hpp>
 
+#include <expected>
 #include <variant>
 
 namespace amon {
@@ -172,6 +173,36 @@ public:
     layers::LayerError parse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset = 0);
 
 protected:
+    /**
+     * @brief Add a layer info (PacketLayer) into layers vector in packet. If layer view
+     * construction fails, ErrorLayer is added.
+     * @tparam LayerViewT Type of the layer view to add into the layers vector.
+     * @param packet Packet being parsed.
+     * @param currentOffset Current offset in the packet data.
+     * @return Expected containing the added layer view on success, or LayerError on failure.
+     */
+    template <typename LayerViewT>
+    std::expected<LayerViewT, layers::LayerError>
+    addLayer(Packet& packet, const uint16_t currentOffset)
+    {
+        if (packet.layers.full()) {
+            return std::unexpected(layers::LayerError::LAYER_VECTOR_FULL);
+        }
+
+        auto layerOrError = LayerViewT::create(packet.data.subspan(currentOffset));
+        if (layerOrError) {
+            PacketLayer layer {.type = LayerViewT::LAYER_TYPE, .offset = currentOffset};
+            packet.layers.pushBack(layer);
+        } else {
+            ErrorLayer error {
+                .type = LayerViewT::LAYER_TYPE,
+                .error = layerOrError.error(),
+                .offset = currentOffset};
+            packet.layers.pushBack(error);
+        }
+        return layerOrError;
+    }
+
     /**
      * @brief Process layer after link layer.
      * @param packet Packet being parsed.

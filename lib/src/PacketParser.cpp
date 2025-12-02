@@ -28,28 +28,6 @@ namespace amon {
 
 using namespace layers;
 
-template <typename LayerViewT>
-static inline std::expected<LayerViewT, LayerError>
-addLayer(Packet& packet, const uint16_t currentOffset)
-{
-    if (packet.layers.full()) {
-        return std::unexpected(LayerError::LAYER_VECTOR_FULL);
-    }
-
-    auto layerOrError = LayerViewT::create(packet.data.subspan(currentOffset));
-    if (layerOrError) {
-        PacketLayer layer {.type = LayerViewT::LAYER_TYPE, .offset = currentOffset};
-        packet.layers.pushBack(layer);
-    } else {
-        ErrorLayer error {
-            .type = LayerViewT::LAYER_TYPE,
-            .error = layerOrError.error(),
-            .offset = currentOffset};
-        packet.layers.pushBack(error);
-    }
-    return layerOrError;
-}
-
 LayerError PacketParser::parse(Packet& packet, LayerType firstLayer, const uint16_t startOffset)
 {
     return parse(packet, layerTypeToVariant(firstLayer), startOffset);
