@@ -15,6 +15,7 @@
 #include <charconv>
 #include <cstddef>
 #include <string_view>
+#include <utility>
 
 namespace amon::util {
 
@@ -207,7 +208,7 @@ public:
         }
 
         const auto length = size_t(ptr - begin);
-        if (padWidth >= 0 && size_t(padWidth) > length) {
+        if (padWidth >= 0 && std::cmp_greater(padWidth, length)) {
             const size_t padAmount = std::min(size_t(padWidth) - length, buffer.size() - length);
             std::move(begin, begin + length, begin + padAmount);
             std::fill_n(begin, padAmount, padSymbol);
