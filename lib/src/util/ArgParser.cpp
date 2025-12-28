@@ -467,9 +467,9 @@ TEST_CASE("ArgParser positional argument with multiple values not last throws")
 {
     CHECK_THROWS(
         ArgParser {{PosArg("input").allowMultiple(true), PosArg("output")}, {}}.setAutoHelp(false));
-    CHECK_THROWS(ArgParser {
-        {PosArg("input").allowMultiple(true), PosArg("output").required(false)},
-        {}}.setAutoHelp(false));
+    CHECK_THROWS(
+        ArgParser {{PosArg("input").allowMultiple(true), PosArg("output").required(false)}, {}}
+            .setAutoHelp(false));
 }
 
 } // namespace amon::util
