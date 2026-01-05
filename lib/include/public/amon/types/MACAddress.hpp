@@ -18,6 +18,7 @@
 #include <span>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 
 namespace amon::types {
 
@@ -48,16 +49,17 @@ public:
             throw std::invalid_argument("MAC address string must be 17 characters long.");
         }
         auto* dataAsUChar = reinterpret_cast<unsigned char*>(data());
-        if (std::sscanf(
-                addressStr.c_str(),
-                "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
-                &dataAsUChar[0],
-                &dataAsUChar[1],
-                &dataAsUChar[2],
-                &dataAsUChar[3],
-                &dataAsUChar[4],
-                &dataAsUChar[5])
-            != MAC_ADDRESS_LEN) {
+        if (std::cmp_not_equal(
+                std::sscanf(
+                    addressStr.c_str(),
+                    "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx",
+                    &dataAsUChar[0],
+                    &dataAsUChar[1],
+                    &dataAsUChar[2],
+                    &dataAsUChar[3],
+                    &dataAsUChar[4],
+                    &dataAsUChar[5]),
+                MAC_ADDRESS_LEN)) {
             throw std::invalid_argument("Bad MAC address string format.");
         }
     }

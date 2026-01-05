@@ -11,6 +11,9 @@ set(FETCHCONTENT_QUIET OFF)
 
 set(BUILD_SHARED_LIBS OFF)
 set(SPDLOG_BUILD_SHARED OFF)
+# Consider header files as system files so that (potential) compiler/linter
+# warnings are ignored.
+set(SPDLOG_SYSTEM_INCLUDES ON)
 
 FetchContent_Declare(
     spdlog
