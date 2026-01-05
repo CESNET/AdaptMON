@@ -60,6 +60,8 @@ TEST_CASE("TCPView create valid TCP header with payload")
     CHECK(view.headerLength() == 20);
     CHECK(view.srcPort() == 4660);
     CHECK(view.dstPort() == 22136);
+    CHECK(view.sequenceNumber() == 0x01020304);
+    CHECK(view.acknowledgeNumber() == 0x05060708);
     CHECK(view.payload().size() == 4);
     CHECK(view.payload()[0] == std::byte {0xDE});
     CHECK(view.payload()[3] == std::byte {0xEF});
