@@ -124,23 +124,33 @@ struct [[gnu::packed]] IPv6ExtensionHeader {
 };
 
 /**
- * @brief Layer view for IPv6 generic extension.
+ * @brief Layer view base class for IPv6 extension headers.
  *
- * This class should only be used for IPv6 extensions that are not defined below,
- * or for extending. Provides access to extension header fields, options and payload.
+ * This class should be used for deriving IPv6 extensions.
+ * Provides access to extension header fields, options and payload.
  */
-class IPv6ExtensionView : public LayerView<IPv6ExtensionHeader> {
+template <typename Derived, LayerType TypeValue>
+class IPv6ExtensionViewBase : public LayerView<IPv6ExtensionHeader> {
 public:
     /// Layer type identifier for IPv6 extension headers.
-    static const LayerType LAYER_TYPE = LayerType::IPV6_EXTENSION;
+    static const LayerType LAYER_TYPE = TypeValue;
 
     /**
      * @brief Create and validate an IPv6ExtensionView from a byte span.
      * @param data Span of bytes containing the IPv6 extension header.
      * @return std::expected containing IPv6ExtensionView or LayerError.
      */
-    static std::expected<IPv6ExtensionView, LayerError>
-    create(std::span<const std::byte> data) noexcept;
+    static std::expected<Derived, LayerError> create(std::span<const std::byte> data) noexcept
+    {
+        if (data.size() < sizeof(IPv6ExtensionHeader)) {
+            return std::unexpected(LayerError::HEADER_SHORT);
+        }
+        auto view = Derived(data);
+        if (data.size() < view.headerLength()) {
+            return std::unexpected(LayerError::BAD_LEN_FIELD);
+        }
+        return view;
+    };
 
     /**
      * @brief Get the length of the IPv6 extension header.
@@ -180,41 +190,61 @@ public:
             sizeof(IPv6ExtensionHeader),
             headerLength() - sizeof(IPv6ExtensionHeader));
     }
+
+private:
+    explicit IPv6ExtensionViewBase(std::span<const std::byte> data) noexcept
+        : LayerView<IPv6ExtensionHeader>(data)
+    {
+    }
+    friend Derived;
+};
+
+/**
+ * @brief Layer view for IPv6 generic extension.
+ *
+ * This class should only be used for IPv6 extensions that are not defined below.
+ */
+class IPv6ExtensionView
+    : public IPv6ExtensionViewBase<IPv6ExtensionView, LayerType::IPV6_EXTENSION> {
+    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 Hop-by-Hop extension headers.
  */
-class IPv6HopByHopView : public IPv6ExtensionView {
-    static const LayerType LAYER_TYPE = LayerType::IPV6_HOPBYHOP;
+class IPv6HopByHopView : public IPv6ExtensionViewBase<IPv6HopByHopView, LayerType::IPV6_HOPBYHOP> {
+    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 Routing extension headers.
  */
-class IPv6RoutingView : public IPv6ExtensionView {
-    static const LayerType LAYER_TYPE = LayerType::IPV6_ROUTING;
+class IPv6RoutingView : public IPv6ExtensionViewBase<IPv6RoutingView, LayerType::IPV6_ROUTING> {
+    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 Authentication Header extension headers.
  */
-class IPv6AHView : public IPv6ExtensionView {
-    static const LayerType LAYER_TYPE = LayerType::IPV6_AH;
+class IPv6AHView : public IPv6ExtensionViewBase<IPv6AHView, LayerType::IPV6_AH> {
+    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 ESP extension headers.
  */
-class IPv6ESPView : public IPv6ExtensionView {
-    static const LayerType LAYER_TYPE = LayerType::IPV6_ESP;
+class IPv6ESPView : public IPv6ExtensionViewBase<IPv6ESPView, LayerType::IPV6_ESP> {
+    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 Destination Options extension headers.
  */
-class IPv6DestinationOptionsView : public IPv6ExtensionView {
-    static const LayerType LAYER_TYPE = LayerType::IPV6_DESTINATION_OPTIONS;
+class IPv6DestinationOptionsView
+    : public IPv6ExtensionViewBase<
+          IPv6DestinationOptionsView,
+          LayerType::IPV6_DESTINATION_OPTIONS> {
+    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
