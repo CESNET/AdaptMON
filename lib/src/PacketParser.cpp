@@ -120,19 +120,19 @@ LayerError PacketParser::processPrototype(
     PacketParserProtoType prototype)
 {
     switch (prototype) {
-    case IPV6_FRAGMENT:
+    case IPV6_OPT_FRAGMENT:
         return processIPv6Fragment(packet, offset);
-    case IPV6_HOPBYHOP:
+    case IPV6_OPT_HOPBYHOP:
         return processIPv6Extension<IPv6HopByHopView>(packet, offset);
-    case IPV6_ROUTING:
+    case IPV6_OPT_ROUTING:
         return processIPv6Extension<IPv6RoutingView>(packet, offset);
     case ESP:
         return processESP(packet, offset);
     case AUTHENTICATION_HEADER:
         return processAH(packet, offset);
-    case IPV6_DESTINATION_OPTIONS:
+    case IPV6_OPT_DESTINATION_OPTIONS:
         return processIPv6Extension<IPv6DestinationOptionsView>(packet, offset);
-    case IPV6_EXTENSION:
+    case IPV6_OPT_GENERIC:
     case IPV6_MOBILITY:
     case IPV6_HOST_IDENTITY:
     case IPV6_SHIM6:

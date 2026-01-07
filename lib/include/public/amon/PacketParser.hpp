@@ -48,13 +48,13 @@ enum PacketParserEtherType : uint16_t {
  * @brief Enumeration of protocol types for packet parsing.
  */
 enum PacketParserProtoType : uint8_t {
-    IPV6_HOPBYHOP = 0,
-    IPV6_ROUTING = 43,
-    IPV6_FRAGMENT = 44,
+    IPV6_OPT_HOPBYHOP = 0,
+    IPV6_OPT_ROUTING = 43,
+    IPV6_OPT_FRAGMENT = 44,
     ESP = 50,
     AUTHENTICATION_HEADER = 51,
     IPV6_NO_NEXT = 59,
-    IPV6_DESTINATION_OPTIONS = 60,
+    IPV6_OPT_DESTINATION_OPTIONS = 60,
     IPV6_MOBILITY = 135,
     IPV6_HOST_IDENTITY = 139,
     IPV6_SHIM6 = 140,
@@ -65,8 +65,8 @@ enum PacketParserProtoType : uint8_t {
     ICMPV6 = 58,
     RESERVED1 = 253,
     RESERVED2 = 254,
-    IPV6_EXTENSION = 255, // generic extension for mapping LayerType => ProtoType
-                          // IANA reserved value is used
+    IPV6_OPT_GENERIC = 255, // generic extension for mapping LayerType => ProtoType
+                            // IANA reserved value is used
 };
 
 /// Variant type for representing different layer type categories.
@@ -99,21 +99,21 @@ static constexpr LayerTypeVariant layerTypeToVariant(LayerType type) noexcept
     case LayerType::VLAN:
         return PacketParserEtherType::VLAN_8021Q;
 
-    case LayerType::IPV6_EXTENSION:
+    case LayerType::IPV6_OPT_GENERIC:
         // generic extension, not real prototype number
-        return PacketParserProtoType::IPV6_EXTENSION;
-    case LayerType::IPV6_FRAGMENT:
-        return PacketParserProtoType::IPV6_FRAGMENT;
-    case LayerType::IPV6_HOPBYHOP:
-        return PacketParserProtoType::IPV6_HOPBYHOP;
-    case LayerType::IPV6_ROUTING:
-        return PacketParserProtoType::IPV6_ROUTING;
+        return PacketParserProtoType::IPV6_OPT_GENERIC;
+    case LayerType::IPV6_OPT_FRAGMENT:
+        return PacketParserProtoType::IPV6_OPT_FRAGMENT;
+    case LayerType::IPV6_OPT_HOPBYHOP:
+        return PacketParserProtoType::IPV6_OPT_HOPBYHOP;
+    case LayerType::IPV6_OPT_ROUTING:
+        return PacketParserProtoType::IPV6_OPT_ROUTING;
     case LayerType::AUTHENTICATION_HEADER:
         return PacketParserProtoType::AUTHENTICATION_HEADER;
     case LayerType::ESP:
         return PacketParserProtoType::ESP;
-    case LayerType::IPV6_DESTINATION_OPTIONS:
-        return PacketParserProtoType::IPV6_DESTINATION_OPTIONS;
+    case LayerType::IPV6_OPT_DESTINATION_OPTIONS:
+        return PacketParserProtoType::IPV6_OPT_DESTINATION_OPTIONS;
 
     case LayerType::ICMP:
         return PacketParserProtoType::ICMP;
