@@ -42,8 +42,8 @@ enum class LayerType : uint16_t {
     IPV6_FRAGMENT = LAYERTYPE_L3 | 0x04,
     IPV6_HOPBYHOP = LAYERTYPE_L3 | 0x05,
     IPV6_ROUTING = LAYERTYPE_L3 | 0x06,
-    IPV6_AH = LAYERTYPE_L3 | 0x07,
-    IPV6_ESP = LAYERTYPE_L3 | 0x08,
+    AUTHENTICATION_HEADER = LAYERTYPE_L3 | 0x07,
+    ESP = LAYERTYPE_L3 | 0x08,
     IPV6_DESTINATION_OPTIONS = LAYERTYPE_L3 | 0x09,
     ICMP = LAYERTYPE_L3 | 0x0A,
     ICMPV6 = LAYERTYPE_L3 | 0x0B,
@@ -85,10 +85,10 @@ constexpr std::string_view layerTypeToString(LayerType type)
         return "IPV6_HOPBYHOP";
     case LayerType::IPV6_ROUTING:
         return "IPV6_ROUTING";
-    case LayerType::IPV6_AH:
-        return "IPV6_AH";
-    case LayerType::IPV6_ESP:
-        return "IPV6_ESP";
+    case LayerType::AUTHENTICATION_HEADER:
+        return "AUTHENTICATION_HEADER";
+    case LayerType::ESP:
+        return "ESP";
     case LayerType::IPV6_DESTINATION_OPTIONS:
         return "IPV6_DESTINATION_OPTIONS";
     case LayerType::ICMP:

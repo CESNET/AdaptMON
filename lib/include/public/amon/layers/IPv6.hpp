@@ -226,14 +226,14 @@ class IPv6RoutingView : public IPv6ExtensionViewBase<IPv6RoutingView, LayerType:
 /**
  * @brief Layer view for IPv6 Authentication Header extension headers.
  */
-class IPv6AHView : public IPv6ExtensionViewBase<IPv6AHView, LayerType::IPV6_AH> {
+class IPv6AHView : public IPv6ExtensionViewBase<IPv6AHView, LayerType::AUTHENTICATION_HEADER> {
     using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 ESP extension headers.
  */
-class IPv6ESPView : public IPv6ExtensionViewBase<IPv6ESPView, LayerType::IPV6_ESP> {
+class IPv6ESPView : public IPv6ExtensionViewBase<IPv6ESPView, LayerType::ESP> {
     using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 

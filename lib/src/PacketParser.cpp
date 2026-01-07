@@ -124,9 +124,9 @@ LayerError PacketParser::processPrototype(
         return processIPv6Extension<IPv6HopByHopView>(packet, offset);
     case IPV6_ROUTING:
         return processIPv6Extension<IPv6RoutingView>(packet, offset);
-    case IPV6_ESP:
+    case ESP:
         return processIPv6Extension<IPv6ESPView>(packet, offset);
-    case IPV6_AH:
+    case AUTHENTICATION_HEADER:
         return processIPv6Extension<IPv6AHView>(packet, offset);
     case IPV6_DESTINATION_OPTIONS:
         return processIPv6Extension<IPv6DestinationOptionsView>(packet, offset);

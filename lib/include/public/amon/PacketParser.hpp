@@ -51,8 +51,8 @@ enum PacketParserProtoType : uint8_t {
     IPV6_HOPBYHOP = 0,
     IPV6_ROUTING = 43,
     IPV6_FRAGMENT = 44,
-    IPV6_ESP = 50,
-    IPV6_AH = 51,
+    ESP = 50,
+    AUTHENTICATION_HEADER = 51,
     IPV6_NO_NEXT = 59,
     IPV6_DESTINATION_OPTIONS = 60,
     IPV6_MOBILITY = 135,
@@ -108,10 +108,10 @@ static constexpr LayerTypeVariant layerTypeToVariant(LayerType type) noexcept
         return PacketParserProtoType::IPV6_HOPBYHOP;
     case LayerType::IPV6_ROUTING:
         return PacketParserProtoType::IPV6_ROUTING;
-    case LayerType::IPV6_AH:
-        return PacketParserProtoType::IPV6_AH;
-    case LayerType::IPV6_ESP:
-        return PacketParserProtoType::IPV6_ESP;
+    case LayerType::AUTHENTICATION_HEADER:
+        return PacketParserProtoType::AUTHENTICATION_HEADER;
+    case LayerType::ESP:
+        return PacketParserProtoType::ESP;
     case LayerType::IPV6_DESTINATION_OPTIONS:
         return PacketParserProtoType::IPV6_DESTINATION_OPTIONS;
 
