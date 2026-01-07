@@ -219,6 +219,8 @@ private:
     template <typename LayerViewT, bool payloadFollows>
     static LayerError processSimpleProtoType(Packet& packet, uint16_t offset);
     static LayerError processGRE(Packet& packet, uint16_t offset);
+    static LayerError processESP(Packet& packet, uint16_t offset);
+    static LayerError processAH(Packet& packet, uint16_t offset);
     static LayerError processUnknown(Packet& packet, uint16_t offset);
 };
 

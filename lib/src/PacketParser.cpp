@@ -9,6 +9,8 @@
 
 #include <amon-internal/Test.hpp>
 #include <amon/PacketParser.hpp>
+#include <amon/layers/AuthenticationHeader.hpp>
+#include <amon/layers/ESP.hpp>
 #include <amon/layers/Ethernet.hpp>
 #include <amon/layers/GRE.hpp>
 #include <amon/layers/ICMP.hpp>
@@ -125,9 +127,9 @@ LayerError PacketParser::processPrototype(
     case IPV6_ROUTING:
         return processIPv6Extension<IPv6RoutingView>(packet, offset);
     case ESP:
-        return processIPv6Extension<IPv6ESPView>(packet, offset);
+        return processESP(packet, offset);
     case AUTHENTICATION_HEADER:
-        return processIPv6Extension<IPv6AHView>(packet, offset);
+        return processAH(packet, offset);
     case IPV6_DESTINATION_OPTIONS:
         return processIPv6Extension<IPv6DestinationOptionsView>(packet, offset);
     case IPV6_EXTENSION:
@@ -313,6 +315,27 @@ LayerError PacketParser::processGRE(Packet& packet, const uint16_t offset)
         packet,
         offset + greOrError->headerLength(),
         static_cast<PacketParserEtherType>(greOrError->protocolType()));
+}
+
+LayerError PacketParser::processESP(Packet& packet, uint16_t offset)
+{
+    auto espOrError = addLayer<ESPView>(packet, offset);
+    if (!espOrError) {
+        return espOrError.error();
+    }
+    return processUnknown(packet, offset + espOrError->headerLength());
+}
+
+LayerError PacketParser::processAH(Packet& packet, uint16_t offset)
+{
+    auto ahOrError = addLayer<AuthenticationHeaderView>(packet, offset);
+    if (!ahOrError) {
+        return ahOrError.error();
+    }
+    return processPrototype(
+        packet,
+        offset + ahOrError->headerLength(),
+        static_cast<PacketParserProtoType>(ahOrError->nextHeader()));
 }
 
 LayerError PacketParser::processUnknown(Packet& packet, uint16_t offset)
