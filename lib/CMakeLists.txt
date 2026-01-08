@@ -1,6 +1,7 @@
 add_library(amon-lib
     src/Error.cpp
     src/hello.cpp
+    src/layers/AuthenticationHeader.cpp
     src/layers/Ethernet.cpp
     src/layers/GRE.cpp
     src/layers/ICMP.cpp
