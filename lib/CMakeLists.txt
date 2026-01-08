@@ -28,6 +28,7 @@ add_library(amon-lib
     src/util/getopt.cpp
     src/util/numeric.cpp
     src/util/Pcap.cpp
+    src/util/string.cpp
 )
 
 target_include_directories(amon-lib
