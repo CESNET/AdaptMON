@@ -307,7 +307,8 @@ Checks: "
   readability-uniqueptr-delete-release,
   readability-uppercase-literal-suffix,
   readability-use-anyofallof,
-  readability-use-std-min-max"
+  readability-use-std-min-max,
+  google-default-arguments"
 FormatStyle: file
 WarningsAsErrors: "*"
 
