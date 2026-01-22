@@ -205,35 +205,22 @@ private:
  * This class should only be used for IPv6 extensions that are not defined below.
  */
 class IPv6ExtensionView
-    : public IPv6ExtensionViewBase<IPv6ExtensionView, LayerType::IPV6_EXTENSION> {
+    : public IPv6ExtensionViewBase<IPv6ExtensionView, LayerType::IPV6_OPT_GENERIC> {
     using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 Hop-by-Hop extension headers.
  */
-class IPv6HopByHopView : public IPv6ExtensionViewBase<IPv6HopByHopView, LayerType::IPV6_HOPBYHOP> {
+class IPv6HopByHopView
+    : public IPv6ExtensionViewBase<IPv6HopByHopView, LayerType::IPV6_OPT_HOPBYHOP> {
     using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
 /**
  * @brief Layer view for IPv6 Routing extension headers.
  */
-class IPv6RoutingView : public IPv6ExtensionViewBase<IPv6RoutingView, LayerType::IPV6_ROUTING> {
-    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
-};
-
-/**
- * @brief Layer view for IPv6 Authentication Header extension headers.
- */
-class IPv6AHView : public IPv6ExtensionViewBase<IPv6AHView, LayerType::IPV6_AH> {
-    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
-};
-
-/**
- * @brief Layer view for IPv6 ESP extension headers.
- */
-class IPv6ESPView : public IPv6ExtensionViewBase<IPv6ESPView, LayerType::IPV6_ESP> {
+class IPv6RoutingView : public IPv6ExtensionViewBase<IPv6RoutingView, LayerType::IPV6_OPT_ROUTING> {
     using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
@@ -243,7 +230,7 @@ class IPv6ESPView : public IPv6ExtensionViewBase<IPv6ESPView, LayerType::IPV6_ES
 class IPv6DestinationOptionsView
     : public IPv6ExtensionViewBase<
           IPv6DestinationOptionsView,
-          LayerType::IPV6_DESTINATION_OPTIONS> {
+          LayerType::IPV6_OPT_DESTINATION_OPTIONS> {
     using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
 };
 
@@ -265,7 +252,7 @@ struct [[gnu::packed]] IPv6FragmentHeader {
 class IPv6FragmentView : public LayerView<IPv6FragmentHeader> {
 public:
     /// Layer type identifier for IPv6 fragment headers.
-    static const LayerType LAYER_TYPE = LayerType::IPV6_FRAGMENT;
+    static const LayerType LAYER_TYPE = LayerType::IPV6_OPT_FRAGMENT;
 
     /**
      * @brief Create and validate an IPv6FragmentView from a byte span.

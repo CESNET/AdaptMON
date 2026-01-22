@@ -38,13 +38,15 @@ enum class LayerType : uint16_t {
 
     IPV4 = LAYERTYPE_L3 | 0x01,
     IPV6 = LAYERTYPE_L3 | 0x02,
-    IPV6_EXTENSION = LAYERTYPE_L3 | 0x03,
-    IPV6_FRAGMENT = LAYERTYPE_L3 | 0x04,
-    IPV6_HOPBYHOP = LAYERTYPE_L3 | 0x05,
-    IPV6_ROUTING = LAYERTYPE_L3 | 0x06,
-    IPV6_AH = LAYERTYPE_L3 | 0x07,
-    IPV6_ESP = LAYERTYPE_L3 | 0x08,
-    IPV6_DESTINATION_OPTIONS = LAYERTYPE_L3 | 0x09,
+    // generic extensions that have the same structure of header, use for extensions that
+    // have not own type in this enum
+    IPV6_OPT_GENERIC = LAYERTYPE_L3 | 0x03,
+    IPV6_OPT_FRAGMENT = LAYERTYPE_L3 | 0x04,
+    IPV6_OPT_HOPBYHOP = LAYERTYPE_L3 | 0x05,
+    IPV6_OPT_ROUTING = LAYERTYPE_L3 | 0x06,
+    AUTHENTICATION_HEADER = LAYERTYPE_L3 | 0x07,
+    ESP = LAYERTYPE_L3 | 0x08,
+    IPV6_OPT_DESTINATION_OPTIONS = LAYERTYPE_L3 | 0x09,
     ICMP = LAYERTYPE_L3 | 0x0A,
     ICMPV6 = LAYERTYPE_L3 | 0x0B,
 
@@ -77,20 +79,20 @@ constexpr std::string_view layerTypeToString(LayerType type)
         return "IPV4";
     case LayerType::IPV6:
         return "IPV6";
-    case LayerType::IPV6_EXTENSION:
-        return "IPV6_EXTENSION";
-    case LayerType::IPV6_FRAGMENT:
-        return "IPV6_FRAGMENT";
-    case LayerType::IPV6_HOPBYHOP:
-        return "IPV6_HOPBYHOP";
-    case LayerType::IPV6_ROUTING:
-        return "IPV6_ROUTING";
-    case LayerType::IPV6_AH:
-        return "IPV6_AH";
-    case LayerType::IPV6_ESP:
-        return "IPV6_ESP";
-    case LayerType::IPV6_DESTINATION_OPTIONS:
-        return "IPV6_DESTINATION_OPTIONS";
+    case LayerType::IPV6_OPT_GENERIC:
+        return "IPV6_OPT_GENERIC";
+    case LayerType::IPV6_OPT_FRAGMENT:
+        return "IPV6_OPT_FRAGMENT";
+    case LayerType::IPV6_OPT_HOPBYHOP:
+        return "IPV6_OPT_HOPBYHOP";
+    case LayerType::IPV6_OPT_ROUTING:
+        return "IPV6_OPT_ROUTING";
+    case LayerType::AUTHENTICATION_HEADER:
+        return "AUTHENTICATION_HEADER";
+    case LayerType::ESP:
+        return "ESP";
+    case LayerType::IPV6_OPT_DESTINATION_OPTIONS:
+        return "IPV6_OPT_DESTINATION_OPTIONS";
     case LayerType::ICMP:
         return "ICMP";
     case LayerType::ICMPV6:
