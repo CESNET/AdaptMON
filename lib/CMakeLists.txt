@@ -4,6 +4,7 @@ add_library(amon-lib
     src/conf/Parser.cpp
     src/conf/Scalar.cpp
     src/conf/Struct.cpp
+    src/conf/yaml.cpp
     src/Error.cpp
     src/hello.cpp
     src/layers/AuthenticationHeader.cpp
