@@ -1,4 +1,5 @@
 add_library(amon-lib
+    src/conf/Node.cpp
     src/conf/Scalar.cpp
     src/Error.cpp
     src/hello.cpp
