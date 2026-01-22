@@ -3,6 +3,7 @@ add_library(amon-lib
     src/conf/Node.cpp
     src/conf/Parser.cpp
     src/conf/Scalar.cpp
+    src/conf/Struct.cpp
     src/Error.cpp
     src/hello.cpp
     src/layers/AuthenticationHeader.cpp
