@@ -65,6 +65,7 @@ include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
 include(cmake/doctest.cmake)
 include(cmake/libpcap.cmake)
+include(cmake/yaml-cpp.cmake)
 
 if (AMON_BUILD_SHARED)
     set(BUILD_SHARED_LIBS ON)

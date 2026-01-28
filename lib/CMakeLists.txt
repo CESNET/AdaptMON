@@ -1,4 +1,10 @@
 add_library(amon-lib
+    src/conf/ConfigError.cpp
+    src/conf/Node.cpp
+    src/conf/Parser.cpp
+    src/conf/Scalar.cpp
+    src/conf/Struct.cpp
+    src/conf/yaml.cpp
     src/Error.cpp
     src/hello.cpp
     src/layers/AuthenticationHeader.cpp
@@ -42,6 +48,7 @@ target_link_libraries(amon-lib
         doctest
         libbacktrace
         spdlog::spdlog
+        yaml-cpp
     PUBLIC
         PkgConfig::libpcap
 )
