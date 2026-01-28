@@ -19,15 +19,13 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing an Ethernet header.
  */
 struct [[gnu::packed]] EthernetHeader {
-    MACAddress destination; ///< Destination MAC address
-    MACAddress source; ///< Source MAC address
-    UInt16BE protocol; ///< EtherType protocol field
+    types::MACAddress destination; ///< Destination MAC address
+    types::MACAddress source; ///< Source MAC address
+    types::UInt16BE protocol; ///< EtherType protocol field
 };
 
 /**
@@ -73,13 +71,13 @@ public:
      * @brief Get the destination MAC address.
      * @return Destination MAC address.
      */
-    const MACAddress& dst() const noexcept { return header().destination; }
+    const types::MACAddress& dst() const noexcept { return header().destination; }
 
     /**
      * @brief Get the source MAC address.
      * @return Source MAC address.
      */
-    const MACAddress& src() const noexcept { return header().source; }
+    const types::MACAddress& src() const noexcept { return header().source; }
 };
 
 } // namespace amon::layers

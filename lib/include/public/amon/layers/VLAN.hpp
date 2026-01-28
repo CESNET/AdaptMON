@@ -18,14 +18,12 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing a VLAN header.
  */
 struct [[gnu::packed]] VLANHeader {
-    UInt16BE tci; ///< Tag Control Information (Priority, CFI, VLAN ID)
-    UInt16BE protocol; ///< Encapsulated Protocol (EtherType)
+    types::UInt16BE tci; ///< Tag Control Information (Priority, CFI, VLAN ID)
+    types::UInt16BE protocol; ///< Encapsulated Protocol (EtherType)
 };
 
 /**

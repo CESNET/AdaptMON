@@ -18,15 +18,13 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing an ICMPv6 header.
  */
 struct [[gnu::packed]] ICMPv6Header {
-    UInt8 type; ///< Type
-    UInt8 code; ///< Code
-    UInt16BE checksum; ///< Checksum
+    types::UInt8 type; ///< Type
+    types::UInt8 code; ///< Code
+    types::UInt16BE checksum; ///< Checksum
 };
 
 /**

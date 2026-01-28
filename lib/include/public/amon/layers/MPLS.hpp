@@ -18,14 +18,12 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Union representing an MPLS header.
  */
 union MPLSHeader {
-    UInt32BE label; ///< MPLS Label, Traffic Class, Bottom of Stack, TTL
-    UInt8 bytes[4]; ///< Raw bytes for easier access to individual fields
+    types::UInt32BE label; ///< MPLS Label, Traffic Class, Bottom of Stack, TTL
+    types::UInt8 bytes[4]; ///< Raw bytes for easier access to individual fields
 };
 
 /**
