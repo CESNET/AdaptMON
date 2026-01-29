@@ -20,22 +20,20 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing an IPv4 header.
  */
 struct [[gnu::packed]] IPv4Header {
-    UInt8 versionIhl; ///< Version and Internet Header Length
-    UInt8 tos; ///< Type of Service
-    UInt16BE totalLength; ///< Total Length
-    UInt16BE id; ///< Identification
-    UInt16BE flagsFragmentOffset; ///< Flags and Fragment Offset
-    UInt8 ttl; ///< Time to Live
-    UInt8 protocol; ///< Protocol
-    UInt16BE headerChecksum; ///< Header Checksum
-    IPv4 sourceAddress; ///< Source Address
-    IPv4 destinationAddress; ///< Destination Address
+    types::UInt8 versionIhl; ///< Version and Internet Header Length
+    types::UInt8 tos; ///< Type of Service
+    types::UInt16BE totalLength; ///< Total Length
+    types::UInt16BE id; ///< Identification
+    types::UInt16BE flagsFragmentOffset; ///< Flags and Fragment Offset
+    types::UInt8 ttl; ///< Time to Live
+    types::UInt8 protocol; ///< Protocol
+    types::UInt16BE headerChecksum; ///< Header Checksum
+    types::IPv4 sourceAddress; ///< Source Address
+    types::IPv4 destinationAddress; ///< Destination Address
 };
 
 /**
@@ -86,13 +84,13 @@ public:
      * @brief Get the source IP address.
      * @return Source IP address.
      */
-    const IPv4& srcIP() const noexcept { return header().sourceAddress; }
+    const types::IPv4& srcIP() const noexcept { return header().sourceAddress; }
 
     /**
      * @brief Get the destination IP address.
      * @return Destination IP address.
      */
-    const IPv4& dstIP() const noexcept { return header().destinationAddress; }
+    const types::IPv4& dstIP() const noexcept { return header().destinationAddress; }
 
     /**
      * @brief Check if the packet is fragmented.

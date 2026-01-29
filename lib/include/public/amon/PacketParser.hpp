@@ -82,8 +82,10 @@ using LayerTypeVariant = std::variant<
  * @param type LayerType value.
  * @return Corresponding variant.
  */
-static constexpr LayerTypeVariant layerTypeToVariant(LayerType type) noexcept
+static constexpr LayerTypeVariant layerTypeToVariant(layers::LayerType type) noexcept
 {
+    using namespace layers;
+
     switch (type) {
     case LayerType::RAW:
         return PacketParserLinkType::RAW;
@@ -154,7 +156,8 @@ public:
      * @param startOffset Offset in the packet data where parsing should start.
      * @return LayerError indicating success or type of error encountered.
      */
-    static LayerError parse(Packet& packet, LayerType firstLayer, uint16_t startOffset = 0);
+    static layers::LayerError
+    parse(Packet& packet, layers::LayerType firstLayer, uint16_t startOffset = 0);
 
     /**
      * @brief Parse raw packet data and populate Packet structure.
@@ -164,7 +167,8 @@ public:
      * @param startOffset Offset in the packet data where parsing should start.
      * @return LayerError indicating success or type of error encountered.
      */
-    static LayerError parse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset = 0);
+    static layers::LayerError
+    parse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset = 0);
 
 private:
     /**
@@ -174,7 +178,7 @@ private:
      * @param linktype Link type indicating the next layer type.
      * @return LayerError indicating success or type of error encountered.
      */
-    static LayerError
+    static layers::LayerError
     processLinktype(Packet& packet, uint16_t offset, PacketParserLinkType linktype);
     /**
      * @brief Process layer after ethernet.
@@ -183,7 +187,7 @@ private:
      * @param ethertype Ethertype indicating the next layer type.
      * @return LayerError indicating success or type of error encountered.
      */
-    static LayerError
+    static layers::LayerError
     processEthertype(Packet& packet, uint16_t offset, PacketParserEtherType ethertype);
     /**
      * @brief Process layer after IP layer.
@@ -192,7 +196,7 @@ private:
      * @param prototype Protocol number indicating the next layer type.
      * @return LayerError indicating success or type of error encountered.
      */
-    static LayerError
+    static layers::LayerError
     processPrototype(Packet& packet, uint16_t offset, PacketParserProtoType prototype);
     /**
      * @brief Process rest of the packet – payload.
@@ -201,27 +205,30 @@ private:
      * @param payloadType Type of the payload layer (default is LayerType::PAYLOAD_APP).
      * @return LayerError indicating success or type of error encountered.
      */
-    static LayerError
-    processPayload(Packet& packet, uint16_t offset, LayerType payloadType = LayerType::PAYLOAD_APP);
+    static layers::LayerError processPayload(
+        Packet& packet,
+        uint16_t offset,
+        layers::LayerType payloadType = layers::LayerType::PAYLOAD_APP);
 
     // Following functions are handlers for the given single protocol. Each of them should check
     // whether the packet's layers vector is not full before appending or use addLayer function
     // which checks it internally.
-    static LayerError processEthernet(Packet& packet, uint16_t offset);
-    static LayerError processVLAN(Packet& packet, uint16_t offset);
-    static LayerError processMPLS(Packet& packet, uint16_t offset, PacketParserEtherType ethertype);
-    static LayerError processIPFromPayload(Packet& packet, uint16_t offset);
-    static LayerError processIPv4(Packet& packet, uint16_t offset);
-    static LayerError processIPv6(Packet& packet, uint16_t offset);
-    static LayerError processIPv6Fragment(Packet& packet, uint16_t offset);
+    static layers::LayerError processEthernet(Packet& packet, uint16_t offset);
+    static layers::LayerError processVLAN(Packet& packet, uint16_t offset);
+    static layers::LayerError
+    processMPLS(Packet& packet, uint16_t offset, PacketParserEtherType ethertype);
+    static layers::LayerError processIPFromPayload(Packet& packet, uint16_t offset);
+    static layers::LayerError processIPv4(Packet& packet, uint16_t offset);
+    static layers::LayerError processIPv6(Packet& packet, uint16_t offset);
+    static layers::LayerError processIPv6Fragment(Packet& packet, uint16_t offset);
     template <typename LayerViewT>
-    static LayerError processIPv6Extension(Packet& packet, uint16_t offset);
+    static layers::LayerError processIPv6Extension(Packet& packet, uint16_t offset);
     template <typename LayerViewT, bool payloadFollows>
-    static LayerError processSimpleProtoType(Packet& packet, uint16_t offset);
-    static LayerError processGRE(Packet& packet, uint16_t offset);
-    static LayerError processESP(Packet& packet, uint16_t offset);
-    static LayerError processAH(Packet& packet, uint16_t offset);
-    static LayerError processUnknown(Packet& packet, uint16_t offset);
+    static layers::LayerError processSimpleProtoType(Packet& packet, uint16_t offset);
+    static layers::LayerError processGRE(Packet& packet, uint16_t offset);
+    static layers::LayerError processESP(Packet& packet, uint16_t offset);
+    static layers::LayerError processAH(Packet& packet, uint16_t offset);
+    static layers::LayerError processUnknown(Packet& packet, uint16_t offset);
 };
 
 } // namespace amon

@@ -18,16 +18,14 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing a UDP header.
  */
 struct [[gnu::packed]] UDPHeader {
-    UInt16BE sourcePort; ///< Source Port
-    UInt16BE destinationPort; ///< Destination Port
-    UInt16BE length; ///< Length
-    UInt16BE checksum; ///< Checksum
+    types::UInt16BE sourcePort; ///< Source Port
+    types::UInt16BE destinationPort; ///< Destination Port
+    types::UInt16BE length; ///< Length
+    types::UInt16BE checksum; ///< Checksum
 };
 
 /**

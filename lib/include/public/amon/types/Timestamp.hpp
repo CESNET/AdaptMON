@@ -24,8 +24,6 @@
 
 namespace amon::types {
 
-using namespace util::numeric;
-
 /**
  * @brief Time units for timestamp representation and conversion.
  */
@@ -70,7 +68,7 @@ public:
     {
         const uint64_t multiplier
             = unitsInSecond(TimeUnit::NANOSECONDS) / unitsInSecond(SourceUnit);
-        const uint64_t nanosec = safeMul(value, multiplier);
+        const uint64_t nanosec = util::numeric::safeMul(value, multiplier);
         return {nanosec};
     }
 
@@ -84,9 +82,11 @@ public:
         if (timeVal.tv_sec < 0 || timeVal.tv_usec < 0) {
             throw std::invalid_argument("Only positive timeval are accepted.");
         }
-        const uint64_t totalNanoseconds = safeAdd(
-            safeMul(static_cast<uint64_t>(timeVal.tv_sec), unitsInSecond(TimeUnit::NANOSECONDS)),
-            safeMul(static_cast<uint64_t>(timeVal.tv_usec), 1000));
+        const uint64_t totalNanoseconds = util::numeric::safeAdd(
+            util::numeric::safeMul(
+                static_cast<uint64_t>(timeVal.tv_sec),
+                unitsInSecond(TimeUnit::NANOSECONDS)),
+            util::numeric::safeMul(static_cast<uint64_t>(timeVal.tv_usec), 1000));
         return {totalNanoseconds};
     }
 

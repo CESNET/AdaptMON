@@ -12,6 +12,8 @@
 
 namespace amon::layers {
 
+using namespace types;
+
 std::expected<EthernetView, LayerError>
 EthernetView::create(std::span<const std::byte> data) noexcept
 {

@@ -19,21 +19,19 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing a TCP header.
  */
 struct [[gnu::packed]] TCPHeader {
-    UInt16BE sourcePort; ///< Source Port
-    UInt16BE destinationPort; ///< Destination Port
-    UInt32BE sequenceNumber; ///< Sequence Number
-    UInt32BE acknowledgeNumber; ///< Acknowledge Number
-    UInt8 dataOffsetReserved; ///< Data Offset and Reserved bits
-    UInt8 flags; ///< Flags
-    UInt16BE window; ///< Window Size
-    UInt16BE checksum; ///< Checksum
-    UInt16BE urgentPointer; ///< Urgent Pointer
+    types::UInt16BE sourcePort; ///< Source Port
+    types::UInt16BE destinationPort; ///< Destination Port
+    types::UInt32BE sequenceNumber; ///< Sequence Number
+    types::UInt32BE acknowledgeNumber; ///< Acknowledge Number
+    types::UInt8 dataOffsetReserved; ///< Data Offset and Reserved bits
+    types::UInt8 flags; ///< Flags
+    types::UInt16BE window; ///< Window Size
+    types::UInt16BE checksum; ///< Checksum
+    types::UInt16BE urgentPointer; ///< Urgent Pointer
 };
 
 /**

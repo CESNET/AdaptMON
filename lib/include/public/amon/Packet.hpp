@@ -20,9 +20,6 @@
 
 namespace amon {
 
-using namespace types;
-using namespace layers;
-
 /// Maximum number of layers in a packet.
 constexpr static const unsigned MAX_LAYERS = 32;
 
@@ -30,8 +27,8 @@ constexpr static const unsigned MAX_LAYERS = 32;
  * @brief Structure representing error packet layer.
  */
 struct ErrorLayer {
-    LayerType type; ///< Type of the layer.
-    LayerError error; ///< Error status for this layer.
+    layers::LayerType type; ///< Type of the layer.
+    layers::LayerError error; ///< Error status for this layer.
     uint16_t offset; ///< Offset of the layer in the packet data.
 };
 
@@ -39,7 +36,7 @@ struct ErrorLayer {
  * @brief Structure representing a parsed layer within a packet.
  */
 struct PacketLayer {
-    LayerType type; ///< Type of the layer.
+    layers::LayerType type; ///< Type of the layer.
     uint16_t offset; ///< Offset of the layer in the packet data.
 };
 
@@ -70,7 +67,7 @@ struct Packet {
      * @param startPos Starting index in the layers vector.
      * @return Variant containing PacketLayer or ErrorLayer if found, otherwise empty variant.
      */
-    std::optional<LayerVariant> findLayer(LayerType layerType, uint8_t startPos = 0) const
+    std::optional<LayerVariant> findLayer(layers::LayerType layerType, uint8_t startPos = 0) const
     {
         return findLayer(layerType, startPos, static_cast<uint8_t>(layers.size()));
     }
@@ -83,7 +80,7 @@ struct Packet {
      * @return Variant containing PacketLayer or ErrorLayer if found, otherwise empty variant.
      */
     std::optional<LayerVariant>
-    findLayer(LayerType layerType, uint8_t startPos, uint8_t endPos) const
+    findLayer(layers::LayerType layerType, uint8_t startPos, uint8_t endPos) const
     {
         if (endPos > layers.size() || startPos > endPos) {
             throw std::out_of_range("Bad start or end position.");
@@ -91,7 +88,8 @@ struct Packet {
         const auto* begin = layers.begin() + startPos;
         const auto* end = layers.begin() + endPos;
         const auto* it = std::ranges::find_if(begin, end, [&layerType](const auto& layerOrError) {
-            const LayerType type = std::visit([](auto&& arg) { return arg.type; }, layerOrError);
+            const layers::LayerType type
+                = std::visit([](auto&& arg) { return arg.type; }, layerOrError);
             return type == layerType;
         });
         if (it != end) {
@@ -150,10 +148,11 @@ struct Packet {
     }
 
     std::span<std::byte> data; ///< Raw packet data.
-    Timestamp timestamp; ///< Packet timestamp.
+    types::Timestamp timestamp; ///< Packet timestamp.
     std::optional<uint8_t> ingressInterface; ///< Network port ID from which is packet received.
     PacketLayout layout; ///< Layout contains indexes to layers vector.
-    InplaceVector<LayerVariant, MAX_LAYERS> layers; ///< Parsed protocol layers in the packet.
+    types::InplaceVector<LayerVariant, MAX_LAYERS>
+        layers; ///< Parsed protocol layers in the packet.
 };
 
 } // namespace amon

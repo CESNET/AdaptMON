@@ -18,14 +18,12 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing an IPsec ESP Header.
  */
 struct [[gnu::packed]] ESPHeader {
-    UInt32BE spi; ///< Security Parameters Index
-    UInt32BE sequenceNumber; ///< Sequence Number
+    types::UInt32BE spi; ///< Security Parameters Index
+    types::UInt32BE sequenceNumber; ///< Sequence Number
 };
 
 /**

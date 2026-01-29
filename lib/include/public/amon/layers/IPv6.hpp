@@ -20,18 +20,16 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing an IPv6 header.
  */
 struct [[gnu::packed]] IPv6Header {
-    UInt32BE versionTrafficClassFlowLabel; ///< Version, Traffic Class, Flow Label
-    UInt16BE payloadLength; ///< Payload Length
-    UInt8 nextHeader; ///< Next Header
-    UInt8 hopLimit; ///< Hop Limit
-    IPv6 sourceAddress; ///< Source Address
-    IPv6 destinationAddress; ///< Destination Address
+    types::UInt32BE versionTrafficClassFlowLabel; ///< Version, Traffic Class, Flow Label
+    types::UInt16BE payloadLength; ///< Payload Length
+    types::UInt8 nextHeader; ///< Next Header
+    types::UInt8 hopLimit; ///< Hop Limit
+    types::IPv6 sourceAddress; ///< Source Address
+    types::IPv6 destinationAddress; ///< Destination Address
 };
 
 /**
@@ -81,13 +79,13 @@ public:
      * @brief Get the source IPv6 address.
      * @return Source IPv6 address.
      */
-    const IPv6& srcIP() const { return header().sourceAddress; }
+    const types::IPv6& srcIP() const { return header().sourceAddress; }
 
     /**
      * @brief Get the destination IPv6 address.
      * @return Destination IPv6 address.
      */
-    const IPv6& dstIP() const { return header().destinationAddress; }
+    const types::IPv6& dstIP() const { return header().destinationAddress; }
 
     /**
      * @brief Get the payload length from the IPv6 header.
@@ -118,8 +116,8 @@ private:
  * Used for IPv6 extension headers such as Hop-by-Hop, Routing, etc.
  */
 struct [[gnu::packed]] IPv6ExtensionHeader {
-    UInt8 nextHeader; ///< Next Header
-    UInt8 length; ///< Length in 8-byte units, not including the first 8 bytes
+    types::UInt8 nextHeader; ///< Next Header
+    types::UInt8 length; ///< Length in 8-byte units, not including the first 8 bytes
     // Followed by options...
 };
 
@@ -238,10 +236,10 @@ class IPv6DestinationOptionsView
  * @brief Structure representing an IPv6 fragment header.
  */
 struct [[gnu::packed]] IPv6FragmentHeader {
-    UInt8 nextHeader; ///< Next Header
-    UInt8 reserved; ///< Reserved
-    UInt16BE fragmentOffsetAndFlags; ///< Fragment Offset and Flags
-    UInt32BE identification; ///< Identification
+    types::UInt8 nextHeader; ///< Next Header
+    types::UInt8 reserved; ///< Reserved
+    types::UInt16BE fragmentOffsetAndFlags; ///< Fragment Offset and Flags
+    types::UInt32BE identification; ///< Identification
 };
 
 /**

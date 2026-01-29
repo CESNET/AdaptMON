@@ -18,14 +18,12 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing an GRE header.
  */
 struct [[gnu::packed]] GREHeader {
-    UInt16BE flagsVersion; ///< Version dependent flags and GRE version
-    UInt16BE protocolType; ///< Protocol Type
+    types::UInt16BE flagsVersion; ///< Version dependent flags and GRE version
+    types::UInt16BE protocolType; ///< Protocol Type
 };
 
 /**

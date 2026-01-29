@@ -18,17 +18,15 @@
 
 namespace amon::layers {
 
-using namespace types;
-
 /**
  * @brief Structure representing an IPsec Authentication Header.
  */
 struct [[gnu::packed]] AuthenticationHeader {
-    UInt8 nextHeader; ///< Next Header
-    UInt8 length; ///< Length in 4-octets units, not including the first 2 units
-    UInt16BE reserved; ///< Reserved
-    UInt32BE spi; ///< Security Parameters Index
-    UInt32BE sequenceNumber; ///< Sequence Number
+    types::UInt8 nextHeader; ///< Next Header
+    types::UInt8 length; ///< Length in 4-octets units, not including the first 2 units
+    types::UInt16BE reserved; ///< Reserved
+    types::UInt32BE spi; ///< Security Parameters Index
+    types::UInt32BE sequenceNumber; ///< Sequence Number
     // variable length Integrity Check Value
 };
 

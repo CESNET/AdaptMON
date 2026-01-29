@@ -1,0 +1,10 @@
+#!/bin/bash
+
+ec=0
+for f in $(find . -iname '*.hpp'); do
+    if grep -Hn "^using namespace.*$" "$f"; then
+        echo "Global 'using namespace ...;' statement found in header file (forbidden in header files)"
+        ec=1
+    fi
+done
+exit $ec
