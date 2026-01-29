@@ -55,11 +55,6 @@ atomic-commits:
   rules:
     - if: $CI_MERGE_REQUEST_DIFF_BASE_SHA
 
-pragma-once:
-  extends: .check
-  script:
-    - "make pragma-once"
-
 doxygen:
   extends: .check
   script:
@@ -68,7 +63,7 @@ doxygen:
     paths: [build/doc/doxygen/html]
     expire_in: 1 week
 
-cmake-format:
+custom-checks:
   extends: .check
   script:
-    - "make format-cmake"
+    - "make custom-checks"

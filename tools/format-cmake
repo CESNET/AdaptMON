@@ -52,7 +52,9 @@ def main() -> int:
     args = argparser.parse_args()
 
     exit_code = 0
+    counter = 0
     for file in glob.glob(args.input, recursive=True):
+        counter += 1
         file = Path(file)
         content = file.read_text()
         new_content = content
@@ -70,6 +72,10 @@ def main() -> int:
                 print(f"\033[33m{file} has been formatted\033[0m")
                 print_diff(content, new_content)
             file.write_text(new_content)
+
+    if args.check and counter == 0:
+        print("\033[31mNo files were checked!\033[0m")
+        exit_code = 1
 
     return exit_code
 

@@ -107,5 +107,25 @@ atomic-commits:
 .PHONY: atomic-commits
 
 pragma-once:
-	@tools/check-pragma-once
+	@tools/checks/check-pragma-once
 .PHONY: pragma-once
+
+custom-checks:
+	@rc=0; \
+	GREEN='\033[0;32m'; \
+	RED='\033[0;31m'; \
+	YELLOW='\033[1;33m'; \
+	NC='\033[0m'; \
+	for script in tools/checks/*; do \
+		if [ -x "$$script" ]; then \
+			printf "$${YELLOW}==> Running %s$${NC}\n" "$$script"; \
+			if "$$script"; then \
+				printf "$${GREEN}✔ PASS %s$${NC}\n\n" "$$script"; \
+			else \
+				printf "$${RED}✖ FAIL %s$${NC}\n\n" "$$script"; \
+				rc=1; \
+			fi; \
+		fi; \
+	done; \
+	exit $$rc
+.PHONY: custom-checks
