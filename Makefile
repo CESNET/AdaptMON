@@ -107,7 +107,7 @@ atomic-commits:
 .PHONY: atomic-commits
 
 pragma-once:
-	@tools/check-pragma-once
+	@tools/checks/check-pragma-once
 .PHONY: pragma-once
 
 custom-checks:
