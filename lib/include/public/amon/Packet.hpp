@@ -23,6 +23,9 @@ namespace amon {
 /// Maximum number of layers in a packet.
 constexpr static const unsigned MAX_LAYERS = 32;
 
+/// Maximum number of encapsulation layers to store in PacketLayout.
+constexpr static const unsigned ENCAPSULATION_SIZE = 2;
+
 /**
  * @brief Structure representing error packet layer.
  */
@@ -45,11 +48,18 @@ using LayerVariant = std::variant<PacketLayer, ErrorLayer>;
 
 /**
  * @brief Structure representing the layout of key protocol layers in a packet.
- *        Members hold offsets to layers vector inside the packet object.
+ *
+ * Members hold offsets to layers vector inside the packet object.
+ *
+ * @par Example accessing layer from packet structure by layout member:
+ * @code
+ * if (layout.l3) {
+ *   LayerVariant layerOrError = packet.layers[layout.l3];
+ * }
+ * @endcode
  */
 struct PacketLayout {
     std::optional<uint8_t> l2; ///< Offset of the L2 layer in the layers vector.
-    std::optional<uint8_t> vlan; ///< Offset of the VLAN layer in the layers vector.
     std::optional<uint8_t> l3; ///< Offset of the L3 layer in the layers vector.
     std::optional<uint8_t> l4; ///< Offset of the L4 layer in the layers vector.
     std::optional<uint8_t> l7; ///< Offset of the L7 layer in the layers vector.
@@ -150,9 +160,64 @@ struct Packet {
     std::span<std::byte> data; ///< Raw packet data.
     types::Timestamp timestamp; ///< Packet timestamp.
     std::optional<uint8_t> ingressInterface; ///< Network port ID from which is packet received.
-    PacketLayout layout; ///< Layout contains indexes to layers vector.
     types::InplaceVector<LayerVariant, MAX_LAYERS>
         layers; ///< Parsed protocol layers in the packet.
+
+    /**
+     * @brief Layouts of protocol layers in the packet.
+     *
+     * Each layout corresponds to one encapsulation level, up to ENCAPSULATION_SIZE entries.
+     *
+     * @par Layout indexing:
+     * - **layout[0]**: Outermost (first) encapsulation level. For a standard packet without
+     *   tunneling, this contains offsets to the L2/L3/L4/L7 layers. For tunneled packets, it
+     *   contains offsets to the layers before the tunneled protocol begins (e.g., Ethernet (L2)
+     *   and outer IP layer (L3) for an IP-in-IP tunnel).
+     * - **layout[1]**: Second encapsulation level, present when tunneling occurs. For example,
+     *   in an IP-in-IP tunnel, this contains offsets to the inner IP layer (L3) and its
+     *   L4/L7 protocols.
+     *
+     * @par Encapsulation overflow behavior:
+     * When a packet contains more than ENCAPSULATION_SIZE encapsulation levels (e.g., nested
+     * tunnels exceeding 2 levels), the layout vector becomes full and no additional layouts are
+     * stored. In this case, the last layout is NOT the innermost encapsulation level.
+     *
+     * @note All protocol layers remain accessible via the `layers` vector regardless of layout
+     *       overflow. The layout only provides quick access to the first ENCAPSULATION_SIZE
+     *       encapsulation levels.
+     *
+     * @par Example - Standard packet (no tunneling):
+     * @code
+     * // Packet: Ethernet -> IPv4 -> TCP -> HTTP
+     * // layout.size() == 1
+     * // layout[0].l2 = 0 (Ethernet at index 0)
+     * // layout[0].l3 = 1 (IPv4 at index 1)
+     * // layout[0].l4 = 2 (TCP at index 2)
+     * // layout[0].l7 = 3 (HTTP payload at index 3)
+     * @endcode
+     *
+     * @par Example - IP-in-IP tunnel:
+     * @code
+     * // Packet: Ethernet -> IPv4 (outer) -> IPv4 (inner) -> TCP -> HTTP
+     * // layout.size() == 2
+     * // layout[0].l2 = 0 (Ethernet)
+     * // layout[0].l3 = 1 (outer IPv4)
+     * // layout[1].l3 = 2 (inner IPv4)
+     * // layout[1].l4 = 3 (TCP)
+     * // layout[1].l7 = 4 (HTTP payload)
+     * @endcode
+     *
+     * @par Example - IP-in-IP + GRE tunnel (overflow):
+     * @code
+     * // Packet: Ethernet -> IPv4 (outer) -> IPv4 (middle) -> GRE -> IPv4 (inner) -> TCP -> HTTP
+     * // layout.size() == 2 (overflow - inner IPv4 not stored in layout)
+     * // layout[0].l2 = 0 (Ethernet)
+     * // layout[0].l3 = 1 (outer IPv4)
+     * // layout[1].l3 = 2 (middle IPv4)
+     * // layout[1].l4 = 3 (GRE)
+     * @endcode
+     */
+    types::InplaceVector<PacketLayout, ENCAPSULATION_SIZE> layout;
 };
 
 } // namespace amon
