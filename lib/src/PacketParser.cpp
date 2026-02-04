@@ -36,6 +36,8 @@ LayerError PacketParser::parse(Packet& packet, LayerType firstLayer, const uint1
 LayerError
 PacketParser::parse(Packet& packet, LayerTypeVariant firstLayer, const uint16_t startOffset)
 {
+    m_layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
+
     if (std::holds_alternative<PacketParserLinkType>(firstLayer)) {
         return processLinktype(packet, startOffset, std::get<PacketParserLinkType>(firstLayer));
     }
@@ -156,6 +158,9 @@ PacketParser::processPayload(Packet& packet, const uint16_t offset, LayerType pa
         }
         PacketLayer layer {.type = payloadType, .offset = offset};
         packet.layers.pushBack(layer);
+        if (payloadType == LayerType::PAYLOAD_APP) {
+            addToLayout<LayerType::PAYLOAD_APP>(packet);
+        }
     }
     return LayerError::NONE;
 }
