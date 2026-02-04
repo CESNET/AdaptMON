@@ -11,6 +11,8 @@
 #include <amon-internal/Test.hpp>
 #include <amon/types/Timestamp.hpp>
 
+#include <limits>
+
 namespace amon::types {
 
 // STATIC CHECKS
@@ -141,6 +143,24 @@ TEST_CASE("Timestamp::convertTo seconds")
     const Timestamp t2(3'000'000'000ULL);
     CHECK(t2.convertTo(TimeUnit::SECONDS) == 3);
     CHECK(t2.convertTo<TimeUnit::SECONDS>() == 3);
+}
+
+TEST_CASE("Timestamp::difference")
+{
+    const Timestamp t1(5'000'000'000ULL);
+    const Timestamp t2(3'000'000'000ULL);
+    CHECK(t1.difference(t2) == 2'000'000'000);
+    CHECK(t2.difference(t1) == 2'000'000'000);
+}
+
+TEST_CASE("Timestamp::difference edge cases")
+{
+    const Timestamp t1(std::numeric_limits<uint64_t>::max());
+    const Timestamp t2(std::numeric_limits<uint64_t>::max() - 7);
+    const Timestamp t3(1);
+    CHECK(t1.difference(t2) == 7);
+    CHECK(t2.difference(t1) == 7);
+    CHECK(t1.difference(t3) == std::numeric_limits<uint64_t>::max() - 1);
 }
 
 } // namespace amon::types
