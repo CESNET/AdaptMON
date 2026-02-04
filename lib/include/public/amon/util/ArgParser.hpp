@@ -28,7 +28,8 @@
  *             .help("The anonymization key, 32 characters long"),
  *         KwArg('h', "help")
  *             .required(false)
- *             .help("Print this help"),
+ *             .help("Print this help")
+ *             .special(true),
  *     });
  *
  * auto args = argParser.parse(argc, argv);
@@ -243,6 +244,22 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Set the special flag for the keyword argument.
+     *
+     * When an option with this flag set is encountered in parsing, parsing does not end with an
+     * error even if an error condition (e.g. missing required option) happens. This is intended for
+     * special flags like --version or --help that should take priority.
+     *
+     * @param value The value.
+     * @return Reference to this KwArg.
+     */
+    KwArg& special(bool value)
+    {
+        m_special = value;
+        return *this;
+    }
+
 private:
     friend class ArgParser;
     friend class ParsedArgs;
@@ -252,6 +269,7 @@ private:
     bool m_required = false;
     bool m_hasArg = false;
     bool m_allowMultiple = false;
+    bool m_special = false;
     std::optional<std::string> m_metaVar = std::nullopt;
     std::optional<std::string> m_defaultValue = std::nullopt;
     std::string m_help;
@@ -358,6 +376,18 @@ public:
     }
 
     /**
+     * @brief Sets the version string for the argument parser and enables "auto-version".
+     *
+     * @param version The version string to set.
+     * @return Reference to this ArgParser instance.
+     */
+    ArgParser& setVersion(std::string version)
+    {
+        m_version = std::move(version);
+        return *this;
+    }
+
+    /**
      * @brief Parse command-line arguments.
      *
      * When auto-help is enabled (default):
@@ -368,6 +398,11 @@ public:
      * When auto-help is disabled:
      *   - Help options become regular arguments
      *   - Parsing errors throw ArgParserError instead of exiting
+     *
+     * When version is set:
+     *   - Options '-V' and '--version' are automatically added if not present.
+     *   - If such option is provided, it is automatically handled by printing the version and
+     *     exiting with status 0
      *
      * @param argc Argument count from main()
      * @param argv Argument vector from main()
@@ -383,12 +418,24 @@ public:
      */
     std::string usage(const std::string& programName) const;
 
+    /**
+     * @brief Returns the version string.
+     *
+     * If the version is not set, returns an empty string.
+     *
+     * @return std::string The version string or empty string if not set.
+     */
+    std::string version() const { return m_version.value_or(""); }
+
 private:
     std::vector<PosArg> m_posArgs;
     std::vector<KwArg> m_kwArgs;
     bool m_autoHelp = true;
     std::optional<std::string> m_prologue;
     std::optional<std::string> m_epilogue;
+    std::optional<std::string> m_version;
+
+    std::vector<KwArg> getKwArgsWithAutoArgs() const;
 
     static ParsedArgs parseWithGetOpt(
         int argc,
