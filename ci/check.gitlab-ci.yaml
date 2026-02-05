@@ -19,7 +19,7 @@ editorconfig:
   needs: []
   image: mstruebing/editorconfig-checker
   script:
-    - "ec -disable-indent-size" # incompatible with the way clang-format indents things
+    - "ec"
 
 .check:
   stage: check
