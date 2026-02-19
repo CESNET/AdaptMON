@@ -126,7 +126,9 @@ constexpr std::string_view layerTypeToString(LayerType type)
  */
 constexpr uint16_t layerTypeBase(LayerType type) noexcept
 {
-    static_assert(sizeof(LayerType) == 2, "LayerType must be uint16_t.");
+    static_assert(
+        std::is_same_v<uint16_t, decltype(std::to_underlying(type))>,
+        "LayerType must be uint16_t.");
     constexpr uint16_t mask = LAYERTYPE_LINK | LAYERTYPE_L2 | LAYERTYPE_L3 | LAYERTYPE_L4;
     return static_cast<uint16_t>(type) & mask;
 }
