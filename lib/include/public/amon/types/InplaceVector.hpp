@@ -82,7 +82,7 @@ public:
     InplaceVector(InplaceVector&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
     {
         for (SizeType i = 0; i < other.m_size; ++i) {
-            emplaceBack(std::move(other[i]));
+            emplaceBackUnsafe(std::move(other[i]));
         }
         other.clear();
     }
@@ -114,7 +114,7 @@ public:
         if (this != &other) {
             clear();
             for (SizeType i = 0; i < other.m_size; ++i) {
-                emplaceBack(std::move(other[i]));
+                emplaceBackUnsafe(std::move(other[i]));
             }
             other.clear();
         }
@@ -309,10 +309,7 @@ public:
         if (m_size >= Capacity) {
             throw std::length_error("InplaceVector is full");
         }
-        T* ptr = ptrAt(m_size);
-        std::construct_at(ptr, std::forward<Args>(args)...);
-        ++m_size;
-        return *ptr;
+        return emplaceBackUnsafe(std::forward<Args>(args)...);
     }
 
     /**
@@ -365,6 +362,21 @@ private:
     const T* ptrAt(SizeType index) const noexcept
     {
         return std::launder(reinterpret_cast<const T*>(m_storage.data() + (index * sizeof(T))));
+    }
+
+    /**
+     * @brief Construct element in-place at the end without bounds checking.
+     * @tparam Args Argument types for element construction.
+     * @param args Arguments to forward to element constructor.
+     * @return Reference to the new element.
+     */
+    template <typename... Args>
+    Reference emplaceBackUnsafe(Args&&... args) noexcept(std::is_nothrow_move_constructible_v<T>)
+    {
+        T* ptr = ptrAt(m_size);
+        std::construct_at(ptr, std::forward<Args>(args)...);
+        ++m_size;
+        return *ptr;
     }
 };
 
