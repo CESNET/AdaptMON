@@ -172,12 +172,13 @@ PacketParser::processPayload(Packet& packet, const uint16_t offset, LayerType pa
 {
     assert(payloadType == LayerType::PAYLOAD_APP || payloadType == LayerType::PAYLOAD_IP_FRAGMENT);
 
-    if (packet.layers.full()) {
-        return LayerError::LAYER_VECTOR_FULL;
+    if (!packet.data.subspan(offset).empty()) {
+        if (packet.layers.full()) {
+            return LayerError::LAYER_VECTOR_FULL;
+        }
+        PacketLayer layer {.type = payloadType, .offset = offset};
+        packet.layers.pushBack(layer);
     }
-
-    PacketLayer layer {.type = payloadType, .offset = offset};
-    packet.layers.pushBack(layer);
     return LayerError::NONE;
 }
 
@@ -451,6 +452,30 @@ TEST_CASE("PacketParser IP in IP parsing")
         CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::TCP);
         CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 78);
     }
+}
+
+TEST_CASE("PacketParser SYN TCP parsing")
+{
+    unsigned char frame[]
+        = {0x0,  0xe,  0xc,  0xc0, 0xff, 0xee, 0x0,  0x19, 0x30, 0xc0, 0xff, 0xee, 0x8,  0x0,
+           0x45, 0x0,  0x0,  0x28, 0x1,  0x0,  0x0,  0x0,  0x73, 0x6,  0xc0, 0x5c, 0xa4, 0x7c,
+           0x21, 0x4e, 0xc0, 0xa8, 0x0,  0x1,  0x89, 0x5d, 0x0,  0x50, 0x0,  0x0,  0x63, 0x3f,
+           0x0,  0x0,  0x0,  0x0,  0x50, 0x2,  0x40, 0x0,  0xfc, 0x81, 0x0,  0x0};
+
+    Packet packet;
+    packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
+    PacketParser::parse(packet, LayerType::ETHERNET);
+
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+
+    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::TCP);
+    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 34);
+
+    CHECK_EQ(packet.layers.size(), 3);
 }
 
 } // namespace amon
