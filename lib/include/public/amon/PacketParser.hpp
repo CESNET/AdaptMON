@@ -63,6 +63,8 @@ enum PacketParserProtoType : uint8_t {
     UDP = 17,
     GRE = 47,
     ICMPV6 = 58,
+    IPV4_ENCAPSULATION = 4,
+    IPV6_ENCAPSULATION = 41,
     RESERVED1 = 253,
     RESERVED2 = 254,
     IPV6_OPT_GENERIC = 255, // generic extension for mapping LayerType => ProtoType

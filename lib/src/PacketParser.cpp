@@ -154,6 +154,10 @@ LayerError PacketParser::processPrototype(
         return processSimpleProtoType<ICMPv6View, false>(packet, offset);
     case GRE:
         return processGRE(packet, offset);
+    case IPV4_ENCAPSULATION:
+        return processIPv4(packet, offset);
+    case IPV6_ENCAPSULATION:
+        return processIPv6(packet, offset);
     case RESERVED1:
     case RESERVED2:
         return processUnknown(packet, offset);
@@ -168,12 +172,13 @@ PacketParser::processPayload(Packet& packet, const uint16_t offset, LayerType pa
 {
     assert(payloadType == LayerType::PAYLOAD_APP || payloadType == LayerType::PAYLOAD_IP_FRAGMENT);
 
-    if (packet.layers.full()) {
-        return LayerError::LAYER_VECTOR_FULL;
+    if (!packet.data.subspan(offset).empty()) {
+        if (packet.layers.full()) {
+            return LayerError::LAYER_VECTOR_FULL;
+        }
+        PacketLayer layer {.type = payloadType, .offset = offset};
+        packet.layers.pushBack(layer);
     }
-
-    PacketLayer layer {.type = payloadType, .offset = offset};
-    packet.layers.pushBack(layer);
     return LayerError::NONE;
 }
 
@@ -381,6 +386,96 @@ TEST_CASE("PacketParser simple packet parsing")
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::PAYLOAD_APP);
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 42);
+}
+
+TEST_CASE("PacketParser IP in IP parsing")
+{
+    SUBCASE("IPv4 in IPv4")
+    {
+        unsigned char frame[]
+            = {0xca, 0x1,  0xb,  0x14, 0x0,  0x8,  0xca, 0x0,  0xb,  0x14, 0x0,  0x8,  0x8,  0x0,
+               0x45, 0x0,  0x0,  0x78, 0x0,  0xf,  0x0,  0x0,  0xff, 0x4,  0xa3, 0x6e, 0xa,  0x1,
+               0x2,  0x1,  0xa,  0x1,  0x2,  0x2,  0x45, 0x0,  0x0,  0x64, 0x0,  0xf,  0x0,  0x0,
+               0xff, 0x1,  0x3a, 0x36, 0xc0, 0xa8, 0x0,  0x1,  0xc0, 0xa8, 0x0,  0x2,  0x8,  0x0,
+               0x2d, 0x16, 0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0xd,  0x51, 0x24,
+               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
+               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
+               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
+               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
+               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd};
+
+        Packet packet;
+        packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
+        PacketParser::parse(packet, LayerType::ETHERNET);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::IPV4);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 34);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::ICMP);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 54);
+    }
+
+    SUBCASE("IPv6 in IPv4")
+    {
+        unsigned char frame[]
+            = {0xb4, 0x14, 0x89, 0x8,  0x2d, 0x30, 0x20, 0x4e, 0x7f, 0x35, 0x9b, 0xb2, 0x81, 0x0,
+               0x0,  0x4,  0x08, 0x00, 0x45, 0x0,  0x0,  0x5c, 0x0,  0x0,  0x40, 0x0,  0x40, 0x29,
+               0xa1, 0xf0, 0xd5, 0x8d, 0x9a, 0xaa, 0xd5, 0x4f, 0x53, 0x1,  0x60, 0x0,  0x0,  0x0,
+               0x0,  0x20, 0x6,  0x3f, 0x20, 0x1,  0x6,  0x7c, 0x21, 0x58, 0xa0, 0x19, 0x0,  0x0,
+               0x0,  0x0,  0x0,  0x0,  0xa,  0xce, 0x20, 0x1,  0x0,  0x0,  0x5e, 0xf5, 0x79, 0xfd,
+               0x38, 0xc,  0x1d, 0x57, 0xa6, 0x1,  0x24, 0xfa, 0xcf, 0x70, 0x35, 0xdc, 0x44, 0xdd,
+               0xa0, 0x3d, 0x0,  0x0,  0x0,  0x0,  0x80, 0x2,  0x20, 0x0,  0x58, 0xcf, 0x0,  0x0,
+               0x2,  0x4,  0x5,  0x84, 0x1,  0x3,  0x3,  0x2,  0x1,  0x1,  0x4,  0x2};
+
+        Packet packet;
+        packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
+        PacketParser::parse(packet, LayerType::ETHERNET);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::VLAN);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::IPV4);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 18);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::IPV6);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 38);
+
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::TCP);
+        CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 78);
+    }
+}
+
+TEST_CASE("PacketParser SYN TCP parsing")
+{
+    unsigned char frame[]
+        = {0x0,  0xe,  0xc,  0xc0, 0xff, 0xee, 0x0,  0x19, 0x30, 0xc0, 0xff, 0xee, 0x8,  0x0,
+           0x45, 0x0,  0x0,  0x28, 0x1,  0x0,  0x0,  0x0,  0x73, 0x6,  0xc0, 0x5c, 0xa4, 0x7c,
+           0x21, 0x4e, 0xc0, 0xa8, 0x0,  0x1,  0x89, 0x5d, 0x0,  0x50, 0x0,  0x0,  0x63, 0x3f,
+           0x0,  0x0,  0x0,  0x0,  0x50, 0x2,  0x40, 0x0,  0xfc, 0x81, 0x0,  0x0};
+
+    Packet packet;
+    packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
+    PacketParser::parse(packet, LayerType::ETHERNET);
+
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
+    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+
+    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::TCP);
+    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 34);
+
+    CHECK_EQ(packet.layers.size(), 3);
 }
 
 } // namespace amon
