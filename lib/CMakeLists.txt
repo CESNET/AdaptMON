@@ -1,4 +1,5 @@
 add_library(amon-lib
+    src/amon.cpp
     src/conf/ConfigError.cpp
     src/conf/Node.cpp
     src/conf/Parser.cpp
