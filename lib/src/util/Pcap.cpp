@@ -11,6 +11,8 @@
 #include <amon/util/Pcap.hpp>
 
 #include <cassert>
+#include <cstdio>
+#include <iostream>
 
 #include <pcap/pcap.h>
 
@@ -50,6 +52,38 @@ static timeval timestampToTimevalWithNanos(const types::Timestamp& ts)
     tv.tv_sec = numeric::safeCast<decltype(tv.tv_sec)>(nanos / NANOSECS_IN_SEC);
     tv.tv_usec = numeric::safeCast<decltype(tv.tv_usec)>(nanos % NANOSECS_IN_SEC);
     return tv;
+}
+
+static uint64_t ftellEndPos(FILE* fp)
+{
+    int ret;
+    auto savePos = std::ftell(fp);
+    if (savePos < 0) {
+        throw ErrnoError("ftell() failed");
+    }
+    ret = std::fseek(fp, 0, SEEK_END);
+    if (ret < 0) {
+        throw ErrnoError("fseek() failed");
+    }
+    auto endPos = ftello64(fp);
+    if (endPos < 0) {
+        throw ErrnoError("ftello64() failed");
+    }
+    ret = std::fseek(fp, savePos, SEEK_SET);
+    if (ret < 0) {
+        throw ErrnoError("fseek() failed");
+    }
+
+    return numeric::safeCast<uint64_t>(endPos);
+}
+
+static uint64_t ftellCurrPos(FILE* fp)
+{
+    auto pos = ftello64(fp);
+    if (pos < 0) {
+        throw ErrnoError("ftello64() failed");
+    }
+    return numeric::safeCast<uint64_t>(pos);
 }
 
 PcapReader::PcapReader(const std::string& filename, PcapTimestampPrecision precision)
@@ -113,6 +147,16 @@ int PcapReader::linkLayerType() const
     // should never have the file not open
     assert(ret != PCAP_ERROR_NOT_ACTIVATED);
     return ret;
+}
+
+uint64_t PcapReader::tell() const
+{
+    return ftellCurrPos(pcap_file(m_pcap.get()));
+}
+
+uint64_t PcapReader::tellEnd() const
+{
+    return ftellEndPos(pcap_file(m_pcap.get()));
 }
 
 PcapWriter::PcapWriter(
