@@ -9,6 +9,11 @@
 
 #pragma once
 
+#include <amon/Stacktrace.hpp>
+
+#include <iostream>
+#include <sstream>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -90,5 +95,44 @@ auto match(Variant&& variant, Callables&&... callables)
 {
     return std::visit(detail::Overloaded {callables...}, std::forward<decltype(variant)>(variant));
 }
+
+/// @cond DO_NOT_DOCUMENT
+namespace detail {
+
+template <typename... Args>
+[[noreturn]] void assertFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args)
+{
+    std::stringstream ss;
+    ss << "--- ASSERTION FAILED -----------------------------------------------------------\n";
+    ss << "Condition: " << cond << "\n";
+    ss << "Message:   " << std::format(fmt, std::forward<Args>(args)...) << "\n";
+    ss << "\n";
+    ss << "Stacktrace:\n";
+    ss << StacktraceProvider::instance().createStacktrace(1).str() << "\n";
+    std::cerr << ss.str();
+    std::abort();
+}
+
+} // namespace detail
+/// @endcond
+
+/**
+ * @def AMON_ASSERT
+ * @brief Asserts that a condition is true, otherwise prints diagnostic info and aborts.
+ *
+ * Unlike classical `assert`, AMON_ASSERT is intended to work in release mode as well.
+ * The motivation is to replace the `if (!condition) throw std::logic_error(...);` pattern that
+ * could not be replaced by a regular assert due to it being optimized away in release mode.
+ *
+ * AMON_ASSERT also prints a stack trace when triggered to aid in debugging.
+ *
+ * @param CONDITION The condition to assert.
+ * @param MESSAGE_FMT The format string for the error message.
+ * @param ... Arguments for the format string.
+ */
+#define AMON_ASSERT(CONDITION, MESSAGE_FMT, ...)                                                   \
+    if (!(CONDITION)) [[unlikely]] {                                                               \
+        amon::detail::assertFail(#CONDITION, MESSAGE_FMT, ##__VA_ARGS__);                          \
+    }
 
 } // namespace amon
