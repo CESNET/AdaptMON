@@ -35,6 +35,7 @@ add_library(amon-lib
     src/util/ArgParser.cpp
     src/util/ArgvList.cpp
     src/util/getopt.cpp
+    src/util/Human.cpp
     src/util/numeric.cpp
     src/util/Pcap.cpp
     src/util/string.cpp
