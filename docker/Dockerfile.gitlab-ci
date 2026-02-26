@@ -20,6 +20,8 @@ RUN /prepare-machine dev-docker && \
 RUN if [ $USERID != 0 ]; then \
         groupadd -g $GROUPID $GROUP; \
         useradd -u $USERID -g $GROUP $USER; \
+        echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER; \
+        chmod 440 /etc/sudoers.d/$USER; \
     fi
 
 USER $USERID:$GROUPID
