@@ -77,6 +77,10 @@ dev-container:
 	@echo "  docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash"
 .PHONY: dev-docker
 
+enter-dev-container: dev-container
+	docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash
+.PHONY: enter-dev-container
+
 commitlint:
 	if [ -n "$${CI_MERGE_REQUEST_DIFF_BASE_SHA}" ] && [ -n "${CI_COMMIT_SHA}" ]; then \
 		BASE="$${CI_MERGE_REQUEST_DIFF_BASE_SHA}"; \
