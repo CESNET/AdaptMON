@@ -116,14 +116,15 @@ fi
 
 echo
 echo "*** Installing library dependencies ***"
-libasan=libasan
-libubsan=libubsan
 if [ "$USE_GCC_TOOLSET" = true ]; then
-    libasan="gcc-toolset-${GCC_TOOLSET_VERSION}-libasan-devel"
-    libubsan="gcc-toolset-${GCC_TOOLSET_VERSION}-libubsan-devel"
+    dnf install -y \
+        "gcc-toolset-${GCC_TOOLSET_VERSION}-libasan-devel" \
+        "gcc-toolset-${GCC_TOOLSET_VERSION}-libubsan-devel"
+else
+    dnf install -y --enablerepo=devel \
+        libasan-static \
+        libubsan-static
 fi
 
 dnf install -y \
-    libpcap-devel \
-    "$libasan" \
-    "$libubsan"
+    libpcap-devel
