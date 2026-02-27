@@ -83,9 +83,9 @@ elif [ "$OS_ID" = ol ] && [ "$OS_VERSION_MAJOR" = 10 ]; then
     echo "Detected OS: Oracle Linux 10"
     dnf install -y oracle-epel-release-el10
     dnf config-manager --set-enabled "ol10_codeready_builder"
-    # OL10 comes with gcc 14 by default
-    USE_GCC_TOOLSET=false
-    GCC_TOOLSET_AUTOENABLE=false
+    # OL10 comes with gcc 14 by default, but misses libasan-static package
+    GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-15}
+    USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
 fi
 
 echo
@@ -105,7 +105,12 @@ if [ "$USE_GCC_TOOLSET" = true ]; then
 fi
 
 if [ "$GCC_TOOLSET_AUTOENABLE" = true ]; then
-    echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" > "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+    if [ "$GCC_TOOLSET_VERSION" -lt 15 ]; then
+        echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" > "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+    else
+        echo "eval \"\$(gcc-toolset-${GCC_TOOLSET_VERSION}-env printenv | grep gcc-toolset)\"" > "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+    fi
+
     chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
 fi
 
