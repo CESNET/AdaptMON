@@ -42,7 +42,7 @@ case "$ROLE" in
 dev-machine)
     ;;
 dev-docker)
-    GCC_TOOLSET_AUTOENABLE=true
+    GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-true}
     ;;
 esac
 
