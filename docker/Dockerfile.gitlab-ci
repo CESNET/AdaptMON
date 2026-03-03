@@ -14,12 +14,14 @@ RUN cp /etc/skel/.bash_profile /root && \
 COPY prepare-machine /prepare-machine
 
 RUN /prepare-machine dev-docker && \
-	dnf clean all && \
-	rm -rf /var/cache/dnf/
+    dnf clean all && \
+    rm -rf /var/cache/dnf/
 
 RUN if [ $USERID != 0 ]; then \
         groupadd -g $GROUPID $GROUP; \
         useradd -u $USERID -g $GROUP $USER; \
+        echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER; \
+        chmod 440 /etc/sudoers.d/$USER; \
     fi
 
 USER $USERID:$GROUPID

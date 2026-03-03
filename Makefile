@@ -72,10 +72,15 @@ dev-container:
 	docker build -f docker/Dockerfile.gitlab-ci -t adaptmon-dev-container \
 		--build-arg USERID=$(shell id -u) --build-arg GROUPID=$(shell id -g) \
 		--build-arg USER=$(shell whoami) --build-arg GROUP=$(shell getent group "$$(id -u)" | cut -d: -f1 ) \
+		--build-arg OS_DISTRO=$(or ${OS_DISTRO},oraclelinux) --build-arg OS_RELEASE=$(or ${OS_RELEASE},10) \
 		.
 	@echo "Hint:"
 	@echo "  docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash"
 .PHONY: dev-docker
+
+enter-dev-container: dev-container
+	docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash
+.PHONY: enter-dev-container
 
 commitlint:
 	if [ -n "$${CI_MERGE_REQUEST_DIFF_BASE_SHA}" ] && [ -n "${CI_COMMIT_SHA}" ]; then \
