@@ -324,12 +324,48 @@ int SignalHandler::waitForSignals()
     return info.sigNum;
 }
 
-void SignalHandler::install()
+void SignalHandler::installSigAction(int signal, SigActionCallback callback)
 {
-    int ret;
+    struct sigaction action {};
+    action.sa_handler = callback;
 
+    const int ret = sigaction(signal, &action, nullptr);
+    if (ret != 0) {
+        throw ErrnoError("sigaction");
+    }
+}
+
+void SignalHandler::installSigAction(int signal, SigActionExtendedCallback callback)
+{
     struct sigaction action {};
     action.sa_flags = SA_SIGINFO;
+    action.sa_sigaction = callback;
+
+    const int ret = sigaction(signal, &action, nullptr);
+    if (ret != 0) {
+        throw ErrnoError("sigaction");
+    }
+}
+
+void SignalHandler::installSigAction(std::initializer_list<int> signals, SigActionCallback callback)
+{
+    for (const int signal : signals) {
+        installSigAction(signal, callback);
+    }
+}
+
+void SignalHandler::installSigAction(
+    std::initializer_list<int> signals,
+    SigActionExtendedCallback callback)
+{
+    for (const int signal : signals) {
+        installSigAction(signal, callback);
+    }
+}
+
+void SignalHandler::install(bool willUseWaitForSignals)
+{
+    int ret;
 
     // Unblock all signals
     sigset_t sigSet;
@@ -342,33 +378,19 @@ void SignalHandler::install()
         throw Error("pthread_sigmask() failed: {}", ret);
     }
 
-    // Termination/configuration signals
-    // (signals that we only want the main thread to handle)
-    action.sa_sigaction = &returnSignalCallback;
-    for (const int signal : {SIGTERM, SIGINT, SIGQUIT, SIGUSR1}) {
-        ret = sigaction(signal, &action, nullptr);
-        if (ret != 0) {
-            throw ErrnoError("sigaction");
-        }
+    if (willUseWaitForSignals) {
+        // Termination/configuration signals
+        // (signals that we only want the main thread to handle)
+        installSigAction({SIGTERM, SIGINT, SIGQUIT, SIGUSR1}, returnSignalCallback);
     }
 
     // Deadly signals
     // (signals that we want the specific thread to handle)
-    action.sa_sigaction = &deadlySignalCallback;
-    for (const int signal : {SIGILL, SIGBUS, SIGFPE, SIGSEGV, SIGSYS}) {
-        ret = sigaction(signal, &action, nullptr);
-        if (ret != 0) {
-            throw ErrnoError("sigaction");
-        }
-    }
+    installSigAction({SIGILL, SIGBUS, SIGFPE, SIGSEGV, SIGSYS}, deadlySignalCallback);
 
     // Special debug signal
     // (signal that we want the specific thread to handle)
-    action.sa_sigaction = &debugSignalCallback;
-    ret = sigaction(SIGUSR2, &action, nullptr);
-    if (ret != 0) {
-        throw ErrnoError("sigaction");
-    }
+    installSigAction(SIGUSR2, debugSignalCallback);
 
     // Terminate handler
     // (technically not a signal, but it fits here)

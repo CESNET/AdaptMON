@@ -13,6 +13,7 @@
 #include <amon/util/UniqueResource.hpp>
 
 #include <csignal>
+#include <initializer_list>
 
 namespace amon {
 
@@ -71,9 +72,60 @@ namespace amon {
  *
  * Note: The `SignalHandler::waitForSignals()` method can be potentially called from any thread.
  * There is no limitation that would require it to be called from the main thread as in the example.
+ *
+ * Example use 2:
+ *
+ * In case your application does not want to use the waitForSignals mechanism, for example in case
+ * of simpler and/or single-threaded applications...
+ * @code{.cpp}
+ * std::atomic_bool g_stop;
+ *
+ * void stopSignalHandler(int signal) noexcept
+ * {
+ *     g_stop.store(true);
+ * }
+ *
+ * int main()
+ * {
+ *     amon::SignalHandler::install(false);
+ *     amon::SignalHandler::installSigAction({SIGINT, SIGTERM}, stopSignalHandler);
+ *
+ *     while (true) {
+ *         if (g_stop.load(std::memory_order_relaxed)) {
+ *             std::cout << "CTRL+C received, stopping early...\n";
+ *             break;
+ *         }
+ *
+ *         // ... do work ...
+ *
+ *     }
+ *
+ *     return 0;
+ * }
+ * @endcode
+ *
  */
 class SignalHandler {
 public:
+    /**
+     * @brief Type alias for a signal handler callback function.
+     *
+     * This callback is invoked when a signal is received.
+     * @param sigNum The signal number.
+     */
+    using SigActionCallback = void (*)(int sigNum) noexcept;
+
+    /**
+     * @brief Type alias for an extended signal handler callback function.
+     *
+     * This callback is invoked when a signal is received and provides additional information.
+     * @param sigNum The signal number.
+     * @param sigInfo Pointer to a siginfo_t structure containing signal information.
+     * @param context Pointer to context information.
+     */
+    using SigActionExtendedCallback
+        = void (*)(int sigNum, siginfo_t* sigInfo, void* context) noexcept;
+
     /**
      * @brief Get the singleton instance of SignalHandler.
      * @return Reference to the SignalHandler instance.
@@ -81,9 +133,57 @@ public:
     static SignalHandler& instance();
 
     /**
-     * @brief Install signal handlers.
+     * @brief Installs a signal handler for the specified signal number.
+     *
+     * Sets up a signal handler for the given signal number using the provided callback function.
+     *
+     * @param signal The signal number to handle (e.g., SIGINT, SIGTERM).
+     * @param callback The callback function to be invoked when the signal is received.
      */
-    static void install();
+    static void installSigAction(int signal, SigActionCallback callback);
+
+    /**
+     * @brief Installs a signal handler for the specified signal number.
+     *
+     * This function sets up a signal handler using the provided callback for the given signal
+     * number.
+     *
+     * @param signal The signal number to handle (e.g., SIGINT, SIGTERM).
+     * @param callback The extended callback function to be invoked when the signal is received.
+     */
+    static void installSigAction(int signal, SigActionExtendedCallback callback);
+
+    /**
+     * @brief Installs a signal handler for the given signals.
+     *
+     * @param signals List of signal numbers to handle.
+     * @param callback Function to call when the signal is received.
+     */
+    static void installSigAction(std::initializer_list<int> signals, SigActionCallback callback);
+
+    /**
+     * @brief Installs an extended signal handler for the given signals.
+     *
+     * @param signals List of signal numbers to handle.
+     * @param callback Extended callback function to call when the signal is received.
+     */
+    static void
+    installSigAction(std::initializer_list<int> signals, SigActionExtendedCallback callback);
+
+    /**
+     * @brief Installs signal handlers for the application.
+     *
+     * This function sets up the necessary signal handlers. If
+     * willUseWaitForSignals is true, the handlers will be configured to
+     * support waiting for signals in the application's event loop.
+     *
+     * In summary, set willUseForSignals = true if you intend to use the `waitForSignals()` method.
+     *
+     * @param willUseWaitForSignals If true, enables waiting for signals using the
+     * `waitForSignals()` method; otherwise, installs only basic handlers providing more informative
+     * output for certain signals.
+     */
+    static void install(bool willUseWaitForSignals = true);
 
     /**
      * @brief Wait for signals and process them.
