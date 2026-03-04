@@ -61,11 +61,6 @@ target_link_options(amon-lib PRIVATE
     -Wl,--version-script=${CMAKE_BINARY_DIR}/export.map
 )
 
-if (ENABLE_SANITIZERS)
-    target_link_libraries(amon-lib PRIVATE asan ubsan)
-    target_compile_options(amon-lib PRIVATE -fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all)
-endif()
-
 if (ENABLE_TESTS)
     add_executable(amon-lib-tests)
 

@@ -60,6 +60,21 @@ if (BUILD_SHARED_LIBS)
     set(BUILD_SHARED_LIBS OFF)
 endif()
 
+if (ENABLE_SANITIZERS)
+    add_compile_options(
+        -fsanitize=address
+        -static-libasan
+        -fsanitize=undefined
+        -static-libubsan
+        -fno-sanitize-recover=all)
+    add_link_options(
+        -fsanitize=address
+        -static-libasan
+        -fsanitize=undefined
+        -static-libubsan
+        -fno-sanitize-recover=all)
+endif()
+
 # Add external dependencies
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
