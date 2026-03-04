@@ -13,7 +13,6 @@
 #include <amon/util/UniqueResource.hpp>
 
 #include <csignal>
-#include <vector>
 
 namespace amon {
 
@@ -99,7 +98,6 @@ private:
     returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/) noexcept;
     friend void debugSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/) noexcept;
 
-    std::vector<Stacktrace> m_perCoreStacktrace; ///< Stacktraces per CPU core.
     util::UniqueFd m_pipeRd; ///< Read end of the signal pipe.
     util::UniqueFd m_pipeWr; ///< Write end of the signal pipe.
 
