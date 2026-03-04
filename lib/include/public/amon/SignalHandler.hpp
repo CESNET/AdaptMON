@@ -42,7 +42,7 @@ namespace amon {
  *   All other signals that have not been mentioned are handled using their default handler.
  *
  * Example use:
- * \code{.cpp}
+ * @code{.cpp}
  * int main()
  * {
  *     amon::SignalHandler::install();
@@ -67,7 +67,7 @@ namespace amon {
  *
  *     return 0;
  * }
- * \endcode
+ * @endcode
  *
  * Note: The `SignalHandler::waitForSignals()` method can be potentially called from any thread.
  * There is no limitation that would require it to be called from the main thread as in the example.
