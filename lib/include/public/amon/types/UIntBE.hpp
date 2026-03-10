@@ -11,8 +11,42 @@
 
 #include <bit>
 #include <cstdint>
+#include <type_traits>
 
 namespace amon::types {
+
+/**
+ * @brief Byte-swaps the given integral value.
+ *
+ * This function swaps the byte order of the input value, effectively converting
+ * between little-endian and big-endian representations. For 1-byte values, the
+ * input is returned unchanged. For 2, 4, and 8-byte values, the appropriate
+ * built-in byte swap function is used. For other sizes, compilation will fail.
+ *
+ * @tparam T Integral type to be byte-swapped.
+ * @param value The value to byte-swap.
+ * @return The byte-swapped value.
+ * @note Requires T to be an integral type.
+ */
+template <typename T>
+constexpr T byteswap(T value) noexcept
+{
+#if defined(__clang__) && (__clang_major__ < 23)
+    static_assert(std::is_integral_v<T>, "byteswap requires integral type");
+
+    if constexpr (sizeof(T) == 1) {
+        return value;
+    } else if constexpr (sizeof(T) == 2) {
+        return __builtin_bswap16(value);
+    } else if constexpr (sizeof(T) == 4) {
+        return __builtin_bswap32(value);
+    } else if constexpr (sizeof(T) == 8) {
+        return __builtin_bswap64(value);
+    }
+#else
+    return std::byteswap(value);
+#endif
+}
 
 /**
  * @brief Template class representing an unsigned integer stored in big-endian format.
@@ -42,7 +76,7 @@ public:
     {
         if constexpr (std::endian::native == std::endian::little) {
             // Convert from host to big-endian
-            m_value = std::byteswap(valueHostEndian);
+            m_value = byteswap(valueHostEndian);
         } else {
             // Already in big-endian
             m_value = valueHostEndian;
@@ -57,7 +91,7 @@ public:
     operator UIntT() const noexcept
     {
         if constexpr (std::endian::native == std::endian::little) {
-            return std::byteswap(m_value); // Convert from big-endian to host
+            return byteswap(m_value); // Convert from big-endian to host
         } else {
             return m_value; // Already in host-endian
         }

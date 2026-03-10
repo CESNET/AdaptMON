@@ -216,10 +216,80 @@ class IPv6HopByHopView
 };
 
 /**
+ * @brief Represents an IPv6 Routing Header (RFC 2460, Section 4.4).
+ */
+struct [[gnu::packed]] IPv6RoutingHeader {
+    /** Next header type (identifies the type of header immediately following this header) */
+    types::UInt8 nextHeader;
+    /** Length of the routing header in 8-octet units, not including the first 8 octets */
+    types::UInt8 length;
+    /** Routing type (specifies the particular routing header variant) */
+    types::UInt8 routingType;
+    /** Number of route segments remaining */
+    types::UInt8 segmentsLeft;
+};
+
+/**
  * @brief Layer view for IPv6 Routing extension headers.
  */
-class IPv6RoutingView : public IPv6ExtensionViewBase<IPv6RoutingView, LayerType::IPV6_OPT_ROUTING> {
-    using IPv6ExtensionViewBase::IPv6ExtensionViewBase; // inherit constructor
+class IPv6RoutingView : public LayerView<IPv6RoutingHeader> {
+public:
+    /// Layer type identifier for IPv6 fragment headers.
+    static const LayerType LAYER_TYPE = LayerType::IPV6_OPT_ROUTING;
+
+    /**
+     * @brief Create and validate an IPv6RoutingView from a byte span.
+     * @param data Span of bytes containing the IPv6 routing header.
+     * @return std::expected containing IPv6RoutingView or LayerError.
+     */
+    static std::expected<IPv6RoutingView, LayerError>
+    create(std::span<const std::byte> data) noexcept;
+
+    /**
+     * @brief Get the length of the IPv6 header.
+     * @return Length of the fragment header in bytes.
+     */
+    constexpr uint16_t headerLength() const noexcept
+    {
+        return static_cast<uint16_t>(header().length * 8) + 8;
+    }
+
+    /**
+     * @brief Get the payload of the IPv6 header.
+     * @return Span of bytes representing the payload.
+     */
+    std::span<const std::byte> payload() const
+    {
+        // Return the payload starting after the IPv6 routing header
+        return data.subspan(headerLength());
+    }
+
+    /**
+     * @brief Get the next header field from the header.
+     * @return Next header identifier.
+     */
+    uint8_t nextHeader() const noexcept { return header().nextHeader; }
+
+    /**
+     * @brief Get the routing type from the header.
+     * @return The routing type.
+     */
+    uint8_t routingType() const noexcept { return header().routingType; }
+
+    /**
+     * @brief Get the number of segments left from the header.
+     * @return The segments left.
+     */
+    uint8_t segmentsLeft() const noexcept { return header().segmentsLeft; }
+
+    /**
+     * @brief Get the routing data of the IPv6 header.
+     * @return Span of bytes representing the routing data.
+     */
+    std::span<const std::byte> routingData() const
+    {
+        return data.subspan(sizeof(IPv6RoutingHeader), headerLength() - sizeof(IPv6RoutingHeader));
+    }
 };
 
 /**

@@ -268,7 +268,7 @@ std::string Stacktrace::str() const
     for (const auto& frame : frames()) {
         ss << std::dec << std::setfill(' ') << std::setw(2) << (frameCount + 1) << ") ";
         ss << "0x" << std::hex << std::setfill('0') << std::setw(16) << frame.pc << " "
-           << frame.symbol << "+0x" << frame.offsetFromSymbol << "\n";
+           << frame.symbol << "+0x" << frame.offsetFromSymbol << std::dec << "\n";
         ss << "    in " << (!frame.function.empty() ? frame.function : "???") << "()" << " at "
            << (!frame.filename.empty() ? frame.filename : "???") << ":" << frame.line << "\n";
         frameCount++;

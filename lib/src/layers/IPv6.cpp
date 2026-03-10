@@ -40,10 +40,22 @@ IPv6FragmentView::create(std::span<const std::byte> data) noexcept
     return IPv6FragmentView(data);
 }
 
+std::expected<IPv6RoutingView, LayerError>
+IPv6RoutingView::create(std::span<const std::byte> data) noexcept
+{
+    if (data.size() < sizeof(IPv6RoutingHeader)) {
+        return std::unexpected(LayerError::HEADER_SHORT);
+    }
+    return IPv6RoutingView(data);
+}
+
 static_assert(std::is_standard_layout<IPv6Header>(), "Unexpected data type layout for IPv6Header");
 static_assert(
     std::is_standard_layout<IPv6FragmentHeader>(),
     "Unexpected data type layout for IPv6FragmentHeader");
+static_assert(
+    std::is_standard_layout<IPv6RoutingHeader>(),
+    "Unexpected data type layout for IPv6RoutingHeader");
 static_assert(
     std::is_standard_layout<IPv6ExtensionHeader>(),
     "Unexpected data type layout for IPv6ExtensionHeader");
@@ -54,10 +66,14 @@ static_assert(
     std::is_trivially_default_constructible<IPv6FragmentHeader>(),
     "Unexpected construction for IPv6FragmentHeader");
 static_assert(
+    std::is_trivially_default_constructible<IPv6RoutingHeader>(),
+    "Unexpected construction for IPv6RoutingHeader");
+static_assert(
     std::is_trivially_default_constructible<IPv6ExtensionHeader>(),
     "Unexpected construction for IPv6ExtensionHeader");
 static_assert(sizeof(IPv6Header) == 40, "IPv6Header size must be 40 bytes");
 static_assert(sizeof(IPv6FragmentHeader) == 8, "IPv6FragmentHeader size must be 8 bytes");
+static_assert(sizeof(IPv6RoutingHeader) == 4, "IPv6RoutingHeader size must be 4 bytes");
 static_assert(sizeof(IPv6ExtensionHeader) == 2, "IPv6ExtensionHeader size must be 2 bytes");
 
 TEST_CASE("IPv6View create valid IPv6 header")
@@ -167,6 +183,47 @@ TEST_CASE("IPv6FragmentView create valid fragment header")
     CHECK(view.fragmentOffset() == 181); // Only upper 13 bits, in 8-byte units
     CHECK(view.moreFragmentsFollow());
     CHECK(view.payload().size() == 0);
+}
+
+TEST_CASE("IPv6RoutingView header too short")
+{
+    std::vector<std::byte> bytes(2, std::byte {0});
+    auto result = IPv6RoutingView::create(std::span<const std::byte>(bytes));
+    CHECK(result.error() == LayerError::HEADER_SHORT);
+}
+
+TEST_CASE("IPv6RoutingView create valid routing header")
+{
+    // Next Header = 0x3A (ICMPv6), Length = 2 (header is 24 bytes: 2*8+8)
+    // Routing Type = 1, Segments Left = 3, Routing Data = 20 bytes (arbitrary)
+    /* clang-format off */
+    const unsigned char packet[] = {
+        0x3A, // Next Header
+        0x02, // Length (2*8+8 = 24 bytes total)
+        0x01, // Routing Type
+        0x03, // Segments Left
+        // Routing Data (20 bytes)
+        0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x11, 0x22, 0x33, 0x44,
+        0x55, 0x66, 0x77, 0x88, 0x99, 0x00, 0x12, 0x34, 0x56, 0x78
+    };
+    /* clang-format on */
+    const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
+
+    auto result = IPv6RoutingView::create(frame);
+    REQUIRE(result.has_value());
+    auto view = result.value();
+
+    CHECK(view.headerLength() == 24);
+    CHECK(view.nextHeader() == 0x3A);
+    CHECK(view.routingType() == 0x01);
+    CHECK(view.segmentsLeft() == 0x03);
+    CHECK(view.routingData().size() == 20);
+    CHECK(view.payload().size() == 0);
+
+    // Optionally check routingData contents
+    const auto routingData = view.routingData();
+    CHECK(reinterpret_cast<const unsigned char*>(routingData.data())[0] == 0xAA);
+    CHECK(reinterpret_cast<const unsigned char*>(routingData.data())[19] == 0x78);
 }
 
 } // namespace amon::layers

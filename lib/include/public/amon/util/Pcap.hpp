@@ -120,6 +120,18 @@ public:
      */
     int linkLayerType() const;
 
+    /**
+     * @brief Returns the current position in the underlying file stream.
+     * @return The current position as an unsigned 64-bit integer.
+     */
+    uint64_t tell() const;
+
+    /**
+     * @brief Returns the position at the end of the underlying file stream.
+     * @return The end position as an unsigned 64-bit integer.
+     */
+    uint64_t tellEnd() const;
+
 private:
     std::unique_ptr<pcap_t, detail::PcapClose> m_pcap;
     PcapTimestampPrecision m_precision;
