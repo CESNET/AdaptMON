@@ -86,6 +86,7 @@ elif [ "$OS_ID" = ol ] && [ "$OS_VERSION_MAJOR" = 10 ]; then
     # OL10 comes with gcc 14 by default, but misses libasan-static package
     GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-15}
     USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
+    INSTALL_UV=${INSTALL_UV-true}
 fi
 
 echo
@@ -93,6 +94,7 @@ echo "*** Setting up CPP development tools ***"
 USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
 GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-14}
 GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-false}
+INSTALL_UV=${INSTALL_UV-false}
 
 dnf install -y \
     cmake make rpm-build \
@@ -128,3 +130,11 @@ fi
 
 dnf install -y \
     libpcap-devel
+
+echo
+echo "*** Installing python tools ***"
+if [ "$INSTALL_UV" = true ]; then
+    dnf install -y uv
+else
+    echo "WARNING: Package uv is not installed"
+fi
