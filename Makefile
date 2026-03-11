@@ -134,3 +134,8 @@ custom-checks:
 	done; \
 	exit $$rc
 .PHONY: custom-checks
+
+# don't be afraid to add Python tests for your applications to this target
+pytest: build
+	cd apps/pcap-anonymizer && uv run pytest -v
+.PHONY: pytest
