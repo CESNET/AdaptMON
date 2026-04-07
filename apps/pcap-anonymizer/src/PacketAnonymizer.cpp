@@ -83,16 +83,12 @@ void PacketAnonymizer::anonymizeLayer(std::span<std::byte> data, amon::layers::L
 
     case amon::layers::LayerType::TCP: {
         auto [tcpHdr, rest] = take<amon::layers::TCPHeader>(data);
-        m_valueAnon.anonymize(tcpHdr.sourcePort);
-        m_valueAnon.anonymize(tcpHdr.destinationPort);
         m_valueAnon.anonymize(rest);
         m_stats.nTCP++;
     } break;
 
     case amon::layers::LayerType::UDP: {
         auto [udpHdr, rest] = take<amon::layers::UDPHeader>(data);
-        m_valueAnon.anonymize(udpHdr.sourcePort);
-        m_valueAnon.anonymize(udpHdr.destinationPort);
         m_valueAnon.anonymize(rest);
         m_stats.nUDP++;
     } break;
