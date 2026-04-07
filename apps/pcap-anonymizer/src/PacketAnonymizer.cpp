@@ -83,12 +83,14 @@ void PacketAnonymizer::anonymizeLayer(std::span<std::byte> data, amon::layers::L
 
     case amon::layers::LayerType::TCP: {
         auto [tcpHdr, rest] = take<amon::layers::TCPHeader>(data);
+        tcpHdr.checksum = 0;
         m_valueAnon.anonymize(rest);
         m_stats.nTCP++;
     } break;
 
     case amon::layers::LayerType::UDP: {
         auto [udpHdr, rest] = take<amon::layers::UDPHeader>(data);
+        udpHdr.checksum = 0;
         m_valueAnon.anonymize(rest);
         m_stats.nUDP++;
     } break;
@@ -97,6 +99,7 @@ void PacketAnonymizer::anonymizeLayer(std::span<std::byte> data, amon::layers::L
         auto [ipv4Hdr, rest] = take<amon::layers::IPv4Header>(data);
         m_valueAnon.anonymize(ipv4Hdr.sourceAddress);
         m_valueAnon.anonymize(ipv4Hdr.destinationAddress);
+        ipv4Hdr.headerChecksum = 0;
         m_valueAnon.anonymize(rest);
         m_stats.nIPv4++;
     } break;
@@ -132,12 +135,14 @@ void PacketAnonymizer::anonymizeLayer(std::span<std::byte> data, amon::layers::L
 
     case amon::layers::LayerType::ICMP: {
         auto [icmpHdr, rest] = take<amon::layers::ICMPHeader>(data);
+        icmpHdr.checksum = 0;
         m_valueAnon.anonymize(rest);
         m_stats.nICMP++;
     } break;
 
     case amon::layers::LayerType::ICMPV6: {
         auto [icmpv6Hdr, rest] = take<amon::layers::ICMPv6Header>(data);
+        icmpv6Hdr.checksum = 0;
         m_valueAnon.anonymize(rest);
         m_stats.nICMPv6++;
     } break;
