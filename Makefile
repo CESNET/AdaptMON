@@ -8,15 +8,15 @@ build: $(BUILD_TYPE)
 .PHONY: build
 
 release-build:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Release $(shell pwd) && make -j $(shell nproc)
 .PHONY: release-build
 
 debug-build:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 $(shell pwd) && make -j $(shell nproc)
 .PHONY: debug-build
 
 debug-build-strict:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 .. && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 $(shell pwd) && make -j $(shell nproc)
 .PHONY: debug-build-strict
 
 test: $(if $(filter debug-build%,$(BUILD_TYPE)),$(BUILD_TYPE),debug-build)
@@ -39,12 +39,12 @@ format-fix:
 .PHONY: format-fix
 
 tidy:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $(shell pwd)
 	run-clang-tidy -p $(BUILD_DIR) -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
 .PHONY: tidy
 
 tidy-fix:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $(shell pwd)
 	run-clang-tidy -p $(BUILD_DIR) -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
 .PHONY: tidy-fix
 
@@ -57,11 +57,11 @@ format-cmake-fix:
 .PHONY: format-cmake-fix
 
 doxygen:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug .. && make doxygen
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug $(shell pwd) && make doxygen
 .PHONY: doxygen
 
 doxygen-strict:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug -DDOXYGEN_WARN_AS_ERROR=FAIL_ON_WARNINGS .. && make doxygen
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DENABLE_DOXYGEN=On -DCMAKE_BUILD_TYPE=Debug -DDOXYGEN_WARN_AS_ERROR=FAIL_ON_WARNINGS $(shell pwd) && make doxygen
 .PHONY: doxygen-strict
 
 editorconfig:
