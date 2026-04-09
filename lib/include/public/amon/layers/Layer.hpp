@@ -13,6 +13,8 @@
 #include <format>
 #include <stdexcept>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 
 namespace amon::layers {
 
@@ -21,23 +23,28 @@ static constexpr uint16_t LAYERTYPE_L2 = 0x2000; ///< Layer 2 type base
 static constexpr uint16_t LAYERTYPE_L3 = 0x3000; ///< Layer 3 type base
 static constexpr uint16_t LAYERTYPE_L4 = 0x4000; ///< Layer 4 type base
 
+/// Bit flag that marks "key" layer, typically the first and most important layer of a given layer
+/// group (L2, L3, L4) in a packet. The flag is used by the PacketParser which notes a key layer
+/// into the PacketLayout. Non-key layers are skipped in the PacketLayout.
+static constexpr uint16_t LAYERTYPE_KEY = 0x8000;
+
 /**
  * @brief Enumeration of supported layer types.
  */
 enum class LayerType : uint16_t {
     ERROR = 0x00,
     UNKNOWN = 0x01,
-    PAYLOAD_APP = 0x02,
+    PAYLOAD_APP = LAYERTYPE_KEY | 0x02,
     PAYLOAD_IP_FRAGMENT = 0x03,
 
     RAW = LAYERTYPE_LINK | 0x01, // DLT_RAW (packet starts with IPv4 or IPv6)
 
-    ETHERNET = LAYERTYPE_L2 | 0x01,
+    ETHERNET = LAYERTYPE_KEY | LAYERTYPE_L2 | 0x01,
     MPLS = LAYERTYPE_L2 | 0x02,
     VLAN = LAYERTYPE_L2 | 0x03,
 
-    IPV4 = LAYERTYPE_L3 | 0x01,
-    IPV6 = LAYERTYPE_L3 | 0x02,
+    IPV4 = LAYERTYPE_KEY | LAYERTYPE_L3 | 0x01,
+    IPV6 = LAYERTYPE_KEY | LAYERTYPE_L3 | 0x02,
     // generic extensions that have the same structure of header, use for extensions that
     // have not own type in this enum
     IPV6_OPT_GENERIC = LAYERTYPE_L3 | 0x03,
@@ -45,14 +52,14 @@ enum class LayerType : uint16_t {
     IPV6_OPT_HOPBYHOP = LAYERTYPE_L3 | 0x05,
     IPV6_OPT_ROUTING = LAYERTYPE_L3 | 0x06,
     AUTHENTICATION_HEADER = LAYERTYPE_L3 | 0x07,
-    ESP = LAYERTYPE_L3 | 0x08,
-    IPV6_OPT_DESTINATION_OPTIONS = LAYERTYPE_L3 | 0x09,
-    ICMP = LAYERTYPE_L3 | 0x0A,
-    ICMPV6 = LAYERTYPE_L3 | 0x0B,
+    IPV6_OPT_DESTINATION_OPTIONS = LAYERTYPE_L3 | 0x08,
 
-    UDP = LAYERTYPE_L4 | 0x01,
-    TCP = LAYERTYPE_L4 | 0x02,
-    GRE = LAYERTYPE_L4 | 0x03,
+    UDP = LAYERTYPE_KEY | LAYERTYPE_L4 | 0x01,
+    TCP = LAYERTYPE_KEY | LAYERTYPE_L4 | 0x02,
+    GRE = LAYERTYPE_KEY | LAYERTYPE_L4 | 0x03,
+    ICMP = LAYERTYPE_KEY | LAYERTYPE_L4 | 0x04,
+    ICMPV6 = LAYERTYPE_KEY | LAYERTYPE_L4 | 0x05,
+    ESP = LAYERTYPE_KEY | LAYERTYPE_L4 | 0x06,
 };
 
 /**
@@ -119,8 +126,25 @@ constexpr std::string_view layerTypeToString(LayerType type)
  */
 constexpr uint16_t layerTypeBase(LayerType type) noexcept
 {
-    static_assert(sizeof(LayerType) == 2, "LayerType must be uint16_t.");
-    return static_cast<uint16_t>(type) & 0xF000;
+    static_assert(
+        std::is_same_v<uint16_t, decltype(std::to_underlying(type))>,
+        "LayerType must be uint16_t.");
+    constexpr uint16_t mask = LAYERTYPE_LINK | LAYERTYPE_L2 | LAYERTYPE_L3 | LAYERTYPE_L4;
+    return static_cast<uint16_t>(type) & mask;
+}
+
+/**
+ * @brief Check if LayerType has the "key" bit set which indicates it should be noted in
+ * PacketLayout.
+ * @param type LayerType value.
+ * @return True if the layer type is a key layer, false otherwise.
+ */
+constexpr bool layerTypeIsKey(LayerType type) noexcept
+{
+    static_assert(
+        std::is_same_v<uint16_t, decltype(std::to_underlying(type))>,
+        "LayerType must be uint16_t.");
+    return (static_cast<uint16_t>(type) & LAYERTYPE_KEY) != 0;
 }
 
 /**

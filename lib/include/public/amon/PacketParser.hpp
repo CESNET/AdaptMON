@@ -173,6 +173,10 @@ struct PacketParserConfig {
  * @brief Packet parser class.
  *
  * Provides method to parse raw packet data and populate Packet structure.
+ *
+ * @warning This class is NOT thread-safe. Do not call parse() method concurrently from multiple
+ * threads on the same PacketParser instance. Each thread should use its own PacketParser instance
+ * for thread-safe operation.
  */
 class PacketParser {
 public:
@@ -212,6 +216,8 @@ protected:
      * @param packet Packet being parsed.
      * @param currentOffset Current offset in the packet data.
      * @return Expected containing the added layer view on success, or LayerError on failure.
+     *
+     * @note Packet layout is updated if parsing and adding layer is successful.
      */
     template <typename LayerViewT>
     std::expected<LayerViewT, layers::LayerError>
@@ -225,6 +231,7 @@ protected:
         if (layerOrError) {
             PacketLayer layer {.type = LayerViewT::LAYER_TYPE, .offset = currentOffset};
             packet.layers.pushBack(layer);
+            addToLayout<LayerViewT::LAYER_TYPE>(packet);
         } else {
             ErrorLayer error {
                 .type = LayerViewT::LAYER_TYPE,
@@ -233,6 +240,29 @@ protected:
             packet.layers.pushBack(error);
         }
         return layerOrError;
+    }
+
+    /**
+     * @brief Add last inserted layer to packet layout based on its type.
+     * @tparam LayerType_ Type of the layer being added.
+     * @param packet Packet being parsed.
+     */
+    template <layers::LayerType LayerType_>
+    void addToLayout(Packet& packet)
+    {
+        assert(!packet.layers.empty());
+
+        if constexpr (layerTypeIsKey(LayerType_)) {
+            if constexpr (layerTypeBase(LayerType_) == layers::LAYERTYPE_L2) {
+                addToLayoutHelper<&PacketLayout::l2, 2>(packet);
+            } else if constexpr (layerTypeBase(LayerType_) == layers::LAYERTYPE_L3) {
+                addToLayoutHelper<&PacketLayout::l3, 3>(packet);
+            } else if constexpr (layerTypeBase(LayerType_) == layers::LAYERTYPE_L4) {
+                addToLayoutHelper<&PacketLayout::l4, 4>(packet);
+            } else if constexpr (LayerType_ == layers::LayerType::PAYLOAD_APP) {
+                addToLayoutHelper<&PacketLayout::l7, 7>(packet);
+            }
+        }
     }
 
     /**
@@ -305,7 +335,37 @@ private:
     layers::LayerError processAH(Packet& packet, uint16_t offset);
     static layers::LayerError processUnknown(Packet& packet, uint16_t offset);
 
+    /**
+     * @brief Add last inserted layer to packet layout.
+     * @tparam PacketLayoutMember Pointer to a member in PacketLayout structure which should be
+     * updated.
+     * @tparam LayerIndex OSI layer number (2=L2, 3=L3, 4=L4) for tracking the current layer level.
+     * @param packet Packet being parsed.
+     */
+    template <auto PacketLayoutMember, unsigned LayerIndex>
+        requires std::is_member_object_pointer_v<decltype(PacketLayoutMember)>
+    void addToLayoutHelper(Packet& packet)
+    {
+        if (m_layoutLastLayerIndex >= LayerIndex) {
+            // new encapsulation level detected
+            if (packet.layout.full()) {
+                // parsed packet has more encapsulations than supported by packet layout
+                // ensure that any layer will not be added to the layout
+                m_layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
+                return;
+            }
+            packet.layout.emplaceBack();
+        }
+
+        auto& layout = packet.layout.back();
+        if (!(layout.*PacketLayoutMember)) {
+            layout.*PacketLayoutMember = packet.layers.size() - 1;
+            m_layoutLastLayerIndex = LayerIndex;
+        }
+    }
+
     PacketParserConfig m_config;
+    unsigned m_layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
 };
 
 } // namespace amon

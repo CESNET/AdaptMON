@@ -36,6 +36,8 @@ LayerError PacketParser::parse(Packet& packet, LayerType firstLayer, const uint1
 LayerError
 PacketParser::parse(Packet& packet, LayerTypeVariant firstLayer, const uint16_t startOffset)
 {
+    m_layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
+
     if (std::holds_alternative<PacketParserLinkType>(firstLayer)) {
         return processLinktype(packet, startOffset, std::get<PacketParserLinkType>(firstLayer));
     }
@@ -156,6 +158,9 @@ PacketParser::processPayload(Packet& packet, const uint16_t offset, LayerType pa
         }
         PacketLayer layer {.type = payloadType, .offset = offset};
         packet.layers.pushBack(layer);
+        if (payloadType == LayerType::PAYLOAD_APP) {
+            addToLayout<LayerType::PAYLOAD_APP>(packet);
+        }
     }
     return LayerError::NONE;
 }
@@ -430,6 +435,11 @@ TEST_CASE("PacketParser simple packet parsing")
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::PAYLOAD_APP);
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 42);
+
+    CHECK_EQ(packet.layout[0].l2, 0);
+    CHECK_EQ(packet.layout[0].l3, 1);
+    CHECK_EQ(packet.layout[0].l4, 2);
+    CHECK_EQ(packet.layout[0].l7, 3);
 }
 
 TEST_CASE("PacketParser IP in IP parsing")
@@ -464,6 +474,16 @@ TEST_CASE("PacketParser IP in IP parsing")
 
         CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::ICMP);
         CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 54);
+
+        // outer
+        CHECK_EQ(packet.layout[0].l2, 0);
+        CHECK_EQ(packet.layout[0].l3, 1);
+        CHECK(!packet.layout[0].l4);
+        CHECK(!packet.layout[0].l7);
+        // inner
+        CHECK_EQ(packet.layout[1].l3, 2);
+        CHECK_EQ(packet.layout[1].l4, 3);
+        CHECK(!packet.layout[1].l7);
     }
 
     SUBCASE("IPv6 in IPv4")
@@ -497,6 +517,16 @@ TEST_CASE("PacketParser IP in IP parsing")
 
         CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::TCP);
         CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 78);
+
+        // outer
+        CHECK_EQ(packet.layout[0].l2, 0);
+        CHECK_EQ(packet.layout[0].l3, 2);
+        CHECK(!packet.layout[0].l4);
+        CHECK(!packet.layout[0].l7);
+        // inner
+        CHECK_EQ(packet.layout[1].l3, 3);
+        CHECK_EQ(packet.layout[1].l4, 4);
+        CHECK(!packet.layout[1].l7);
     }
 }
 
@@ -523,6 +553,11 @@ TEST_CASE("PacketParser SYN TCP parsing")
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 34);
 
     CHECK_EQ(packet.layers.size(), 3);
+
+    CHECK_EQ(packet.layout[0].l2, 0);
+    CHECK_EQ(packet.layout[0].l3, 1);
+    CHECK_EQ(packet.layout[0].l4, 2);
+    CHECK_EQ(packet.layout.size(), 1);
 }
 
 TEST_CASE("PacketParser standard MPLS with IP continuing")
@@ -558,6 +593,10 @@ TEST_CASE("PacketParser standard MPLS with IP continuing")
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::UNKNOWN);
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 66);
+
+    CHECK_EQ(packet.layout[0].l2, 0);
+    CHECK_EQ(packet.layout[0].l3, 4);
+    CHECK(!packet.layout[0].l7);
 }
 
 TEST_CASE("PacketParser pseudo-wire MPLS without control-word packet parsing")
@@ -598,6 +637,12 @@ TEST_CASE("PacketParser pseudo-wire MPLS without control-word packet parsing")
     CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 60);
 
     CHECK_EQ(packet.layers.size(), 7);
+
+    CHECK_EQ(packet.layout[0].l2, 0);
+    CHECK_EQ(packet.layout[1].l2, 3);
+    CHECK_EQ(packet.layout[1].l3, 5);
+    CHECK_EQ(packet.layout[1].l4, 6);
+    CHECK(!packet.layout[1].l7);
 }
 
 } // namespace amon
