@@ -6,6 +6,7 @@ add_library(amon-lib
     src/conf/Scalar.cpp
     src/conf/Struct.cpp
     src/conf/yaml.cpp
+    src/dpdk/PktBurst.cpp
     src/Error.cpp
     src/hello.cpp
     src/layers/AuthenticationHeader.cpp
