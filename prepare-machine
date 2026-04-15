@@ -129,7 +129,9 @@ else
 fi
 
 dnf install -y \
-    libpcap-devel
+    libpcap-devel \
+    dpdk dpdk-devel dpdk-tools \
+
 
 echo
 echo "*** Installing python tools ***"
