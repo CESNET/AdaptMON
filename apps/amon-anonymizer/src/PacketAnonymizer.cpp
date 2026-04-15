@@ -9,6 +9,8 @@
 
 #include <amon/Error.hpp>
 #include <amon/amon.hpp>
+#include <amon/layers/AuthenticationHeader.hpp>
+#include <amon/layers/ESP.hpp>
 #include <amon/layers/Ethernet.hpp>
 #include <amon/layers/ICMP.hpp>
 #include <amon/layers/ICMPv6.hpp>
@@ -145,6 +147,17 @@ void PacketAnonymizer::anonymizeLayer(std::span<std::byte> data, amon::layers::L
         icmpv6Hdr.checksum = 0;
         m_valueAnon.anonymize(rest);
         m_stats.nICMPv6++;
+    } break;
+
+    case amon::layers::LayerType::AUTHENTICATION_HEADER: {
+        auto [ahHdr, rest] = take<amon::layers::AuthenticationHeader>(data);
+        m_valueAnon.anonymize(rest);
+    } break;
+
+    case amon::layers::LayerType::ESP: {
+        auto [espHdr, rest] = take<amon::layers::ESPHeader>(data);
+        m_valueAnon.anonymize(rest);
+        m_stats.nESP++;
     } break;
 
     default: {
