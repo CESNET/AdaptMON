@@ -22,6 +22,7 @@ add_library(amon-lib
     src/layers/TCPOptions.cpp
     src/layers/UDP.cpp
     src/layers/VLAN.cpp
+    src/linuxos/Hugepages.cpp
     src/Logger.cpp
     src/Packet.cpp
     src/PacketParser.cpp
