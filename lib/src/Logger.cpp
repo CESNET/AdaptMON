@@ -54,11 +54,6 @@ static spdlog::level::level_enum toSpdLogLevel(LoggerLevel level)
         "Invalid log level provided: " + std::to_string(static_cast<int>(level)));
 }
 
-Logger Logger::get(const std::string& name)
-{
-    return LoggerProvider::instance().getLogger(name);
-}
-
 void Logger::setLevel(LoggerLevel level)
 {
     m_logger->set_level(toSpdLogLevel(level));
@@ -104,28 +99,32 @@ void Logger::log(LoggerLevel level, LoggerFmtString fmt, std::format_args&& args
         "Invalid log level provided: " + std::to_string(static_cast<int>(level)));
 }
 
-LoggerProvider& LoggerProvider::instance()
+Logger LoggerProvider::get(const std::string& name)
 {
-    static LoggerProvider instance;
-    return instance;
-}
-
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
-Logger LoggerProvider::getLogger(const std::string& name)
-{
-    return Logger(name);
+    return LoggerProvider::instance().getImpl(name);
 }
 
 void LoggerProvider::setGlobalLogLevel(LoggerLevel level)
 {
-    spdlog::set_level(toSpdLogLevel(level));
+    LoggerProvider::instance().setGlobalLogLevelImpl(level);
 }
-// NOLINTEND(readability-convert-member-functions-to-static)
 
 LoggerProvider::LoggerProvider()
 {
     spdlog::set_pattern(LOGGER_PATTERN);
     setGlobalLogLevel(DEFAULT_LOGGER_LEVEL);
 }
+
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+Logger LoggerProvider::getImpl(const std::string& name)
+{
+    return Logger(name);
+}
+
+void LoggerProvider::setGlobalLogLevelImpl(LoggerLevel level)
+{
+    spdlog::set_level(toSpdLogLevel(level));
+}
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 } // namespace amon
