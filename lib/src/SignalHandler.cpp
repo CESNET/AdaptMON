@@ -224,7 +224,7 @@ void deadlySignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noe
     dumpSigInfo(sigNum, sigInfo, printBuf);
     printBuf.append("\n");
     printBuf.append("Stacktrace:\n");
-    StacktraceProvider::instance().dump(printBuf, /*skipFrames=*/1);
+    StacktraceProvider::dump(printBuf, /*skipFrames=*/1);
     printBuf.append("\n");
     write(STDERR_FILENO, printBuf.data(), printBuf.size());
     rethrowSignal(sigNum);
@@ -238,7 +238,7 @@ void debugSignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noex
     dumpSigInfo(sigNum, sigInfo, printBuf);
     printBuf.append("\n");
     printBuf.append("Stacktrace:\n");
-    StacktraceProvider::instance().dump(printBuf, /*skipFrames=*/1);
+    StacktraceProvider::dump(printBuf, /*skipFrames=*/1);
     printBuf.append("\n");
     write(STDERR_FILENO, printBuf.data(), printBuf.size());
 }
@@ -284,7 +284,7 @@ static void terminateHandler [[noreturn]] () noexcept
     }
     printBuf.append("\n");
     printBuf.append("Stacktrace:\n");
-    StacktraceProvider::instance().dump(printBuf, /*skipFrames=*/1);
+    StacktraceProvider::dump(printBuf, /*skipFrames=*/1);
     printBuf.append("\n");
     write(STDERR_FILENO, printBuf.data(), printBuf.size());
     std::abort();

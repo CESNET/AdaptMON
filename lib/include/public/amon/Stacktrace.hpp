@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <amon/types/Singleton.hpp>
 #include <amon/util/CharBuffer.hpp>
 
 #include <cstdint>
@@ -65,7 +66,7 @@ private:
  * @brief Provides stack trace capturing functionality.
  *        Implements a singleton pattern.
  */
-class StacktraceProvider {
+class StacktraceProvider final : private types::Singleton<StacktraceProvider> {
 public:
     /**
      * @brief Print the current stack trace to the provided PrintBuffer.
@@ -76,27 +77,18 @@ public:
      * It avoids allocations and non-signal-safe functions.
      * For non-signal contexts, prefer creating a stacktrace and converting it to string.
      */
-    void dump(util::CharBuffer<>& printBuf, int skipFrames = 0);
-
-    /**
-     * @brief Returns the singleton instance of StacktraceProvider.
-     * @return Reference to the singleton instance.
-     */
-    static StacktraceProvider& instance();
+    static void dump(util::CharBuffer<>& printBuf, int skipFrames = 0);
 
     /**
      * @brief Captures a stack trace.
      * @param skipFrames Number of frames to skip from the top.
      * @return The captured stack trace.
      */
-    Stacktrace createStacktrace(int skipFrames = 0);
-
-    StacktraceProvider(const StacktraceProvider&) = delete;
-    StacktraceProvider(StacktraceProvider&&) = delete;
-    StacktraceProvider& operator=(const StacktraceProvider&) = delete;
-    StacktraceProvider& operator=(StacktraceProvider&&) = delete;
+    static Stacktrace createStacktrace(int skipFrames = 0);
 
 private:
+    friend class types::Singleton<StacktraceProvider>;
+
     /**
      * @brief Construct a StacktraceProvider (private).
      */

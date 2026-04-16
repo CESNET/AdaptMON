@@ -108,7 +108,7 @@ template <typename... Args>
     ss << "Message:   " << std::format(fmt, std::forward<Args>(args)...) << "\n";
     ss << "\n";
     ss << "Stacktrace:\n";
-    ss << StacktraceProvider::instance().createStacktrace(1).str() << "\n";
+    ss << StacktraceProvider::createStacktrace(1).str() << "\n";
     std::cerr << ss.str();
     std::abort();
 }
