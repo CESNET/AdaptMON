@@ -30,6 +30,7 @@ add_library(amon-lib
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
+    src/types/Singleton.cpp
     src/types/Timestamp.cpp
     src/types/UIntBE.cpp
     src/util/ArgParser.cpp
