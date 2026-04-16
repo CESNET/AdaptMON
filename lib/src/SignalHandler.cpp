@@ -290,12 +290,6 @@ static void terminateHandler [[noreturn]] () noexcept
     std::abort();
 }
 
-SignalHandler& SignalHandler::instance()
-{
-    static SignalHandler instance;
-    return instance;
-}
-
 SignalHandler::SignalHandler()
 {
     int pipeFds[2];

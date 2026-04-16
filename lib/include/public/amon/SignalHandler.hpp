@@ -10,6 +10,7 @@
 #pragma once
 
 #include <amon/Stacktrace.hpp>
+#include <amon/types/Singleton.hpp>
 #include <amon/util/UniqueResource.hpp>
 
 #include <csignal>
@@ -105,7 +106,7 @@ namespace amon {
  * @endcode
  *
  */
-class SignalHandler {
+class SignalHandler final : private types::Singleton<SignalHandler> {
 public:
     /**
      * @brief Type alias for a signal handler callback function.
@@ -125,12 +126,6 @@ public:
      */
     using SigActionExtendedCallback
         = void (*)(int sigNum, siginfo_t* sigInfo, void* context) noexcept;
-
-    /**
-     * @brief Get the singleton instance of SignalHandler.
-     * @return Reference to the SignalHandler instance.
-     */
-    static SignalHandler& instance();
 
     /**
      * @brief Installs a signal handler for the specified signal number.
@@ -192,6 +187,7 @@ public:
     static int waitForSignals();
 
 private:
+    friend class types::Singleton<SignalHandler>;
     friend void
     deadlySignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/) noexcept;
     friend void
