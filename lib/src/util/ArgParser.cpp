@@ -269,7 +269,7 @@ ParsedArgs ArgParser::doParse(
 
     // Check if there is any parameter marked "special" provided. If so, skip errors.
     const bool skipErrors
-        = std::ranges::any_of(kwArgs, [](const auto& kwArg) { return kwArg.m_special; });
+        = std::ranges::any_of(res.m_kwArgs, [](const auto& p) { return p.first.m_special; });
 
     // Check that all requires kw args were provided, provide default values for optional
     for (const auto& kwArg : kwArgs) {
@@ -507,6 +507,19 @@ TEST_CASE("ArgParser extra keyword argument throws")
     auto parser = ArgParser {{}, {KwArg('v', "verbose")}}.setAutoHelp(false);
 
     const char* argv[] = {"prog", "-v", "-x"};
+    CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+}
+
+TEST_CASE("ArgParser missing required keyword argument throws")
+{
+    auto parser = ArgParser {
+        {},
+        {
+            KwArg('i').required(true),
+            KwArg('h', "help").special(true),
+        }}.setAutoHelp(false);
+
+    const char* argv[] = {"prog"};
     CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
