@@ -269,7 +269,7 @@ ParsedArgs ArgParser::doParse(
 
     // Check if there is any parameter marked "special" provided. If so, skip errors.
     const bool skipErrors
-        = std::ranges::any_of(kwArgs, [](const auto& kwArg) { return kwArg.m_special; });
+        = std::ranges::any_of(res.m_kwArgs, [](const auto& p) { return p.first.m_special; });
 
     // Check that all requires kw args were provided, provide default values for optional
     for (const auto& kwArg : kwArgs) {
