@@ -510,6 +510,19 @@ TEST_CASE("ArgParser extra keyword argument throws")
     CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
+TEST_CASE("ArgParser missing required keyword argument throws")
+{
+    auto parser = ArgParser {
+        {},
+        {
+            KwArg('i').required(true),
+            KwArg('h', "help").special(true),
+        }}.setAutoHelp(false);
+
+    const char* argv[] = {"prog"};
+    CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+}
+
 TEST_CASE("ArgParser positional argument with multiple values not last throws")
 {
     CHECK_THROWS(
