@@ -112,7 +112,7 @@ void LoggerProvider::setGlobalLogLevel(LoggerLevel level)
 LoggerProvider::LoggerProvider()
 {
     spdlog::set_pattern(LOGGER_PATTERN);
-    setGlobalLogLevel(DEFAULT_LOGGER_LEVEL);
+    setGlobalLogLevelImpl(DEFAULT_LOGGER_LEVEL);
 }
 
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
