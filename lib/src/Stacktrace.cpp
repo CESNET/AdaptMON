@@ -195,12 +195,6 @@ static int backtraceFullCallback(
 
 } // namespace dump_detail
 
-StacktraceProvider& StacktraceProvider::instance()
-{
-    static StacktraceProvider instance;
-    return instance;
-}
-
 StacktraceProvider::StacktraceProvider()
 {
     stacktrace_detail::CallbackContext ctx;
@@ -223,10 +217,10 @@ Stacktrace StacktraceProvider::createStacktrace(int skipFrames)
     Stacktrace stacktrace;
 
     stacktrace_detail::CallbackContext ctx;
-    ctx.state = reinterpret_cast<backtrace_state*>(m_backtraceState);
+    ctx.state = reinterpret_cast<backtrace_state*>(instance().m_backtraceState);
     ctx.frames = &stacktrace.m_frames;
     backtrace_full(
-        reinterpret_cast<backtrace_state*>(m_backtraceState),
+        reinterpret_cast<backtrace_state*>(instance().m_backtraceState),
         skipFrames + 1,
         &stacktrace_detail::backtraceFullCallback,
         &stacktrace_detail::backtraceErrorCallback,
@@ -248,10 +242,10 @@ Stacktrace StacktraceProvider::createStacktrace(int skipFrames)
 void StacktraceProvider::dump(util::CharBuffer<>& printBuf, int skipFrames)
 {
     dump_detail::CallbackContext ctx;
-    ctx.state = reinterpret_cast<backtrace_state*>(m_backtraceState);
+    ctx.state = reinterpret_cast<backtrace_state*>(instance().m_backtraceState);
     ctx.printBuf = &printBuf;
     backtrace_full(
-        reinterpret_cast<backtrace_state*>(m_backtraceState),
+        reinterpret_cast<backtrace_state*>(instance().m_backtraceState),
         skipFrames + 1,
         &dump_detail::backtraceFullCallback,
         &dump_detail::backtraceErrorCallback,

@@ -71,7 +71,7 @@ public:
      */
     Error(const char* message)
         : BasicError(message)
-        , m_stacktrace(StacktraceProvider::instance().createStacktrace(1))
+        , m_stacktrace(StacktraceProvider::createStacktrace(1))
     {
     }
 
@@ -88,7 +88,7 @@ public:
     template <typename... Args>
     Error(std::format_string<Args...> fmt, Args&&... args)
         : BasicError(fmt, std::forward<Args>(args)...)
-        , m_stacktrace(StacktraceProvider::instance().createStacktrace(1))
+        , m_stacktrace(StacktraceProvider::createStacktrace(1))
     {
     }
 

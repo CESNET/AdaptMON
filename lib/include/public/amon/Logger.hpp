@@ -6,10 +6,12 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * @note To simply get a logger instance, use `amon::Logger::get("loggerName")`.
+ * @note To simply get a logger instance, use `amon::LoggerProvider::get("loggerName")`.
  */
 
 #pragma once
+
+#include <amon/types/Singleton.hpp>
 
 #include <format>
 #include <memory>
@@ -75,13 +77,6 @@ class Logger {
 public:
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
-
-    /**
-     * @brief Get a Logger instance by name.
-     * @param name Name of the logger.
-     * @return Logger object.
-     */
-    static Logger get(const std::string& name);
 
     /**
      * @brief Set the logging level for this logger.
@@ -215,25 +210,14 @@ private:
  *
  * Use this class to obtain named Logger instances and to set global logging options.
  */
-class LoggerProvider {
+class LoggerProvider final : private types::Singleton<LoggerProvider> {
 public:
-    LoggerProvider(const LoggerProvider&) = delete;
-    LoggerProvider(LoggerProvider&&) = delete;
-    LoggerProvider& operator=(const LoggerProvider&) = delete;
-    LoggerProvider& operator=(LoggerProvider&&) = delete;
-
-    /**
-     * @brief Get the singleton instance of LoggerProvider.
-     * @return Reference to the LoggerProvider instance.
-     */
-    static LoggerProvider& instance();
-
     /**
      * @brief Get a Logger instance by name.
      * @param name Name of the logger.
      * @return Logger object.
      */
-    Logger getLogger(const std::string& name);
+    static Logger get(const std::string& name);
 
     /**
      * @brief Set the global logging level for all loggers.
@@ -241,13 +225,14 @@ public:
      * @note This also affects loggers that have already been created.
      *       Even loggers with explicitly set levels.
      */
-    void setGlobalLogLevel(LoggerLevel level);
+    static void setGlobalLogLevel(LoggerLevel level);
 
 private:
-    /**
-     * @brief Construct the LoggerProvider singleton.
-     */
+    friend class types::Singleton<LoggerProvider>;
+
     LoggerProvider();
+    Logger getImpl(const std::string& name);
+    void setGlobalLogLevelImpl(LoggerLevel level);
 };
 
 } // namespace amon
