@@ -109,6 +109,18 @@ public:
     }
 
     /**
+     * @brief Access the managed resource.
+     * @return Pointer to the managed resource.
+     */
+    ValueType* operator->() { return &get(); }
+
+    /**
+     * @brief Access the managed resource.
+     * @return Const pointer to the managed resource.
+     */
+    const ValueType* operator->() const { return &get(); }
+
+    /**
      * @brief Replace the managed resource. Releases any currently held resource.
      * @param value New resource to manage.
      */
@@ -136,6 +148,19 @@ public:
      * @return True if a resource is held, false otherwise.
      */
     bool hasValue() const noexcept { return m_resource.has_value(); }
+
+    /**
+     * @brief Get a reference to the managed resource.
+     * @return Reference to the resource.
+     * @throw logic_error if no resource is held.
+     */
+    ValueType& get()
+    {
+        if (!m_resource.has_value()) {
+            throw std::logic_error("get() called on UniqueResource that holds no value");
+        }
+        return m_resource.value();
+    }
 
     /**
      * @brief Get a const reference to the managed resource.
