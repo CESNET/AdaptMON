@@ -75,9 +75,6 @@ private:
  */
 class Logger {
 public:
-    Logger(const Logger&) = delete;
-    Logger& operator=(const Logger&) = delete;
-
     /**
      * @brief Set the logging level for this logger.
      * @param level The minimum LogLevel to log.
