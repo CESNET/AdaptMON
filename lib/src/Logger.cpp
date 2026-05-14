@@ -67,7 +67,7 @@ Logger::Logger(const std::string& name)
     }
 }
 
-void Logger::log(LoggerLevel level, LoggerFmtString fmt, std::format_args&& args)
+void Logger::log(LoggerLevel level, LoggerFmtString fmt, std::format_args&& args) const
 {
     auto message = std::vformat(fmt.m_fmt, args);
     std::string_view filename = pathToFilename(fmt.m_loc.file_name());
