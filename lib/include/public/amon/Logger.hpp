@@ -93,7 +93,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void trace(LoggerFmtString fmt, Args... args)
+    void trace(LoggerFmtString fmt, Args... args) const
     {
         log(LoggerLevel::TRACE, fmt, std::make_format_args(args...));
     }
@@ -110,7 +110,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void info(LoggerFmtString fmt, Args... args)
+    void info(LoggerFmtString fmt, Args... args) const
     {
         log(LoggerLevel::INFO, fmt, std::make_format_args(args...));
     }
@@ -127,7 +127,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void error(LoggerFmtString fmt, Args... args)
+    void error(LoggerFmtString fmt, Args... args) const
     {
         log(LoggerLevel::ERR, fmt, std::make_format_args(args...));
     }
@@ -144,7 +144,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void debug(LoggerFmtString fmt, Args... args)
+    void debug(LoggerFmtString fmt, Args... args) const
     {
         log(LoggerLevel::DEBUG, fmt, std::make_format_args(args...));
     }
@@ -161,7 +161,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void warn(LoggerFmtString fmt, Args... args)
+    void warn(LoggerFmtString fmt, Args... args) const
     {
         log(LoggerLevel::WARN, fmt, std::make_format_args(args...));
     }
@@ -178,7 +178,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void critical(LoggerFmtString fmt, Args... args)
+    void critical(LoggerFmtString fmt, Args... args) const
     {
         log(LoggerLevel::CRITICAL, fmt, std::make_format_args(args...));
     }
@@ -196,7 +196,7 @@ private:
      * @param fmt Format string for the message.
      * @param args Arguments to format the message.
      */
-    void log(LoggerLevel level, LoggerFmtString fmt, std::format_args&& args);
+    void log(LoggerLevel level, LoggerFmtString fmt, std::format_args&& args) const;
 
     friend class LoggerProvider;
     std::shared_ptr<spdlog::logger> m_logger; ///< Underlying spdlog logger instance.
