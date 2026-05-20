@@ -38,6 +38,10 @@ format-fix:
 	find lib/ apps/ -type f -regex '.*\.\(cpp\|hpp\|c\|h\)' -print0 | xargs -0 clang-format -i --Werror
 .PHONY: format-fix
 
+compile-commands:
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $(shell pwd)
+.PHONY: compile-commands
+
 tidy:
 	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $(shell pwd)
 	run-clang-tidy -p $(BUILD_DIR) -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
