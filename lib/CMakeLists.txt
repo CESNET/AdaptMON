@@ -22,6 +22,7 @@ add_library(amon-lib
     src/layers/TCPOptions.cpp
     src/layers/UDP.cpp
     src/layers/VLAN.cpp
+    src/linuxos/Hugepages.cpp
     src/Logger.cpp
     src/Packet.cpp
     src/PacketParser.cpp
@@ -37,6 +38,7 @@ add_library(amon-lib
     src/util/ArgvList.cpp
     src/util/getopt.cpp
     src/util/Human.cpp
+    src/util/io.cpp
     src/util/numeric.cpp
     src/util/Pcap.cpp
     src/util/string.cpp
