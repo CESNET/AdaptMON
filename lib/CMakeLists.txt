@@ -55,6 +55,7 @@ target_link_libraries(amon-lib
         spdlog::spdlog
         yaml-cpp
     PUBLIC
+        PkgConfig::libdpdk
         PkgConfig::libpcap
 )
 
