@@ -12,3 +12,5 @@ if (ENABLE_PCAP)
 else ()
     message(STATUS "Skipping amon-anonymizer and amon-stats because PCAP support is disabled")
 endif ()
+
+add_subdirectory(pktparser-benchmark)
