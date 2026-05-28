@@ -1,5 +1,5 @@
 [project]
-name = "pcap-anonymizer"
+name = "amon-anonymizer"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

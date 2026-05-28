@@ -1,4 +1,4 @@
-add_executable(pcap-anonymizer
+add_executable(amon-anonymizer
     src/3rdparty/cryptopan/panonymizer.cpp
     src/3rdparty/cryptopan/rijndael.cpp
     src/main.cpp
@@ -7,4 +7,4 @@ add_executable(pcap-anonymizer
     src/ValueAnonymizer.cpp
 )
 
-target_link_libraries(pcap-anonymizer PRIVATE amon-lib)
+target_link_libraries(amon-anonymizer PRIVATE amon-lib)

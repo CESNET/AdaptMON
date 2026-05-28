@@ -141,5 +141,5 @@ custom-checks:
 
 # don't be afraid to add Python tests for your applications to this target
 pytest: build
-	cd apps/pcap-anonymizer && uv run pytest -v
+	cd apps/amon-anonymizer && uv run pytest -v
 .PHONY: pytest

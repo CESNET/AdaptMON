@@ -1,6 +1,6 @@
-# pcap-anonymizer
+# amon-anonymizer
 
-**pcap-anonymizer** is a C++ command-line tool designed to anonymize sensitive information in PCAP network capture files. It protects privacy by transforming identifiable network data while preserving packet structure and protocol parsing capabilities.
+**amon-anonymizer** is a C++ command-line tool designed to anonymize sensitive information in PCAP network capture files. It protects privacy by transforming identifiable network data while preserving packet structure and protocol parsing capabilities.
 
 ## Overview
 
@@ -54,16 +54,16 @@
 # Build from project root
 mkdir build && cd build
 cmake ..
-make pcap-anonymizer
+make amon-anonymizer
 
 # Binary location
-./build/apps/pcap-anonymizer/pcap-anonymizer
+./build/apps/amon-anonymizer/amon-anonymizer
 ```
 
 ## Usage
 
 ```
-Usage: pcap-anonymizer ARGS <INPUT_FILE> <OUTPUT_FILE>
+Usage: amon-anonymizer ARGS <INPUT_FILE> <OUTPUT_FILE>
 
 Positional arguments:
   INPUT_FILE                            The input file
@@ -78,7 +78,7 @@ Keyword arguments (ARGS):
 ### Example
 
 ```bash
-./pcap-anonymizer capture.pcap anonymized.pcap -k "MySecretKey123456789012345678901"
+./amon-anonymizer capture.pcap anonymized.pcap -k "MySecretKey123456789012345678901"
 ```
 
 ## Dependencies
@@ -112,8 +112,8 @@ Tests are implemented in Python using pytest and Scapy.
 ### Running Tests
 
 ```bash
-cd apps/pcap-anonymizer
-uv run pytest test/test_pcap_anonymizer.py -v
+cd apps/amon-anonymizer
+uv run pytest test/test_amon_anonymizer.py -v
 ```
 
 ## License
