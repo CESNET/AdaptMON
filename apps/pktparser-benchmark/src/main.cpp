@@ -10,8 +10,11 @@
 #include <amon/util/Pcap.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <print>
 #include <string>
+
+static constexpr unsigned CACHELINE_SIZE = 64;
 
 namespace {
 std::vector<std::vector<std::byte>> readPktsIntoMemory(const std::string& pcapFile)
@@ -93,10 +96,26 @@ int main(int argc, char** argv) // NOLINT
     for (uint64_t i = 0; i < 2'000'000; i++) {
         burstProvider.getNextBurst(burst);
 
-        amon::PacketParser parser;
-        for (const auto& pktData : burst) {
+        for (auto pkt : burst) {
+            __builtin_prefetch(pkt.data(), 0, 2);
+            __builtin_prefetch(pkt.data() + CACHELINE_SIZE, 0, 2);
+        }
+
+        const amon::PacketParser parser;
+        __builtin_prefetch(burst[1].data());
+        __builtin_prefetch(burst[1].data() + CACHELINE_SIZE);
+        __builtin_prefetch(burst[2].data());
+        __builtin_prefetch(burst[2].data() + CACHELINE_SIZE);
+        __builtin_prefetch(burst[3].data());
+        __builtin_prefetch(burst[3].data() + CACHELINE_SIZE);
+        for (size_t j = 0; j < burst.size(); ++j) {
+            if (j < burst.size() - 4) {
+                __builtin_prefetch(burst[j + 4].data());
+                __builtin_prefetch(burst[j + 4].data() + CACHELINE_SIZE);
+            }
+
             amon::Packet packet;
-            packet.data = pktData;
+            packet.data = burst[j];
             auto res = parser.parse(packet, amon::layers::LayerType::ETHERNET);
             if (res == amon::layers::LayerError::NONE) {
                 if (auto l3 = packet.layout[0].l3) {
@@ -119,7 +138,7 @@ int main(int argc, char** argv) // NOLINT
                 ++errPkts;
             }
 
-            totalBytes += pktData.size();
+            totalBytes += packet.data.size();
             ++nProcessed;
         }
 
