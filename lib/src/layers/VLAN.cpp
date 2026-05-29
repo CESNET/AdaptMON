@@ -14,14 +14,6 @@
 
 namespace amon::layers {
 
-std::expected<VLANView, LayerError> VLANView::create(std::span<const std::byte> data) noexcept
-{
-    if (data.size() < sizeof(VLANHeader)) {
-        return std::unexpected(LayerError::HEADER_SHORT);
-    }
-    return VLANView(data);
-}
-
 static_assert(std::is_standard_layout<VLANHeader>(), "Unexpected data type layout for VLANHeader");
 static_assert(
     std::is_trivially_default_constructible<VLANHeader>(),

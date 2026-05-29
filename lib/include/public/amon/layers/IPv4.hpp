@@ -51,7 +51,42 @@ public:
      * @param data Span of bytes containing the IPv4 packet.
      * @return std::expected containing IPv4View or LayerError.
      */
-    static std::expected<IPv4View, LayerError> create(std::span<const std::byte> data) noexcept;
+    static std::expected<IPv4View, LayerError> create(std::span<const std::byte> data) noexcept
+    {
+        std::expected<IPv4View, LayerError> res {std::unexpected(LayerError::NONE)};
+
+        if (data.size() < sizeof(IPv4Header)) {
+            std::expected<IPv4View, LayerError> err {std::unexpected(LayerError::HEADER_SHORT)};
+            res.swap(err);
+            return res;
+        }
+
+        res.emplace(data);
+        if ((res->header().versionIhl >> 4) != 4) {
+            std::expected<IPv4View, LayerError> err {std::unexpected(LayerError::BAD_MAGIC)};
+            res.swap(err);
+            return res;
+        }
+        if (res->headerLength() < sizeof(IPv4Header)) {
+            std::expected<IPv4View, LayerError> err {std::unexpected(LayerError::BAD_LEN_FIELD)};
+            res.swap(err);
+            return res;
+        }
+        if (data.size() < res->headerLength()) {
+            std::expected<IPv4View, LayerError> err {std::unexpected(LayerError::HEADER_SHORT)};
+            res.swap(err);
+            return res;
+        }
+        // Check disabled due to use-cases with trimmed packets.
+        // if (data.size() < view.header().totalLength) {
+        //     return std::unexpected(LayerError::BAD_PAYLOAD_LEN);
+        // }
+        // Check disabled because of tolerance of packets with set reserved bit.
+        // if ((view.header().flagsFragmentOffset >> 15) != 0) {
+        //     return std::unexpected(LayerError::BAD_MAGIC);
+        // }
+        return res;
+    }
 
     /**
      * @brief Get the length of the IPv4 header.

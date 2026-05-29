@@ -49,7 +49,21 @@ public:
      * @param data Span of bytes containing the TCP segment.
      * @return std::expected containing TCPView or LayerError.
      */
-    static std::expected<TCPView, LayerError> create(std::span<const std::byte> data) noexcept;
+    static std::expected<TCPView, LayerError> create(std::span<const std::byte> data) noexcept
+    {
+        if (data.size() < sizeof(TCPHeader)) {
+            return std::unexpected(LayerError::HEADER_SHORT);
+        }
+        auto view = TCPView(data);
+
+        if (view.headerLength() < sizeof(TCPHeader)) {
+            return std::unexpected(LayerError::BAD_LEN_FIELD);
+        }
+        if (data.size() < view.headerLength()) {
+            return std::unexpected(LayerError::HEADER_SHORT);
+        }
+        return view;
+    }
 
     /**
      * @brief Get the length of the TCP header.
