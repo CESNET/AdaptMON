@@ -266,20 +266,25 @@ protected:
         if (packet.layers.full()) {
             return std::unexpected(layers::LayerError::LAYER_VECTOR_FULL);
         }
-
-        auto layerOrError = LayerViewT::create(packet.data.subspan(currentOffset));
-        if (layerOrError) {
-            PacketLayer layer {.type = LayerViewT::LAYER_TYPE, .offset = currentOffset};
-            packet.layers.pushBack(layer);
-            addToLayout<LayerViewT::LAYER_TYPE>(ctx, packet);
-        } else {
-            ErrorLayer error {
-                .type = LayerViewT::LAYER_TYPE,
-                .error = layerOrError.error(),
-                .offset = currentOffset};
-            packet.layers.pushBack(error);
-        }
-        return layerOrError;
+        // You are probably scratching your head at this, but yes, it has a reason to be this way,
+        // and yes, I know it looks completely stupid and unnecessary... This being wrapped in a
+        // lambda makes RVO (return-value-optimization) work in this function, which makes a HUGE
+        // difference in performance.
+        return [&]() {
+            auto res = LayerViewT::create(packet.data.subspan(currentOffset));
+            if (res) {
+                PacketLayer layer {.type = LayerViewT::LAYER_TYPE, .offset = currentOffset};
+                packet.layers.pushBack(layer);
+                addToLayout<LayerViewT::LAYER_TYPE>(ctx, packet);
+            } else {
+                ErrorLayer error {
+                    .type = LayerViewT::LAYER_TYPE,
+                    .error = res.error(),
+                    .offset = currentOffset};
+                packet.layers.pushBack(error);
+            }
+            return res;
+        }();
     }
 
     /**
