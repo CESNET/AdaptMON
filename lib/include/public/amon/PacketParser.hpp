@@ -72,78 +72,6 @@ enum PacketParserProtoType : uint8_t {
                             // IANA reserved value is used
 };
 
-/// Variant type for representing different layer type categories.
-using LayerTypeVariant = std::variant<
-    PacketParserLinkType,
-    PacketParserEtherType,
-    PacketParserProtoType,
-    PacketParserPayloadType,
-    std::monostate>;
-
-/**
- * @brief Convert LayerType to LayerTypeVariant variant.
- * @param type LayerType value.
- * @return Corresponding variant.
- */
-static constexpr LayerTypeVariant layerTypeToVariant(layers::LayerType type) noexcept
-{
-    using namespace layers;
-
-    switch (type) {
-    case LayerType::RAW:
-        return PacketParserLinkType::RAW;
-    case LayerType::ETHERNET:
-        return PacketParserLinkType::ETHERNET;
-
-    case LayerType::IPV4:
-        return PacketParserEtherType::IPV4;
-    case LayerType::IPV6:
-        return PacketParserEtherType::IPV6;
-    case LayerType::MPLS:
-        return PacketParserEtherType::MPLS;
-    case LayerType::VLAN:
-        return PacketParserEtherType::VLAN_8021Q;
-
-    case LayerType::IPV6_OPT_GENERIC:
-        // generic extension, not real prototype number
-        return PacketParserProtoType::IPV6_OPT_GENERIC;
-    case LayerType::IPV6_OPT_FRAGMENT:
-        return PacketParserProtoType::IPV6_OPT_FRAGMENT;
-    case LayerType::IPV6_OPT_HOPBYHOP:
-        return PacketParserProtoType::IPV6_OPT_HOPBYHOP;
-    case LayerType::IPV6_OPT_ROUTING:
-        return PacketParserProtoType::IPV6_OPT_ROUTING;
-    case LayerType::AUTHENTICATION_HEADER:
-        return PacketParserProtoType::AUTHENTICATION_HEADER;
-    case LayerType::ESP:
-        return PacketParserProtoType::ESP;
-    case LayerType::IPV6_OPT_DESTINATION_OPTIONS:
-        return PacketParserProtoType::IPV6_OPT_DESTINATION_OPTIONS;
-
-    case LayerType::ICMP:
-        return PacketParserProtoType::ICMP;
-    case LayerType::ICMPV6:
-        return PacketParserProtoType::ICMPV6;
-    case LayerType::UDP:
-        return PacketParserProtoType::UDP;
-    case LayerType::TCP:
-        return PacketParserProtoType::TCP;
-    case LayerType::GRE:
-        return PacketParserProtoType::GRE;
-
-    case LayerType::PAYLOAD_APP:
-        return PacketParserPayloadType::PAYLOAD_APP;
-    case LayerType::PAYLOAD_IP_FRAGMENT:
-        return PacketParserPayloadType::PAYLOAD_IP_FRAGMENT;
-
-    case LayerType::ERROR:
-    case LayerType::UNKNOWN:
-        return std::monostate {};
-    }
-
-    return std::monostate {};
-}
-
 /**
  * @brief Configuration structure for PacketParser.
  */
@@ -207,17 +135,6 @@ public:
     layers::LayerError
     parse(Packet& packet, layers::LayerType firstLayer, uint16_t startOffset = 0) const;
 
-    /**
-     * @brief Parse raw packet data and populate Packet structure.
-     * @param packet Packet object to populate with parsed data.
-     * Data member in packet object must be filled.
-     * @param firstLayer Type of the first layer in the packet as LayerTypeVariant.
-     * @param startOffset Offset in the packet data where parsing should start.
-     * @return LayerError indicating success or type of error encountered.
-     */
-    layers::LayerError
-    parse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset = 0) const;
-
 protected:
     /**
      * @brief Construct the context object for the current packet and call processFirstLayer method.
@@ -232,7 +149,7 @@ protected:
      * @return LayerError indicating success or type of error encountered.
      */
     virtual layers::LayerError
-    createContextAndParse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset) const;
+    createContextAndParse(Packet& packet, layers::LayerType firstLayer, uint16_t startOffset) const;
 
     /**
      * @brief Parse raw packet data and populate Packet structure.
@@ -245,7 +162,7 @@ protected:
     layers::LayerError processFirstLayer(
         PacketParserContext& ctx,
         Packet& packet,
-        LayerTypeVariant firstLayer,
+        layers::LayerType firstLayer,
         uint16_t startOffset = 0) const;
 
     /**
