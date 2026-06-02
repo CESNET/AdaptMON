@@ -40,6 +40,7 @@ add_library(amon-lib
     src/util/getopt.cpp
     src/util/Human.cpp
     src/util/io.cpp
+    src/util/NameGenerator.cpp
     src/util/numeric.cpp
     src/util/string.cpp
 )
