@@ -53,6 +53,7 @@ if (ENABLE_DPDK)
         src/dpdk/PktMempool.cpp
         src/dpdk/Port.cpp
         src/dpdk/PortHooks.cpp
+        src/dpdk/porthooks/I40E.cpp
         src/dpdk/SocketID.cpp
     )
 endif()

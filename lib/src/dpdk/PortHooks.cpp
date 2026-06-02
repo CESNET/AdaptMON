@@ -8,6 +8,7 @@
  */
 
 #include <amon/dpdk/PortHooks.hpp>
+#include <amon/dpdk/porthooks/I40E.hpp>
 
 namespace amon::dpdk {
 
@@ -152,6 +153,7 @@ void PortHooks::postDevStart(uint16_t portId, const PortConfig& config)
 std::vector<std::unique_ptr<PortHooks>> makeDefaultPortHooks()
 {
     std::vector<std::unique_ptr<PortHooks>> res;
+    res.emplace_back(std::make_unique<porthooks::I40E>());
     return res;
 }
 
