@@ -51,6 +51,7 @@ if (ENABLE_DPDK)
         src/dpdk/Error.cpp
         src/dpdk/PktBurst.cpp
         src/dpdk/PktMempool.cpp
+        src/dpdk/PortHooks.cpp
         src/dpdk/SocketID.cpp
     )
 endif()
