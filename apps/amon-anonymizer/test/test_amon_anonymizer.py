@@ -1,4 +1,4 @@
-"""Tests for pcap-anonymizer apps. It uses testing pcaps in pcap/ directory.
+"""Tests for amon-anonymizer apps. It uses testing pcaps in pcap/ directory.
 
 Author(s): Jan Sobol <sobol@cesnet.cz>
 
@@ -70,7 +70,7 @@ def _find_pcaps_dir() -> Path:
 
 def _anonymizer_binary() -> Path:
     repo_root = Path(__file__).resolve().parents[3]
-    return repo_root / "build" / "apps" / "pcap-anonymizer" / "pcap-anonymizer"
+    return repo_root / "build" / "apps" / "amon-anonymizer" / "amon-anonymizer"
 
 
 def _collect_ips(

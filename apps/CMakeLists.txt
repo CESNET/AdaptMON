@@ -1,2 +1,2 @@
 add_subdirectory(hello)
-add_subdirectory(pcap-anonymizer)
+add_subdirectory(amon-anonymizer)
