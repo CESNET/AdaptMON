@@ -28,7 +28,7 @@ struct Close {
      * @brief Closes the file descriptor.
      * @param fd File descriptor to close.
      */
-    void operator()(int fd) { ::close(fd); }
+    void operator()(int fd) noexcept { ::close(fd); }
 };
 
 } // namespace deleters
@@ -46,16 +46,20 @@ struct Close {
 template <typename ValueType, typename Deleter>
 class UniqueResource {
 public:
+    static_assert(
+        noexcept(std::declval<Deleter&>()(std::declval<ValueType>())),
+        "Deleter must be noexcept");
+
     /**
      * @brief Default constructor. No resource is owned.
      */
-    UniqueResource() = default;
+    UniqueResource() noexcept = default;
 
     /**
      * @brief Construct with a resource value.
      * @param value Resource to manage.
      */
-    UniqueResource(ValueType value)
+    UniqueResource(ValueType value) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
         : m_resource(std::move(value))
     {
     }
@@ -108,10 +112,10 @@ public:
      * @brief Replace the managed resource. Releases any currently held resource.
      * @param value New resource to manage.
      */
-    void reset(ValueType value)
+    void reset(ValueType value) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
     {
-        if (hasValue()) {
-            Deleter {}(get());
+        if (m_resource.has_value()) {
+            Deleter {}(m_resource.value());
         }
         m_resource = std::move(value);
     }
@@ -119,10 +123,10 @@ public:
     /**
      * @brief Release the managed resource, if any.
      */
-    void reset()
+    void reset() noexcept
     {
-        if (hasValue()) {
-            Deleter {}(get());
+        if (m_resource.has_value()) {
+            Deleter {}(m_resource.value());
         }
         m_resource = std::nullopt;
     }
@@ -131,7 +135,7 @@ public:
      * @brief Check if a resource is currently managed.
      * @return True if a resource is held, false otherwise.
      */
-    bool hasValue() const { return m_resource.has_value(); }
+    bool hasValue() const noexcept { return m_resource.has_value(); }
 
     /**
      * @brief Get a const reference to the managed resource.
@@ -162,12 +166,7 @@ public:
     /**
      * @brief Destructor. Releases the resource if held.
      */
-    ~UniqueResource()
-    {
-        if (hasValue()) {
-            Deleter {}(get());
-        }
-    }
+    ~UniqueResource() noexcept { reset(); }
 
 private:
     std::optional<ValueType> m_resource;
