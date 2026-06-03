@@ -357,7 +357,7 @@ void SignalHandler::installSigAction(
     }
 }
 
-void SignalHandler::install(bool willUseWaitForSignals)
+void SignalHandler::installBasic()
 {
     int ret;
 
@@ -372,12 +372,6 @@ void SignalHandler::install(bool willUseWaitForSignals)
         throw Error("pthread_sigmask() failed: {}", ret);
     }
 
-    if (willUseWaitForSignals) {
-        // Termination/configuration signals
-        // (signals that we only want the main thread to handle)
-        installSigAction({SIGTERM, SIGINT, SIGQUIT, SIGUSR1}, returnSignalCallback);
-    }
-
     // Deadly signals
     // (signals that we want the specific thread to handle)
     installSigAction({SIGILL, SIGBUS, SIGFPE, SIGSEGV, SIGSYS}, deadlySignalCallback);
@@ -389,6 +383,12 @@ void SignalHandler::install(bool willUseWaitForSignals)
     // Terminate handler
     // (technically not a signal, but it fits here)
     std::set_terminate(terminateHandler);
+}
+
+void SignalHandler::install()
+{
+    installBasic();
+    installSigAction({SIGTERM, SIGINT, SIGQUIT, SIGUSR1}, returnSignalCallback);
 }
 
 } // namespace amon
