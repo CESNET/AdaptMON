@@ -15,6 +15,7 @@
 
 #include <csignal>
 #include <initializer_list>
+#include <optional>
 
 namespace amon {
 
@@ -203,10 +204,19 @@ public:
     static void install();
 
     /**
-     * @brief Wait for signals and process them.
+     * @brief Wait for a signal to arrive and retrieve it.
      * @return Signal number received. One of {SIGTERM, SIGINT, SIGQUIT, SIGUSR1}.
      */
     static int waitForSignals();
+
+    /**
+     * @brief Wait for a signal to arrive and retrieve it (with timeout support).
+     * @param timeoutMsec Timeout in milliseconds (0 = return immediately if no signal is ready to
+     * be retrieved).
+     * @return Signal number received or std::nullopt. Signal can be one of {SIGTERM, SIGINT,
+     * SIGQUIT, SIGUSR1}.
+     */
+    static std::optional<int> waitForSignals(unsigned timeoutMsec);
 
 private:
     friend class types::Singleton<SignalHandler>;
