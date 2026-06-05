@@ -47,8 +47,9 @@ template <typename ValueType, typename Deleter>
 class UniqueResource {
 public:
     static_assert(
-        noexcept(std::declval<Deleter&>()(std::declval<ValueType>())),
-        "Deleter must be noexcept");
+        std::is_nothrow_default_constructible_v<Deleter>
+            && noexcept(std::declval<Deleter&>()(std::declval<ValueType>())),
+        "Deleter must be noexcept construable and callable");
 
     /**
      * @brief Default constructor. No resource is owned.
@@ -128,8 +129,11 @@ public:
     {
         if (m_resource.has_value()) {
             Deleter {}(m_resource.value());
+            if constexpr (!std::is_nothrow_move_constructible_v<ValueType>) {
+                m_resource.reset(); // reset in case move assignment would throw later
+            }
         }
-        m_resource = std::move(value);
+        m_resource.emplace(std::move(value));
     }
 
     /**
@@ -140,7 +144,7 @@ public:
         if (m_resource.has_value()) {
             Deleter {}(m_resource.value());
         }
-        m_resource = std::nullopt;
+        m_resource.reset();
     }
 
     /**
@@ -198,8 +202,8 @@ private:
 
     ValueType unsafeRelease() noexcept(std::is_nothrow_move_constructible_v<ValueType>)
     {
-        ValueType value = std::move(*m_resource);
-        m_resource = std::nullopt;
+        ValueType value {std::move(*m_resource)};
+        m_resource.reset();
         return std::move(value);
     }
 };
