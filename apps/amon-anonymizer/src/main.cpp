@@ -138,7 +138,7 @@ static void run(const amon::util::ParsedArgs& args)
 
 int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
 {
-    amon::SignalHandler::install(false);
+    amon::SignalHandler::installBasic();
     amon::SignalHandler::installSigAction({SIGINT, SIGTERM}, &stopSignalHandler);
 
     using PosArg = amon::util::PosArg;

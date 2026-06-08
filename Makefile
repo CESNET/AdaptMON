@@ -1,5 +1,5 @@
-BUILD_TYPE = $(or $(file < build/BUILD_TYPE),release-build)
-BUILD_DIR := $(or ${BUILD_DIR},build)
+BUILD_DIR := $(or $(BUILD_DIR),build)
+BUILD_TYPE = $(or $(file < $(BUILD_DIR)/BUILD_TYPE),release-build)
 
 all: build
 .PHONY: all

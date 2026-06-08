@@ -28,7 +28,7 @@ struct Close {
      * @brief Closes the file descriptor.
      * @param fd File descriptor to close.
      */
-    void operator()(int fd) { ::close(fd); }
+    void operator()(int fd) noexcept { ::close(fd); }
 };
 
 } // namespace deleters
@@ -46,16 +46,21 @@ struct Close {
 template <typename ValueType, typename Deleter>
 class UniqueResource {
 public:
+    static_assert(
+        std::is_nothrow_default_constructible_v<Deleter>
+            && noexcept(std::declval<Deleter&>()(std::declval<ValueType>())),
+        "Deleter must be noexcept construable and callable");
+
     /**
      * @brief Default constructor. No resource is owned.
      */
-    UniqueResource() = default;
+    UniqueResource() noexcept = default;
 
     /**
      * @brief Construct with a resource value.
      * @param value Resource to manage.
      */
-    UniqueResource(ValueType value)
+    UniqueResource(ValueType value) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
         : m_resource(std::move(value))
     {
     }
@@ -105,33 +110,61 @@ public:
     }
 
     /**
+     * @brief Access the managed resource.
+     * @return Pointer to the managed resource.
+     */
+    ValueType* operator->() { return &get(); }
+
+    /**
+     * @brief Access the managed resource.
+     * @return Const pointer to the managed resource.
+     */
+    const ValueType* operator->() const { return &get(); }
+
+    /**
      * @brief Replace the managed resource. Releases any currently held resource.
      * @param value New resource to manage.
      */
-    void reset(ValueType value)
+    void reset(ValueType value) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
     {
-        if (hasValue()) {
-            Deleter {}(get());
+        if (m_resource.has_value()) {
+            Deleter {}(m_resource.value());
+            if constexpr (!std::is_nothrow_move_constructible_v<ValueType>) {
+                m_resource.reset(); // reset in case move assignment would throw later
+            }
         }
-        m_resource = std::move(value);
+        m_resource.emplace(std::move(value));
     }
 
     /**
      * @brief Release the managed resource, if any.
      */
-    void reset()
+    void reset() noexcept
     {
-        if (hasValue()) {
-            Deleter {}(get());
+        if (m_resource.has_value()) {
+            Deleter {}(m_resource.value());
         }
-        m_resource = std::nullopt;
+        m_resource.reset();
     }
 
     /**
      * @brief Check if a resource is currently managed.
      * @return True if a resource is held, false otherwise.
      */
-    bool hasValue() const { return m_resource.has_value(); }
+    bool hasValue() const noexcept { return m_resource.has_value(); }
+
+    /**
+     * @brief Get a reference to the managed resource.
+     * @return Reference to the resource.
+     * @throw logic_error if no resource is held.
+     */
+    ValueType& get()
+    {
+        if (!m_resource.has_value()) {
+            throw std::logic_error("get() called on UniqueResource that holds no value");
+        }
+        return m_resource.value();
+    }
 
     /**
      * @brief Get a const reference to the managed resource.
@@ -162,20 +195,15 @@ public:
     /**
      * @brief Destructor. Releases the resource if held.
      */
-    ~UniqueResource()
-    {
-        if (hasValue()) {
-            Deleter {}(get());
-        }
-    }
+    ~UniqueResource() noexcept { reset(); }
 
 private:
     std::optional<ValueType> m_resource;
 
     ValueType unsafeRelease() noexcept(std::is_nothrow_move_constructible_v<ValueType>)
     {
-        ValueType value = std::move(*m_resource);
-        m_resource = std::nullopt;
+        ValueType value {std::move(*m_resource)};
+        m_resource.reset();
         return std::move(value);
     }
 };

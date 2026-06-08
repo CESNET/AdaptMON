@@ -10,6 +10,7 @@
 #include <amon/Error.hpp>
 #include <amon/SignalHandler.hpp>
 #include <amon/util/CharBuffer.hpp>
+#include <amon/util/numeric.hpp>
 
 #include <cassert>
 #include <csignal>
@@ -17,6 +18,7 @@
 
 #include <cxxabi.h>
 #include <linux/limits.h>
+#include <poll.h>
 
 namespace amon {
 
@@ -191,9 +193,11 @@ static void rethrowSignal(int sigNum) noexcept
     kill(getpid(), sigNum);
 }
 
+namespace {
 struct __attribute__((packed)) SignalInfo {
     int sigNum;
 };
+} // namespace
 
 static void dumpSigInfo(int sigNum, siginfo_t* sigInfo, util::CharBuffer<>& printBuf)
 {
@@ -301,21 +305,43 @@ SignalHandler::SignalHandler()
     m_pipeWr = pipeFds[1];
 }
 
+static std::optional<int> waitForSignalsHelper(int pipeRd, int timeoutMsec)
+{
+    struct pollfd pollFd[1] {{.fd = pipeRd, .events = POLLIN, .revents = 0}};
+
+    int ret;
+    while ((ret = poll(pollFd, 1, timeoutMsec)) < 0 && (errno == EAGAIN || errno == EINTR)) {}
+    if (ret == 0) {
+        return std::nullopt;
+    }
+    if (ret < 0) {
+        throw ErrnoError("poll");
+    }
+
+    SignalInfo info;
+    ssize_t nBytes;
+    while ((nBytes = read(pipeRd, &info, sizeof(info))) < 0
+           && (errno == EAGAIN || errno == EINTR)) {}
+    if (nBytes < 0) {
+        throw ErrnoError("read", sizeof(info));
+    }
+    assert(nBytes == sizeof(info));
+    int sigNum = info.sigNum;
+    return {sigNum};
+}
+
+std::optional<int> SignalHandler::waitForSignals(unsigned timeoutMsec)
+{
+    const int pipeRd = instance().m_pipeRd.get();
+    return waitForSignalsHelper(pipeRd, amon::util::numeric::safeCast<int>(timeoutMsec));
+}
+
 int SignalHandler::waitForSignals()
 {
-    SignalInfo info;
-    for (;;) {
-        const ssize_t nBytes = read(instance().m_pipeRd.get(), &info, sizeof(info));
-        if (nBytes < 0) {
-            if (errno == EAGAIN || errno == EINTR) {
-                continue;
-            }
-            throw ErrnoError("read", sizeof(info));
-        }
-        assert(nBytes == sizeof(info));
-        break;
-    }
-    return info.sigNum;
+    std::optional<int> res;
+    const int pipeRd = instance().m_pipeRd.get();
+    while (!(res = waitForSignalsHelper(pipeRd, -1))) {}
+    return res.value();
 }
 
 void SignalHandler::installSigAction(int signal, SigActionCallback callback)
@@ -357,7 +383,7 @@ void SignalHandler::installSigAction(
     }
 }
 
-void SignalHandler::install(bool willUseWaitForSignals)
+void SignalHandler::installBasic()
 {
     int ret;
 
@@ -372,12 +398,6 @@ void SignalHandler::install(bool willUseWaitForSignals)
         throw Error("pthread_sigmask() failed: {}", ret);
     }
 
-    if (willUseWaitForSignals) {
-        // Termination/configuration signals
-        // (signals that we only want the main thread to handle)
-        installSigAction({SIGTERM, SIGINT, SIGQUIT, SIGUSR1}, returnSignalCallback);
-    }
-
     // Deadly signals
     // (signals that we want the specific thread to handle)
     installSigAction({SIGILL, SIGBUS, SIGFPE, SIGSEGV, SIGSYS}, deadlySignalCallback);
@@ -389,6 +409,12 @@ void SignalHandler::install(bool willUseWaitForSignals)
     // Terminate handler
     // (technically not a signal, but it fits here)
     std::set_terminate(terminateHandler);
+}
+
+void SignalHandler::install()
+{
+    installBasic();
+    installSigAction({SIGTERM, SIGINT, SIGQUIT, SIGUSR1}, returnSignalCallback);
 }
 
 } // namespace amon

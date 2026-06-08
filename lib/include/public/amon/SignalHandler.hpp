@@ -15,6 +15,7 @@
 
 #include <csignal>
 #include <initializer_list>
+#include <optional>
 
 namespace amon {
 
@@ -88,7 +89,7 @@ namespace amon {
  *
  * int main()
  * {
- *     amon::SignalHandler::install(false);
+ *     amon::SignalHandler::installBasic();
  *     amon::SignalHandler::installSigAction({SIGINT, SIGTERM}, stopSignalHandler);
  *
  *     while (true) {
@@ -166,25 +167,56 @@ public:
     installSigAction(std::initializer_list<int> signals, SigActionExtendedCallback callback);
 
     /**
-     * @brief Installs signal handlers for the application.
+     * @brief Simpler version of `SignalHandler::install()`.
      *
-     * This function sets up the necessary signal handlers. If
-     * willUseWaitForSignals is true, the handlers will be configured to
-     * support waiting for signals in the application's event loop.
+     * This only hooks into the signals described earlier in @ref amon::SignalHandler as "deadly"
+     * and "debug". "Configuration/termination" signal group is left alone. Default signal handling
+     * behavior of these signals is improved by providing a richer output, but signals aren't
+     * handled using the `waitForSignals()` mechanism. Use this if you just want some nice quality
+     * of life things but don't want to use `waitForSignals()` in a loop.
      *
-     * In summary, set willUseForSignals = true if you intend to use the `waitForSignals()` method.
-     *
-     * @param willUseWaitForSignals If true, enables waiting for signals using the
-     * `waitForSignals()` method; otherwise, installs only basic handlers providing more informative
-     * output for certain signals.
+     * Handled signals: {SIGILL, SIGBUS, SIGFPE, SIGSEGV, SIGSYS, SIGUSR2}
      */
-    static void install(bool willUseWaitForSignals = true);
+    static void installBasic();
 
     /**
-     * @brief Wait for signals and process them.
+     * @brief Installs signal handlers for the application.
+     *
+     * Calling this function fully inhibits the default signal handling behavior of your program,
+     * hooking into all the signal groups described earlier in @ref amon::SignalHandler as "debug",
+     * "deadly" and "configuration/termination".
+     *
+     * The following signal groups are handled:
+     *
+     *   "Deadly" signals - {SIGILL, SIGBUS, SIGFPE, SIGSEGV, SIGSYS}:
+     *   - Prints current stacktrace of the handling thread and invoke the default signal handler
+     * (rethrow signal).
+     *
+     *   "Debug" signals - {SIGUSR2}:
+     *   - Prints current stacktrace of the handling thread and do nothing.
+     *
+     *   "Configuration/termination" signals - {SIGTERM, SIGINT, SIGQUIT, SIGUSR1}:
+     *   - Pass to the user to handle using the `waitForSignals()` mechanism.
+     *
+     * Handled signals: {SIGILL, SIGBUS, SIGFPE, SIGSEGV, SIGSYS, SIGUSR2,
+     *                   SIGTERM, SIGINT, SIGQUIT, SIGUSR1}
+     */
+    static void install();
+
+    /**
+     * @brief Wait for a signal to arrive and retrieve it.
      * @return Signal number received. One of {SIGTERM, SIGINT, SIGQUIT, SIGUSR1}.
      */
     static int waitForSignals();
+
+    /**
+     * @brief Wait for a signal to arrive and retrieve it (with timeout support).
+     * @param timeoutMsec Timeout in milliseconds (0 = return immediately if no signal is ready to
+     * be retrieved).
+     * @return Signal number received or std::nullopt. Signal can be one of {SIGTERM, SIGINT,
+     * SIGQUIT, SIGUSR1}.
+     */
+    static std::optional<int> waitForSignals(unsigned timeoutMsec);
 
 private:
     friend class types::Singleton<SignalHandler>;
