@@ -9,6 +9,12 @@
 
 #include <amon/Error.hpp>
 #include <amon/amon.hpp>
+#include <amon/layers/AuthenticationHeader.hpp>
+#include <amon/layers/Ethernet.hpp>
+#include <amon/layers/GRE.hpp>
+#include <amon/layers/IPv4.hpp>
+#include <amon/layers/IPv6.hpp>
+#include <amon/layers/VLAN.hpp>
 #include <amon/util/Pcap.hpp>
 #include <amon/util/ansi.hpp>
 #include <amon/util/io.hpp>
@@ -31,15 +37,21 @@ LayerCounter::printNodes(std::string_view prefix, const LayerNode& root)
         double relativePercentage = (count / static_cast<double>(root.count)) * 100.0;
         double absolutePercentage = (count / static_cast<double>(m_rootNode.count)) * 100.0;
 
+        std::string layerProtocol;
+        if (node.layerType == amon::layers::LayerType::UNKNOWN && node.layerProtocol) {
+            layerProtocol = std::format(" (0x{:04x})", node.layerProtocol.value());
+        }
+
         std::string layerError;
         if (node.error != amon::layers::LayerError::NONE) {
             layerError = std::format(" [{}]", node.error);
         }
 
         fullText += std::format(
-            AMON_ANSI_CLEAR_LINE "{}+- {}{}: {:.2f}% ({:.2f}% ({}))\n",
+            AMON_ANSI_CLEAR_LINE "{}+- {}{}{}: {:.2f}% ({:.2f}% ({}))\n",
             prefix,
             node.layerType,
+            layerProtocol,
             layerError,
             relativePercentage,
             absolutePercentage,
@@ -97,6 +109,64 @@ uint32_t LayerCounter::printNodes(bool showPosition)
     return lineCount;
 }
 
+static std::optional<uint16_t>
+unknownProtocol(const amon::Packet& packet, const amon::PacketLayer& prevLayer)
+{
+    switch (prevLayer.type) {
+    case amon::layers::LayerType::ETHERNET:
+        if (auto view = packet.getLayerView<amon::layers::EthernetView>(prevLayer)) {
+            return view->protocol();
+        }
+        break;
+    case amon::layers::LayerType::VLAN:
+        if (auto view = packet.getLayerView<amon::layers::VLANView>(prevLayer)) {
+            return view->protocol();
+        }
+        break;
+    case amon::layers::LayerType::GRE:
+        if (auto view = packet.getLayerView<amon::layers::GREView>(prevLayer)) {
+            return view->protocolType();
+        }
+        break;
+    case amon::layers::LayerType::IPV4:
+        if (auto view = packet.getLayerView<amon::layers::IPv4View>(prevLayer)) {
+            return view->protocol();
+        }
+        break;
+    case amon::layers::LayerType::IPV6:
+        if (auto view = packet.getLayerView<amon::layers::IPv6View>(prevLayer)) {
+            return view->nextHeader();
+        }
+        break;
+    case amon::layers::LayerType::IPV6_OPT_GENERIC:
+    case amon::layers::LayerType::IPV6_OPT_HOPBYHOP:
+    case amon::layers::LayerType::IPV6_OPT_DESTINATION_OPTIONS:
+        if (auto view = packet.getLayerView<amon::layers::IPv6ExtensionView>(prevLayer)) {
+            return view->nextHeader();
+        }
+        break;
+    case amon::layers::LayerType::IPV6_OPT_ROUTING:
+        if (auto view = packet.getLayerView<amon::layers::IPv6RoutingView>(prevLayer)) {
+            return view->nextHeader();
+        }
+        break;
+    case amon::layers::LayerType::IPV6_OPT_FRAGMENT:
+        if (auto view = packet.getLayerView<amon::layers::IPv6FragmentView>(prevLayer)) {
+            return view->nextHeader();
+        }
+        break;
+    case amon::layers::LayerType::AUTHENTICATION_HEADER:
+        if (auto view = packet.getLayerView<amon::layers::AuthenticationHeaderView>(prevLayer)) {
+            return view->nextHeader();
+        }
+        break;
+    default:
+        break;
+    }
+
+    return std::nullopt;
+}
+
 static LayerNode& count(const amon::Packet& packet, LayerNode& parentNode, size_t layerIndex)
 {
     auto error = amon::layers::LayerError::NONE;
@@ -108,14 +178,22 @@ static LayerNode& count(const amon::Packet& packet, LayerNode& parentNode, size_
             return errorLayer.type;
         });
 
+    std::optional<uint16_t> layerData;
+    if (layer == amon::layers::LayerType::UNKNOWN && error == amon::layers::LayerError::NONE
+        && layerIndex != 0) {
+        if (const auto* prev = std::get_if<amon::PacketLayer>(&packet.layers[layerIndex - 1])) {
+            layerData = unknownProtocol(packet, *prev);
+        }
+    }
+
     for (auto& node : parentNode.nodes) {
-        if (node.layerType == layer && node.error == error) {
+        if (node.layerType == layer && node.layerProtocol == layerData && node.error == error) {
             node.count++;
             return node;
         }
     }
 
-    return parentNode.nodes.emplace_back(layer, error, 1);
+    return parentNode.nodes.emplace_back(layer, error, 1, std::vector<LayerNode> {}, layerData);
 }
 
 void LayerCounter::countAll(amon::Packet& packet, uint64_t readerPosition)
@@ -153,6 +231,12 @@ static std::string writeNodes(const LayerNode& root, std::string prefix = "")
     for (const auto& node : root.nodes) {
         text += std::format("{0}- layer: {1}\n", prefix, node.layerType);
         text += std::format("{0}  count: {1}\n", prefix, node.count);
+        if (node.layerType == amon::layers::LayerType::UNKNOWN && node.layerProtocol) {
+            text += std::format(
+                "{0}  protocol: \"0x{1:04x}\"\n",
+                prefix,
+                node.layerProtocol.value());
+        }
 
         if (node.error != amon::layers::LayerError::NONE) {
             text += std::format("{0}  error: {1}\n", prefix, node.error);

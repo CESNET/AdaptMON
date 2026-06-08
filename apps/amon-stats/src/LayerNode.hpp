@@ -23,4 +23,6 @@ struct LayerNode {
     uint64_t count = 0;
     /** Stores layers below this one. */
     std::vector<LayerNode> nodes;
+    /** Raw protocol number when layerType is UNKNOWN. */
+    std::optional<uint16_t> layerProtocol;
 };
