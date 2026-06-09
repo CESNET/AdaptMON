@@ -85,11 +85,14 @@ static void run(const amon::util::ParsedArgs& args)
             "Options --file and --interface are mutually exclusive. Specify only one.");
     }
 
+    bool isInterface = false;
+
     auto reader = [&]() -> amon::util::PcapReader {
         if (inputPath.has_value()) {
             return amon::util::PcapReader::fromFile(inputPath.value());
         }
         if (inputInterface.has_value()) {
+            isInterface = true;
             return amon::util::PcapReader::fromInterface(inputInterface.value());
         }
         throw amon::Error("No input specified. Use --file or --interface.");
@@ -98,7 +101,8 @@ static void run(const amon::util::ParsedArgs& args)
     auto printEvery = amon::util::string::parse<uint32_t>(args["--print-every"].value_or("0"));
 
     const amon::PacketParser parser;
-    LayerCounter counter;
+    const uint64_t readerEnd = reader.tellEnd();
+    LayerCounter counter {readerEnd, isInterface};
     std::vector<std::byte> buffer;
 
     auto linkLayer = dltToLayerType(reader.linkLayerType());
@@ -122,7 +126,7 @@ static void run(const amon::util::ParsedArgs& args)
 
         parser.parse(packet, linkLayer);
 
-        counter.countAll(packet);
+        counter.countAll(packet, reader.tell());
     }
 
     printWorker.request_stop();
@@ -135,7 +139,7 @@ static void run(const amon::util::ParsedArgs& args)
         counter.writeToFile(outputPath.value());
     }
 
-    counter.printNodes();
+    counter.printNodes(false);
 }
 
 int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)

@@ -61,7 +61,7 @@ LayerCounter::printNodes(std::string_view prefix, const LayerNode& root)
     return {lineCount, fullText};
 }
 
-uint32_t LayerCounter::printNodes()
+uint32_t LayerCounter::printNodes(bool showPosition)
 {
     if (m_rootNode.count == 0) {
         return 0;
@@ -73,6 +73,21 @@ uint32_t LayerCounter::printNodes()
     {
         const std::lock_guard<std::mutex> lock(m_memberMutex);
         std::tie(lineCount, fullText) = printNodes(prefix, m_rootNode);
+
+        if (showPosition) {
+            fullText += std::format(AMON_ANSI_CLEAR_LINE "\rCounted {0} packets", m_rootNode.count);
+
+            if (!m_isInterface && m_readerEnd != std::numeric_limits<uint64_t>::max()) {
+                double percentDone
+                    = static_cast<double>(m_readerPos) / static_cast<double>(m_readerEnd) * 100.0;
+
+                fullText += std::format(" ({0:.02f}%)", percentDone);
+            }
+            fullText += '\n';
+        } else {
+            fullText += AMON_ANSI_CLEAR_LINE "\n";
+        }
+        lineCount++;
     }
 
     std::print("{}", fullText);
@@ -103,9 +118,10 @@ static LayerNode& count(const amon::Packet& packet, LayerNode& parentNode, size_
     return parentNode.nodes.emplace_back(layer, error, 1);
 }
 
-void LayerCounter::countAll(amon::Packet& packet)
+void LayerCounter::countAll(amon::Packet& packet, uint64_t readerPosition)
 {
     const std::lock_guard<std::mutex> lock(m_memberMutex);
+    m_readerPos = readerPosition;
 
     m_rootNode.count++;
     LayerNode* currentNode = &m_rootNode;

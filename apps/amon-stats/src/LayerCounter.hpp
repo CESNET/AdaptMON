@@ -24,15 +24,18 @@ public:
      * inside the packet.
      *
      * @param packet Packet to count.
+     * @param readerPosition Current position of PcapReader.
      */
-    void countAll(amon::Packet& packet);
+    void countAll(amon::Packet& packet, uint64_t readerPosition);
 
     /**
      * @brief Prints current statistics into stdout with the class root used.
      *
+     * @param showPosition Prints progress through the file at the end.
+     *
      * @return Number of lines outputted
      */
-    uint32_t printNodes();
+    uint32_t printNodes(bool showPosition = true);
 
     /**
      * @brief Recursively sorts the whole tree in descending order by count.
@@ -46,11 +49,30 @@ public:
      */
     void writeToFile(std::string_view path);
 
+    /**
+     * @brief Constructs LayerCounter.
+     *
+     * @param readerEnd Byte offset of the end of the input file, used to compute the
+     * percent done while printing progress.
+     * @param isInterface Specifies if counter is being ran on an interface.
+     */
+    LayerCounter(const uint64_t readerEnd, bool isInterface)
+        : m_readerEnd(readerEnd)
+        , m_isInterface(isInterface)
+    {
+    }
+
 private:
+    /** Byte offset of the end of the input file, used to compute the percent done. */
+    uint64_t m_readerEnd;
+    /** Current position of reader inside the file */
+    uint64_t m_readerPos = 0;
     /** Root of the layer tree; its children are the lowest parsed layers. */
     LayerNode m_rootNode {};
     /** Mutex for counting packets */
     std::mutex m_memberMutex;
+    /** See if its running on a network interface */
+    bool m_isInterface;
 
     amon::Logger m_logger = amon::LoggerProvider::get("LayerCounter");
 
