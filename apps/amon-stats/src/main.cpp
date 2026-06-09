@@ -10,10 +10,10 @@
 #include <amon/Error.hpp>
 #include <amon/Logger.hpp>
 #include <amon/PacketParser.hpp>
+#include <amon/util/ArgParser.hpp>
 #include <amon/util/Pcap.hpp>
 
 #include <string>
-#include <vector>
 
 static constexpr amon::layers::LayerType dltToLayerType(int dataLinkType)
 {
@@ -39,16 +39,28 @@ static constexpr amon::layers::LayerType dltToLayerType(int dataLinkType)
     }
 }
 
-int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
+static void run(const amon::util::ParsedArgs& args)
 {
-    const amon::Logger logger = amon::LoggerProvider::get("main");
-    if (argc < 2 || argc > 3) {
-        logger.critical("Invalid number of parameters (expects 2)");
-        return 1;
-    }
-    const std::string filePath = argv[1];
+    const amon::Logger logger = amon::LoggerProvider::get("run");
+    const std::optional<std::string> outputPath = args["OUTPUT_FILE"];
 
-    amon::util::PcapReader reader = amon::util::PcapReader::fromFile(filePath);
+    auto inputPath = args["--file"];
+    auto inputInterface = args["--interface"];
+
+    if (inputPath.has_value() && inputInterface.has_value()) {
+        throw amon::Error(
+            "Options --file and --interface are mutually exclusive. Specify only one.");
+    }
+
+    auto reader = [&]() -> amon::util::PcapReader {
+        if (inputPath.has_value()) {
+            return amon::util::PcapReader::fromFile(inputPath.value());
+        }
+        if (inputInterface.has_value()) {
+            return amon::util::PcapReader::fromInterface(inputInterface.value());
+        }
+        throw amon::Error("No input specified. Use --file or --interface.");
+    }();
 
     const amon::PacketParser parser;
     LayerCounter counter;
@@ -78,8 +90,37 @@ int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
 
     counter.sort();
 
-    const std::string outputPath = argv[2];
-    counter.writeToFile(outputPath);
+    if (outputPath.has_value()) {
+        counter.writeToFile(outputPath.value());
+    }
 
     counter.printNodes();
+}
+
+int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
+{
+    const amon::Logger logger = amon::LoggerProvider::get("main");
+    static const auto argParser = amon::util::ArgParser(
+        {
+            amon::util::PosArg("OUTPUT_FILE")
+                .required(false)
+                .help("Path to the output file with YAML statistics"),
+        },
+        {
+            amon::util::KwArg('f', "file").hasArg().help("Read packets from the given PCAP file"),
+            amon::util::KwArg('i', "interface")
+                .hasArg()
+                .help("Capture packets live from the given network interface"),
+        });
+
+    const amon::util::ParsedArgs args = argParser.parse(argc, argv);
+
+    try {
+        run(args);
+    } catch (amon::Error& err) {
+        logger.error("Error: {}", err.what());
+        return 1;
+    }
+
+    return 0;
 }
