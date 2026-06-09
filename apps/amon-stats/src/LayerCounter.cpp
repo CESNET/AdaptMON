@@ -10,22 +10,25 @@
 #include <amon/Error.hpp>
 #include <amon/amon.hpp>
 #include <amon/util/Pcap.hpp>
+#include <amon/util/ansi.hpp>
 #include <amon/util/io.hpp>
 
 #include <print>
 
-std::string LayerCounter::printNodes(std::string_view prefix, const LayerNode& root)
+std::pair<uint32_t, std::string>
+LayerCounter::printNodes(std::string_view prefix, const LayerNode& root)
 {
-    const uint64_t rootCount = root.count;
-    if (rootCount == 0) {
-        return "";
+    std::string fullText;
+    uint64_t lineCount = 0;
+    if (root.count == 0) {
+        return {lineCount, fullText};
     }
 
-    std::string fullText;
-    for (const auto& node : root.nodes) {
+    for (size_t i = 0; i < root.nodes.size(); i++) {
+        const LayerNode& node = root.nodes[i];
         auto count = static_cast<double>(node.count);
 
-        double relativePercentage = (count / static_cast<double>(rootCount)) * 100.0;
+        double relativePercentage = (count / static_cast<double>(root.count)) * 100.0;
         double absolutePercentage = (count / static_cast<double>(m_rootNode.count)) * 100.0;
 
         std::string layerError;
@@ -34,34 +37,49 @@ std::string LayerCounter::printNodes(std::string_view prefix, const LayerNode& r
         }
 
         fullText += std::format(
-            "{}{}{}: {:.2f}% ({:.2f}% ({}))\n",
+            AMON_ANSI_CLEAR_LINE "{}+- {}{}: {:.2f}% ({:.2f}% ({}))\n",
             prefix,
             node.layerType,
             layerError,
             relativePercentage,
             absolutePercentage,
             node.count);
-        fullText += printNodes(std::format("{}-", prefix), node);
+
+        std::string newPrefix;
+        if (i == root.nodes.size() - 1) {
+            newPrefix = "  ";
+        } else {
+            newPrefix = "| ";
+        }
+
+        lineCount++;
+        auto [newLines, newText] = printNodes(std::format("{}{}", prefix, newPrefix), node);
+        lineCount += newLines;
+        fullText += newText;
     }
 
-    return fullText;
+    return {lineCount, fullText};
 }
 
-void LayerCounter::printNodes()
+uint32_t LayerCounter::printNodes()
 {
     if (m_rootNode.count == 0) {
-        return;
+        return 0;
     }
 
     std::string fullText;
+    uint32_t lineCount;
     const std::string prefix;
     {
         const std::lock_guard<std::mutex> lock(m_memberMutex);
-        fullText = printNodes(prefix, m_rootNode);
+        std::tie(lineCount, fullText) = printNodes(prefix, m_rootNode);
     }
+
     std::print("{}", fullText);
 
     std::flush(std::cout);
+
+    return lineCount;
 }
 
 static LayerNode& count(const amon::Packet& packet, LayerNode& parentNode, size_t layerIndex)

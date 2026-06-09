@@ -12,8 +12,13 @@
 #include <amon/PacketParser.hpp>
 #include <amon/util/ArgParser.hpp>
 #include <amon/util/Pcap.hpp>
+#include <amon/util/ansi.hpp>
+#include <amon/util/string.hpp>
 
+#include <condition_variable>
+#include <print>
 #include <string>
+#include <thread>
 
 static constexpr amon::layers::LayerType dltToLayerType(int dataLinkType)
 {
@@ -36,6 +41,34 @@ static constexpr amon::layers::LayerType dltToLayerType(int dataLinkType)
     default: {
         throw amon::Error("Unsupported data link type {}", dataLinkType);
     }
+    }
+}
+
+static void printTimedWorkerLoop(
+    const std::stop_token& stopToken,
+    LayerCounter& counter,
+    unsigned long printEvery)
+{
+    const amon::Logger logger = amon::LoggerProvider::get("printTimedWorkerLoop");
+    if (printEvery == 0) {
+        return;
+    }
+
+    std::mutex mut;
+    std::condition_variable_any cv;
+    std::unique_lock<std::mutex> lk(mut);
+    while (!stopToken.stop_requested()) {
+        try {
+            counter.sort();
+
+            const uint32_t lineCount = counter.printNodes();
+            std::print("{}", amonAnsiMoveBackLines(lineCount));
+        } catch (std::exception& error) {
+            logger.error("Periodic printing failed: {}", error.what());
+        }
+
+        // wakes immediately on stop request; predicate guards spurious wakeups
+        cv.wait_for(lk, stopToken, std::chrono::seconds(printEvery), [] { return false; });
     }
 }
 
@@ -62,11 +95,15 @@ static void run(const amon::util::ParsedArgs& args)
         throw amon::Error("No input specified. Use --file or --interface.");
     }();
 
+    auto printEvery = amon::util::string::parse<uint32_t>(args["--print-every"].value_or("0"));
+
     const amon::PacketParser parser;
     LayerCounter counter;
     std::vector<std::byte> buffer;
 
     auto linkLayer = dltToLayerType(reader.linkLayerType());
+
+    std::jthread printWorker(printTimedWorkerLoop, std::ref(counter), printEvery);
 
     while (true) {
         // packet reading
@@ -87,6 +124,10 @@ static void run(const amon::util::ParsedArgs& args)
 
         counter.countAll(packet);
     }
+
+    printWorker.request_stop();
+
+    printWorker.join();
 
     counter.sort();
 
@@ -111,6 +152,9 @@ int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
             amon::util::KwArg('i', "interface")
                 .hasArg()
                 .help("Capture packets live from the given network interface"),
+            amon::util::KwArg('p', "print-every")
+                .hasArg()
+                .help("How often to print statistics, in seconds (default: don't print)"),
         });
 
     const amon::util::ParsedArgs args = argParser.parse(argc, argv);

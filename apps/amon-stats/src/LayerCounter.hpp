@@ -29,8 +29,10 @@ public:
 
     /**
      * @brief Prints current statistics into stdout with the class root used.
+     *
+     * @return Number of lines outputted
      */
-    void printNodes();
+    uint32_t printNodes();
 
     /**
      * @brief Recursively sorts the whole tree in descending order by count.
@@ -55,8 +57,14 @@ private:
     /**
      * @brief Prints current statistics into stdout with the specified node as root.
      *
+     * Output is redrawn in place using ANSI escape sequences. When moveBack is set the cursor jumps
+     * to back to the first line
+     *
      * @param prefix Prefix to use for the current line.
      * @param root LayerNode whose children are printed.
+     *
+     * @return Formatted node text in the form of a pair consisting of the number of lines and the
+     * text itself.
      */
-    std::string printNodes(std::string_view prefix, const LayerNode& root);
+    std::pair<uint32_t, std::string> printNodes(std::string_view prefix, const LayerNode& root);
 };
