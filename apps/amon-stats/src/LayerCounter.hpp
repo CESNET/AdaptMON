@@ -32,6 +32,11 @@ public:
      */
     void printNodes();
 
+    /**
+     * @brief Recursively sorts the whole tree in descending order by count.
+     */
+    void sort();
+
 private:
     /** Root of the layer tree; its children are the lowest parsed layers. */
     LayerNode m_rootNode {};

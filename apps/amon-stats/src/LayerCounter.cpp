@@ -93,3 +93,20 @@ void LayerCounter::countAll(amon::Packet& packet)
         currentNode = &count(packet, *currentNode, i);
     }
 }
+
+static auto g_cmp = [](const LayerNode& x, const LayerNode& y) { return x.count > y.count; };
+
+static void sortNodes(LayerNode& root)
+{
+    std::ranges::sort(root.nodes, g_cmp);
+
+    for (auto& node : root.nodes) {
+        sortNodes(node);
+    }
+}
+
+void LayerCounter::sort()
+{
+    const std::lock_guard<std::mutex> lock(m_memberMutex);
+    sortNodes(m_rootNode);
+}
