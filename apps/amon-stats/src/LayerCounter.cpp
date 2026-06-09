@@ -7,8 +7,10 @@
 
 #include "LayerCounter.hpp"
 
+#include <amon/Error.hpp>
 #include <amon/amon.hpp>
 #include <amon/util/Pcap.hpp>
+#include <amon/util/io.hpp>
 
 #include <print>
 
@@ -109,4 +111,45 @@ void LayerCounter::sort()
 {
     const std::lock_guard<std::mutex> lock(m_memberMutex);
     sortNodes(m_rootNode);
+}
+
+static std::string writeNodes(const LayerNode& root, std::string prefix = "")
+{
+    std::string text;
+    for (const auto& node : root.nodes) {
+        text += std::format("{0}- layer: {1}\n", prefix, node.layerType);
+        text += std::format("{0}  count: {1}\n", prefix, node.count);
+
+        if (node.error != amon::layers::LayerError::NONE) {
+            text += std::format("{0}  error: {1}\n", prefix, node.error);
+        }
+
+        if (!node.nodes.empty()) {
+            text += std::format("{0}  nodes:\n", prefix);
+            text += writeNodes(node, prefix + "  ");
+        }
+    }
+
+    return text;
+}
+
+void LayerCounter::writeToFile(std::string_view path)
+{
+    AMON_ASSERT(!path.empty());
+
+    if (m_rootNode.count == 0) {
+        return;
+    }
+
+    std::string fullText;
+    {
+        const std::lock_guard<std::mutex> lock(m_memberMutex);
+        fullText = writeNodes(m_rootNode);
+    }
+
+    try {
+        amon::util::io::writeAll(path, fullText);
+    } catch (amon::Error& error) {
+        m_logger.error("Failed to write to file: {}", error.what());
+    }
 }

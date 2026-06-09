@@ -42,7 +42,7 @@ static constexpr amon::layers::LayerType dltToLayerType(int dataLinkType)
 int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
 {
     const amon::Logger logger = amon::LoggerProvider::get("main");
-    if (argc != 2) {
+    if (argc < 2 || argc > 3) {
         logger.critical("Invalid number of parameters (expects 2)");
         return 1;
     }
@@ -77,5 +77,9 @@ int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
     }
 
     counter.sort();
+
+    const std::string outputPath = argv[2];
+    counter.writeToFile(outputPath);
+
     counter.printNodes();
 }

@@ -37,6 +37,13 @@ public:
      */
     void sort();
 
+    /**
+     * @brief Writes statistics into a file in YAML format.
+     *
+     * @param path Path to the file to write to.
+     */
+    void writeToFile(std::string_view path);
+
 private:
     /** Root of the layer tree; its children are the lowest parsed layers. */
     LayerNode m_rootNode {};
