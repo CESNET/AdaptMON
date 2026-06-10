@@ -43,6 +43,7 @@ dev-machine)
     ;;
 dev-docker)
     GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-true}
+    INSTALL_NIX=${INSTALL_NIX-true}
     ;;
 esac
 
@@ -144,4 +145,39 @@ if [ "$INSTALL_UV" = true ]; then
     $SUDO dnf install -y uv
 else
     echo "WARNING: Package uv is not installed"
+fi
+
+
+if [ "$INSTALL_NIX" = true ]; then
+    echo
+    echo "*** Installing nix shell ***"
+    if nix --version; then
+        echo "WARNING: Nix is already installed, skipping installation"
+
+    else
+        NIX_VERSION=2.34.7
+
+        tmp="$(mktemp --tmpdir -d prepare-machine-XXXXXXXX)"
+        trap "rm -rf '$tmp'" EXIT
+        curl -Lo "$tmp/nix-${NIX_VERSION}-x86_64-linux.tar.xz" "https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-x86_64-linux.tar.xz"
+        tar xf "$tmp/nix-${NIX_VERSION}-x86_64-linux.tar.xz" -C "$tmp"
+
+        mkdir -p ~/.config/nix/
+        if [ -f ~/.config/nix/nix.conf ]; then
+            mv ~/.config/nix/nix.conf ~/.config/nix/nix.conf.bak
+        fi
+        touch ~/.config/nix/nix.conf
+        echo 'build-users-group =' >> ~/.config/nix/nix.conf
+        if [ -f /.dockerenv ]; then # Are we running in docker?
+            echo 'sandbox = false' >> ~/.config/nix/nix.conf
+        fi
+
+        NIX_BECOME="$SUDO" "$tmp/nix-${NIX_VERSION}-x86_64-linux/install"
+
+        # Prefetch nix-shell packages
+        (
+            . ~/.nix-profile/etc/profile.d/nix.sh
+            nix-shell --run echo
+        )
+    fi
 fi
