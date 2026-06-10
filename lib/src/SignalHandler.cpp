@@ -346,6 +346,10 @@ int SignalHandler::waitForSignals()
 
 void SignalHandler::installSigAction(int signal, SigActionCallback callback)
 {
+    // Before we install a callback, ensure that the singleton instance is created, so it does not
+    // happen inside the signal handler
+    SignalHandler::instance();
+
     struct sigaction action {};
     action.sa_handler = callback;
 
@@ -357,6 +361,10 @@ void SignalHandler::installSigAction(int signal, SigActionCallback callback)
 
 void SignalHandler::installSigAction(int signal, SigActionExtendedCallback callback)
 {
+    // Before we install a callback, ensure that the singleton instance is created, so it does not
+    // happen inside the signal handler
+    SignalHandler::instance();
+
     struct sigaction action {};
     action.sa_flags = SA_SIGINFO;
     action.sa_sigaction = callback;
