@@ -199,7 +199,7 @@ struct __attribute__((packed)) SignalInfo {
 };
 } // namespace
 
-static void dumpSigInfo(int sigNum, siginfo_t* sigInfo, util::CharBuffer<>& printBuf)
+static void dumpSigInfo(int sigNum, const siginfo_t* sigInfo, util::CharBuffer<>& printBuf)
 {
     printBuf.append("Signal: ", sigToStr(sigNum), " (", sigNum, ")\n");
     printBuf
@@ -220,6 +220,7 @@ static void dumpSigInfo(int sigNum, siginfo_t* sigInfo, util::CharBuffer<>& prin
     }
 }
 
+// NOLINTNEXTLINE(misc-const-correctness)
 void deadlySignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noexcept
 {
     util::CharBuffer<4096> printBuf;
@@ -234,6 +235,7 @@ void deadlySignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noe
     rethrowSignal(sigNum);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness)
 void debugSignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noexcept
 {
     util::CharBuffer<4096> printBuf;
@@ -247,6 +249,7 @@ void debugSignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noex
     write(STDERR_FILENO, printBuf.data(), printBuf.size());
 }
 
+// NOLINTNEXTLINE(misc-const-correctness)
 void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/) noexcept
 {
     SignalInfo info;
