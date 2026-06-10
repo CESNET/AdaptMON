@@ -249,7 +249,7 @@ void debugSignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noex
     write(STDERR_FILENO, printBuf.data(), printBuf.size());
 }
 
-// NOLINTNEXTLINE(misc-const-correctness)
+// NOLINTNEXTLINE(misc-const-correctness,bugprone-exception-escape)
 void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/) noexcept
 {
     SignalInfo info;
@@ -259,7 +259,9 @@ void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/)
     // is written to the pipe as a contiguous sequence.
     static_assert(sizeof(SignalInfo) <= PIPE_BUF);
     for (;;) {
-        const ssize_t nWrote = write(SignalHandler::instance().m_pipeWr.get(), &info, sizeof(info));
+        const int wrPipe
+            = SignalHandler::instance().m_pipeWr.get(); // Instance is already created, cannot throw
+        const ssize_t nWrote = write(wrPipe, &info, sizeof(info));
         if (nWrote < 0) {
             if (errno == EAGAIN || errno == EINTR) {
                 continue;
