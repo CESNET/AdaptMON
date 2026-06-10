@@ -198,13 +198,11 @@ public:
     /**
      * @brief Erase a single packet at the given position and free it.
      * @param pos Iterator to the packet to erase.
-     * @throws std::out_of_range if pos is out of range.
+     * @warning Behavior is undefined if pos is out of range.
      */
-    void erase(Iterator pos)
+    void erase(Iterator pos) noexcept
     {
-        if (!(pos >= begin() && pos < end())) {
-            throw std::invalid_argument("invalid erase pos");
-        }
+        AMON_ASSERT(pos >= begin() && pos < end(), "invalid erase pos");
 
         Rte::pktmbuf_free(*pos);
         std::copy(pos + 1, end(), pos);
@@ -215,13 +213,11 @@ public:
      * @brief Erase a range of packets and free them.
      * @param first Iterator to first packet to erase.
      * @param last Iterator to one past the last packet to erase.
-     * @throws std::invalid_argument if range is invalid.
+     * @warning Behavior is undefined if range is invalid.
      */
-    void erase(Iterator first, Iterator last)
+    void erase(Iterator first, Iterator last) noexcept
     {
-        if (!(first <= last && last <= end())) {
-            throw std::invalid_argument("invalid erase range");
-        }
+        AMON_ASSERT(first <= last && last <= end(), "invalid erase range");
 
         if (first == last) {
             return;
@@ -280,13 +276,11 @@ public:
      * ownership).
      * @param first Iterator to first packet to release.
      * @param last Iterator to one past the last packet to release.
-     * @throws std::invalid_argument if range is invalid.
+     * @warning Behavior is undefined if range is invalid.
      */
-    void release(Iterator first, Iterator last)
+    void release(Iterator first, Iterator last) noexcept
     {
-        if (!(first <= last && last <= end())) {
-            throw std::invalid_argument("invalid release range");
-        }
+        AMON_ASSERT(first <= last && last <= end(), "invalid release range");
 
         if (first == last) {
             return;
@@ -302,15 +296,13 @@ public:
      * @param first Iterator to first packet to copy.
      * @param last Iterator to one past the last packet to copy.
      * @param outputFirst Output iterator to destination.
-     * @throws std::invalid_argument if range is invalid.
-     * @warning It's up to the caller to ensure that the destination has enough capacity!
+     * @warning Behavior is undefined if range is invalid or the destination does not have enough
+     * capacity.
      */
     template <typename OutputIt>
-    void copy(Iterator first, Iterator last, OutputIt outputFirst)
+    void copy(Iterator first, Iterator last, OutputIt outputFirst) noexcept
     {
-        if (!(first <= last && last <= end())) {
-            throw std::invalid_argument("invalid copy range");
-        }
+        AMON_ASSERT(first <= last && last <= end(), "invalid copy range");
 
         std::copy(first, last, outputFirst);
         for (Iterator it = first; it != last; ++it) {
@@ -323,15 +315,14 @@ public:
      * @param first Iterator to first packet to copy.
      * @param last Iterator to one past the last packet to copy.
      * @param output Destination burst.
-     * @throws std::length_error if range is invalid or the destination does not have enough
+     * @warning Behavior is undefined if range is invalid or the destination does not have enough
      * capacity.
-     * @warning It's up to the caller to ensure that the destination has enough capacity!
      */
-    void copy(Iterator first, Iterator last, PktBurstImpl& output)
+    void copy(Iterator first, Iterator last, PktBurstImpl& output) noexcept
     {
-        if (output.available() < static_cast<size_t>(std::distance(first, last))) {
-            throw std::length_error {"output burst does not have enough capacity"};
-        }
+        AMON_ASSERT(
+            output.available() >= static_cast<size_t>(std::distance(first, last)),
+            "output burst does not have enough capacity");
 
         copy(first, last, output.data() + output.size());
         output.m_size += static_cast<size_t>(std::distance(first, last));
@@ -344,7 +335,7 @@ public:
      * @param pred Predicate to select packets.
      * @param outputFirst Output iterator to destination.
      * @return Output iterator to end of copied range.
-     * @warning It's up to the caller to ensure that the destination has enough capacity!
+     * @warning Behavior is undefined if the destination does not have enough capacity.
      */
     template <typename Predicate, typename OutputIt>
     OutputIt copyIf(Predicate pred, OutputIt outputFirst) noexcept(
@@ -365,17 +356,13 @@ public:
      * @tparam Predicate Predicate type.
      * @param pred Predicate to select packets.
      * @param output Destination burst.
-     * @throws std::length_error if the output burst does not have the necessary capacity.
-     * @note Size checking is done and destination burst must have at least `size()` slots
-     * available. We assume the "worst possible case" that every packet matches the predicate and
-     * gets inserted.
+     * @warning Behavior is undefined if range is invalid or the destination does not have enough
+     * capacity.
      */
     template <typename Predicate>
-    void copyIf(Predicate pred, PktBurstImpl& output)
+    void copyIf(Predicate pred, PktBurstImpl& output) noexcept
     {
-        if (output.available() < size()) {
-            throw std::length_error {"output burst does not have enough capacity"};
-        }
+        AMON_ASSERT(output.available() >= size(), "output burst does not have enough capacity");
 
         auto outputFirst = output.data() + output.size();
         auto outputLast = copyIf(pred, outputFirst);
@@ -387,15 +374,12 @@ public:
      * @param first Iterator to first packet to move.
      * @param last Iterator to one past the last packet to move.
      * @param outputFirst Output iterator to destination.
-     * @throws std::invalid_argument if range is invalid.
-     * @warning It's up to the caller to ensure that the destination has enough capacity!
+     * @warning Behavior is undefined if the destination does not have enough capacity.
      */
     template <typename OutputIt>
-    void move(Iterator first, Iterator last, OutputIt outputFirst)
+    void move(Iterator first, Iterator last, OutputIt outputFirst) noexcept
     {
-        if (!(first <= last && last <= end())) {
-            throw std::invalid_argument("invalid move range");
-        }
+        AMON_ASSERT(first <= last && last <= end(), "invalid move range");
 
         std::copy(first, last, outputFirst);
         release(first, last);
@@ -406,14 +390,14 @@ public:
      * @param first Iterator to first packet to move.
      * @param last Iterator to one past the last packet to move.
      * @param output Destination burst.
-     * @throws std::length_error if range is invalid or the destination does not have enough
+     * @warning Undefined behavior if range is invalid or the destination does not have enough
      * capacity.
      */
-    void move(Iterator first, Iterator last, PktBurstImpl& output)
+    void move(Iterator first, Iterator last, PktBurstImpl& output) noexcept
     {
-        if (output.available() < static_cast<size_t>(std::distance(first, last))) {
-            throw std::length_error {"output burst does not have enough capacity"};
-        }
+        AMON_ASSERT(
+            output.available() >= static_cast<size_t>(std::distance(first, last)),
+            "output burst does not have enough capacity");
 
         move(first, last, output.data() + output.size());
         output.m_size += static_cast<size_t>(std::distance(first, last));
@@ -454,17 +438,13 @@ public:
      * @tparam Predicate Predicate type.
      * @param pred Predicate to select packets.
      * @param output Destination burst.
-     * @throws std::length_error if the output burst does not have the necessary capacity.
-     * @note Size checking is done and destination burst must have at least `size()` slots
-     * available. We assume the "worst possible case" that every packet matches the predicate and
-     * gets inserted.
+     * @warning Behavior is undefined if the output burst does not have the necessary capacity.
      */
     template <typename Predicate>
-    void moveIf(Predicate pred, PktBurstImpl& output)
+    void moveIf(Predicate pred, PktBurstImpl& output) noexcept(
+        detail::IsNoexceptCallable<Predicate, typename Rte::mbuf*>)
     {
-        if (output.available() < size()) {
-            throw std::length_error {"output burst does not have enough capacity"};
-        }
+        AMON_ASSERT(output.available() >= size(), "output burst does not have enough capacity");
 
         auto outputFirst = output.data() + output.size();
         auto outputLast = moveIf(pred, outputFirst);
@@ -476,17 +456,16 @@ public:
      * If resizing introduces new elements, their value is set to zero. If resizing gets rid of
      * elements, they are properly freed.
      * @param newSize New size of the burst.
-     * @throws std::length_error if newSize > capacity().
+     * @warning Behavior is undefined if newSize > capacity().
      */
-    void resize(size_t newSize)
+    void resize(size_t newSize) noexcept
     {
         if (newSize <= m_size) {
             erase(begin() + newSize, end());
 
         } else {
-            if (newSize > capacity()) {
-                throw std::length_error {"not enough space"};
-            }
+            AMON_ASSERT(newSize <= capacity(), "not enough space");
+
             Iterator oldEnd = end();
             m_size = newSize;
             std::fill(oldEnd, end(), nullptr);

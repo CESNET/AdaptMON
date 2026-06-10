@@ -107,8 +107,8 @@ TEST(AmonDpdkPktBurst, PktburstTestEraseInvalidRange)
 {
     TestCtx c(4);
 
-    EXPECT_THROW(c.burst.erase(c.burst.begin() + 4), std::invalid_argument);
-    EXPECT_THROW(c.burst.erase(c.burst.begin() + 1, c.burst.end() + 1), std::invalid_argument);
+    EXPECT_DEATH(c.burst.erase(c.burst.begin() + 4), "ASSERTION FAILED");
+    EXPECT_DEATH(c.burst.erase(c.burst.begin() + 1, c.burst.end() + 1), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstTestRelease)
@@ -129,7 +129,7 @@ TEST(AmonDpdkPktBurst, PktburstTestReleaseInvalidRange)
 {
     TestCtx c(4);
 
-    EXPECT_THROW(c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1), std::invalid_argument);
+    EXPECT_DEATH(c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstTestCopy)
@@ -182,7 +182,7 @@ TEST(AmonDpdkPktBurst, PktburstTestCopyToBurstThatIsTooSmall)
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(1);
-    EXPECT_THROW(c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out), std::length_error);
+    EXPECT_DEATH(c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstTestCopyif)
@@ -239,7 +239,7 @@ TEST(AmonDpdkPktBurst, PktburstTestCopyifToBurstThatIsTooSmall)
 
     PktBurstImpl<MockRte> out(2);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
-    EXPECT_THROW(c.burst.copyIf(pred, out), std::length_error);
+    EXPECT_DEATH(c.burst.copyIf(pred, out), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstTestMove)
@@ -288,7 +288,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveToBurstThatIsTooSmall)
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(1);
-    EXPECT_THROW(c.burst.move(c.burst.begin(), c.burst.begin() + 2, out), std::length_error);
+    EXPECT_DEATH(c.burst.move(c.burst.begin(), c.burst.begin() + 2, out), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstTestMoveif)
@@ -337,7 +337,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveifToBurstThatIsTooSmall)
 
     PktBurstImpl<MockRte> out(2);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
-    EXPECT_THROW(c.burst.moveIf(pred, out), std::length_error);
+    EXPECT_DEATH(c.burst.moveIf(pred, out), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstTestEraseif)
@@ -393,18 +393,7 @@ TEST(AmonDpdkPktBurst, PktburstTestResizeBeyondCapacity)
 {
     TestCtx c(4);
 
-    EXPECT_THROW(c.burst.resize(5), std::length_error);
-
-    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
-    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
-    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
-    EXPECT_TRUE(c.mbufs[3]->refcnt == 1);
-
-    ASSERT_TRUE(c.burst.size() == 4);
-    EXPECT_TRUE(c.burst[0]->id == 0);
-    EXPECT_TRUE(c.burst[1]->id == 1);
-    EXPECT_TRUE(c.burst[2]->id == 2);
-    EXPECT_TRUE(c.burst[3]->id == 3);
+    EXPECT_DEATH(c.burst.resize(5), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstTestClear)
@@ -498,7 +487,7 @@ TEST(AmonDpdkPktBurst, PktburstEraseOnEmptyBurst)
     ASSERT_TRUE(c.burst.size() == 0);
     ASSERT_TRUE(c.burst.begin() == c.burst.end());
 
-    EXPECT_THROW(c.burst.erase(c.burst.begin()), std::invalid_argument);
+    EXPECT_DEATH(c.burst.erase(c.burst.begin()), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstReleaseOnEmptyBurst)
@@ -548,30 +537,18 @@ TEST(AmonDpdkPktBurst, PktburstResizeToSameSize)
     EXPECT_TRUE(c.burst[1]->id == 1);
 }
 
-TEST(AmonDpdkPktBurst, PktburstEraseWithOutOfBoundsIteratorThrows)
+TEST(AmonDpdkPktBurst, PktburstEraseWithOutOfBoundsIterator)
 {
     TestCtx c(2);
 
-    EXPECT_THROW(c.burst.erase(c.burst.end()), std::invalid_argument);
-
-    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
-    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
-    EXPECT_TRUE(c.burst.size() == 2);
-    EXPECT_TRUE(c.burst[0]->id == 0);
-    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_DEATH(c.burst.erase(c.burst.end()), "ASSERTION FAILED");
 }
 
-TEST(AmonDpdkPktBurst, PktburstReleaseWithInvalidRangeThrows)
+TEST(AmonDpdkPktBurst, PktburstReleaseWithInvalidRange)
 {
     TestCtx c(2);
 
-    EXPECT_THROW(c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1), std::exception);
-
-    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
-    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
-    EXPECT_TRUE(c.burst.size() == 2);
-    EXPECT_TRUE(c.burst[0]->id == 0);
-    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_DEATH(c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1), "ASSERTION FAILED");
 }
 
 TEST(AmonDpdkPktBurst, PktburstFill)
