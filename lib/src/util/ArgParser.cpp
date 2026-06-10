@@ -28,7 +28,7 @@ std::vector<std::string> ParsedArgs::getAll(const std::string& option) const
             }
         }
 
-    } else if (option.starts_with("-") && option.size() == 2) {
+    } else if (option.starts_with('-') && option.size() == 2) {
         const char shortOpt = option[1];
         for (const auto& [kwArg, value] : m_kwArgs) {
             if (kwArg.m_shortOpt == shortOpt) {
@@ -395,7 +395,7 @@ TEST_CASE("ArgParser parse positional arguments")
         {PosArg("input").required(true), PosArg("output").defaultValue("out.txt")},
         {}}.setAutoHelp(false);
 
-    const char* argv[] = {"prog", "file.txt"};
+    const char* const argv[] = {"prog", "file.txt"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
     CHECK_EQ(args["input"], "file.txt");
@@ -406,7 +406,7 @@ TEST_CASE("ArgParser parse positional arguments with multiple values")
 {
     auto parser = ArgParser {{PosArg("input").allowMultiple(true)}, {}}.setAutoHelp(false);
 
-    const char* argv[] = {"prog", "file.txt", "file2.txt"};
+    const char* const argv[] = {"prog", "file.txt", "file2.txt"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
     CHECK_EQ(args.getAll("input"), std::vector<std::string> {"file.txt", "file2.txt"});
@@ -419,7 +419,7 @@ TEST_CASE("ArgParser parse keyword arguments")
         {KwArg('v', "verbose").help("Enable verbose mode"),
          KwArg('o', "output").hasArg(true).defaultValue("default.txt")}}.setAutoHelp(false);
 
-    const char* argv[] = {"prog", "-v", "-o", "result.txt"};
+    const char* const argv[] = {"prog", "-v", "-o", "result.txt"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
     CHECK(args["--verbose"]);
@@ -432,7 +432,7 @@ TEST_CASE("ArgParser parse keyword arguments with multiple occurences")
         = ArgParser {{}, {KwArg('v', "verbose").allowMultiple(true).help("Increase verbosity")}}
               .setAutoHelp(false);
 
-    const char* argv[] = {"prog", "-vvv"};
+    const char* const argv[] = {"prog", "-vvv"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
     CHECK_EQ(args.count("-v"), 3);
@@ -443,7 +443,7 @@ TEST_CASE("ArgParser parse keyword arguments with multiple occurences and value"
     auto parser = ArgParser {{}, {KwArg('a', "alpha").hasArg(true).allowMultiple(true).help("")}}
                       .setAutoHelp(false);
 
-    const char* argv[] = {"prog", "-a", "1", "-a", "2", "--alpha", "3", "--alpha", "4"};
+    const char* const argv[] = {"prog", "-a", "1", "-a", "2", "--alpha", "3", "--alpha", "4"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
     CHECK_EQ(
@@ -461,7 +461,7 @@ TEST_CASE("ArgParser parse keyword arguments with different ways of specifying t
     auto parser = ArgParser {{}, {KwArg('a', "alpha").hasArg(true).allowMultiple(true).help("")}}
                       .setAutoHelp(false);
 
-    const char* argv[]
+    const char* const argv[]
         = {"prog", "-a1", "-a", "2", "--alpha", "3", "--alpha", "4", "-a", "5", "-a6", "--alpha=7"};
     auto args = parser.parse(12, (argv));
 
@@ -472,7 +472,7 @@ TEST_CASE("ArgParser missing required positional argument throws")
 {
     auto parser = ArgParser {{PosArg("input").required(true)}, {}}.setAutoHelp(false);
 
-    const char* argv[] = {"prog"};
+    const char* const argv[] = {"prog"};
     CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
@@ -481,7 +481,7 @@ TEST_CASE("ArgParser default values for keyword arguments")
     auto parser = ArgParser {{}, {KwArg('o', "output").hasArg(true).defaultValue("default.txt")}}
                       .setAutoHelp(false);
 
-    const char* argv[] = {"prog"};
+    const char* const argv[] = {"prog"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
     CHECK(args["--output"] == "default.txt");
 }
@@ -490,7 +490,7 @@ TEST_CASE("ArgParser unknown keyword argument throws")
 {
     auto parser = ArgParser {{}, {KwArg('v', "verbose")}}.setAutoHelp(false);
 
-    const char* argv[] = {"prog", "--unknown"};
+    const char* const argv[] = {"prog", "--unknown"};
     CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
@@ -498,7 +498,7 @@ TEST_CASE("ArgParser extra positional argument throws")
 {
     auto parser = ArgParser {{PosArg("input").required(true)}, {}}.setAutoHelp(false);
 
-    const char* argv[] = {"prog", "file.txt", "extra.txt"};
+    const char* const argv[] = {"prog", "file.txt", "extra.txt"};
     CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
@@ -506,7 +506,7 @@ TEST_CASE("ArgParser extra keyword argument throws")
 {
     auto parser = ArgParser {{}, {KwArg('v', "verbose")}}.setAutoHelp(false);
 
-    const char* argv[] = {"prog", "-v", "-x"};
+    const char* const argv[] = {"prog", "-v", "-x"};
     CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
@@ -519,7 +519,7 @@ TEST_CASE("ArgParser missing required keyword argument throws")
             KwArg('h', "help").special(true),
         }}.setAutoHelp(false);
 
-    const char* argv[] = {"prog"};
+    const char* const argv[] = {"prog"};
     CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
