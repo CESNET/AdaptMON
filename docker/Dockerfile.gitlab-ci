@@ -11,13 +11,9 @@ ARG GROUPID=0
 RUN cp /etc/skel/.bash_profile /root && \
     cp /etc/skel/.bashrc /root
 
-COPY prepare-machine /prepare-machine
 
-RUN /prepare-machine dev-docker && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf/
-
-RUN if [ $USERID != 0 ]; then \
+RUN dnf install sudo; \
+    if [ $USERID != 0 ]; then \
         groupadd -g $GROUPID $GROUP; \
         useradd -u $USERID -g $GROUP $USER; \
         echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER; \
@@ -25,5 +21,11 @@ RUN if [ $USERID != 0 ]; then \
     fi
 
 USER $USERID:$GROUPID
+
+COPY prepare-machine /prepare-machine
+
+RUN /prepare-machine dev-docker && \
+    sudo dnf clean all && \
+    sudo rm -rf /var/cache/dnf/
 
 ENTRYPOINT ["/bin/bash", "-l", "-c"]
