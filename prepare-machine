@@ -46,6 +46,11 @@ dev-docker)
     ;;
 esac
 
+if [ "$EUID" = 0 ]; then
+    SUDO=${SUDO-}
+else
+    SUDO=${SUDO-sudo}
+fi
 
 OS_ID="$(grep ^ID= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
 OS_ID_LIKE="$(grep ^ID_LIKE= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
@@ -57,32 +62,32 @@ echo "Selected role: $ROLE"
 
 echo
 echo "*** Installing common tools ***"
-dnf install -y sudo git
+$SUDO dnf install -y sudo git
 
 echo
 echo "*** Enabling extra repositories (epel/crb) ***"
-dnf install -y 'dnf-command(config-manager)'
+$SUDO dnf install -y 'dnf-command(config-manager)'
 
 if [[ "$OS_ID" =~ fedora|rhel || "$OS_ID_LIKE" =~ fedora|rhel ]] && [ "$OS_VERSION_MAJOR" = 8 ] && [ "$OS_ID" != ol ]; then
     # PowerTools repository is enabled (CentOS/Rocky/etc. 8)
     echo "Detected OS: RHEL-like 8"
-    dnf install -y epel-release
-    dnf config-manager --set-enabled powertools
+    $SUDO dnf install -y epel-release
+    $SUDO dnf config-manager --set-enabled powertools
 elif [[ "$OS_ID" =~ fedora|rhel || "$OS_ID_LIKE" =~ fedora|rhel ]] && [ "$OS_VERSION_MAJOR" = 9 ] && [ "$OS_ID" != ol ]; then
     # CodeReady Builder repository is enabled (CentOS/Rocky/etc. 9+)
     echo "Detected OS: RHEL-like 9"
-    dnf install -y epel-release
-    dnf config-manager --set-enabled crb
+    $SUDO dnf install -y epel-release
+    $SUDO dnf config-manager --set-enabled crb
 elif [ "$OS_ID" = ol ] && [[ "$OS_VERSION_MAJOR" =~ 8|9 ]]; then
     # CodeReady Builder repository is enabled (Oracle Linux 8, 9)
     echo "Detected OS: Oracle Linux ${OS_VERSION_MAJOR}"
-    dnf install -y epel-release
-    dnf config-manager --set-enabled "ol${OS_VERSION_MAJOR}_codeready_builder"
+    $SUDO dnf install -y epel-release
+    $SUDO dnf config-manager --set-enabled "ol${OS_VERSION_MAJOR}_codeready_builder"
 elif [ "$OS_ID" = ol ] && [ "$OS_VERSION_MAJOR" = 10 ]; then
     # CodeReady Builder repository is enabled (Oracle Linux 10)
     echo "Detected OS: Oracle Linux 10"
-    dnf install -y oracle-epel-release-el10
-    dnf config-manager --set-enabled "ol10_codeready_builder"
+    $SUDO dnf install -y oracle-epel-release-el10
+    $SUDO dnf config-manager --set-enabled "ol10_codeready_builder"
     # OL10 comes with gcc 14 by default, but misses libasan-static package
     GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-15}
     USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
@@ -96,39 +101,39 @@ GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-14}
 GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-false}
 INSTALL_UV=${INSTALL_UV-false}
 
-dnf install -y \
+$SUDO dnf install -y \
     cmake make rpm-build \
     gcc gcc-c++ \
     clang-tools-extra \
     doxygen
 
 if [ "$USE_GCC_TOOLSET" = true ]; then
-    dnf install -y "gcc-toolset-${GCC_TOOLSET_VERSION}"
+    $SUDO dnf install -y "gcc-toolset-${GCC_TOOLSET_VERSION}"
 fi
 
 if [ "$GCC_TOOLSET_AUTOENABLE" = true ]; then
     if [ "$GCC_TOOLSET_VERSION" -lt 15 ]; then
-        echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" > "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+        echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" | $SUDO tee "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
     else
-        echo "eval \"\$(gcc-toolset-${GCC_TOOLSET_VERSION}-env printenv | grep gcc-toolset)\"" > "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+        echo "eval \"\$(gcc-toolset-${GCC_TOOLSET_VERSION}-env printenv | grep gcc-toolset)\"" | $SUDO tee "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
     fi
 
-    chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+    $SUDO chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
 fi
 
 echo
 echo "*** Installing library dependencies ***"
 if [ "$USE_GCC_TOOLSET" = true ]; then
-    dnf install -y \
+    $SUDO dnf install -y \
         "gcc-toolset-${GCC_TOOLSET_VERSION}-libasan-devel" \
         "gcc-toolset-${GCC_TOOLSET_VERSION}-libubsan-devel"
 else
-    dnf install -y --enablerepo=devel \
+    $SUDO dnf install -y --enablerepo=devel \
         libasan-static \
         libubsan-static
 fi
 
-dnf install -y \
+$SUDO dnf install -y \
     libpcap-devel \
     dpdk dpdk-devel dpdk-tools \
 
@@ -136,7 +141,7 @@ dnf install -y \
 echo
 echo "*** Installing python tools ***"
 if [ "$INSTALL_UV" = true ]; then
-    dnf install -y uv
+    $SUDO dnf install -y uv
 else
     echo "WARNING: Package uv is not installed"
 fi
