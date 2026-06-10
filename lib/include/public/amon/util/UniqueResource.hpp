@@ -125,7 +125,8 @@ public:
      * @brief Replace the managed resource. Releases any currently held resource.
      * @param value New resource to manage.
      */
-    void reset(ValueType value) noexcept(std::is_nothrow_move_constructible_v<ValueType>)
+    void reset(ValueType value) noexcept( // NOLINT(bugprone-exception-escape)
+        std::is_nothrow_move_constructible_v<ValueType>)
     {
         if (m_resource.has_value()) {
             Deleter {}(m_resource.value());
@@ -139,7 +140,7 @@ public:
     /**
      * @brief Release the managed resource, if any.
      */
-    void reset() noexcept
+    void reset() noexcept // NOLINT(bugprone-exception-escape)
     {
         if (m_resource.has_value()) {
             Deleter {}(m_resource.value());
