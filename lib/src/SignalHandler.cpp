@@ -269,7 +269,7 @@ void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/)
     }
 }
 
-static void terminateHandler [[noreturn]] () noexcept
+[[noreturn]] static void terminateHandler() noexcept
 {
     util::CharBuffer printBuf;
     printBuf.append(
