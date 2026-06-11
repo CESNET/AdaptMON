@@ -1,4 +1,5 @@
 add_executable(amon-stats
+    src/LayerCounter.cpp
     src/LayerNode.cpp
     src/main.cpp
 )

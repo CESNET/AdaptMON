@@ -5,10 +5,11 @@
  * @copyright Copyright (c) 2026 CESNET, z.s.p.o.
  */
 
+#include "LayerCounter.hpp"
+
 #include <amon/Error.hpp>
 #include <amon/Logger.hpp>
 #include <amon/PacketParser.hpp>
-#include <amon/amon.hpp>
 #include <amon/util/Pcap.hpp>
 
 #include <string>
@@ -50,12 +51,13 @@ int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
     amon::util::PcapReader reader = amon::util::PcapReader::fromFile(filePath);
 
     const amon::PacketParser parser;
+    LayerCounter counter;
     std::vector<std::byte> buffer;
 
     auto linkLayer = dltToLayerType(reader.linkLayerType());
 
-    uint count = 0;
     while (true) {
+        // packet reading
         std::optional<amon::util::PcapPacket> pcapPacket = reader.readPacket();
         if (!pcapPacket) {
             if (reader.eof()) {
@@ -64,8 +66,6 @@ int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
             continue;
         }
 
-        logger.debug("Count: {0}", ++count);
-
         amon::Packet packet;
 
         buffer.assign(pcapPacket->data.begin(), pcapPacket->data.end());
@@ -73,12 +73,8 @@ int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
 
         parser.parse(packet, linkLayer);
 
-        for (auto& currentLayer : packet.layers) {
-            auto layer = amon::match(
-                currentLayer,
-                [&](const amon::PacketLayer& packetLayer) { return packetLayer.type; },
-                [&](const amon::ErrorLayer& error) { return error.type; });
-            logger.debug("Layer: {0}", layer);
-        }
+        counter.countAll(packet);
     }
+
+    counter.printNodes();
 }

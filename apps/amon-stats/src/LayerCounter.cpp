@@ -1,0 +1,95 @@
+/**
+ * @file
+ * @author Petr Macha <petr.macha@cesnet.cz>
+ * @brief Layer counting class
+ * @copyright Copyright (c) 2026 CESNET, z.s.p.o.
+ */
+
+#include "LayerCounter.hpp"
+
+#include <amon/amon.hpp>
+#include <amon/util/Pcap.hpp>
+
+#include <print>
+
+std::string LayerCounter::printNodes(std::string_view prefix, const LayerNode& root)
+{
+    const uint64_t rootCount = root.count;
+    if (rootCount == 0) {
+        return "";
+    }
+
+    std::string fullText;
+    for (const auto& node : root.nodes) {
+        auto count = static_cast<double>(node.count);
+
+        double relativePercentage = (count / static_cast<double>(rootCount)) * 100.0;
+        double absolutePercentage = (count / static_cast<double>(m_rootNode.count)) * 100.0;
+
+        std::string layerError;
+        if (node.error != amon::layers::LayerError::NONE) {
+            layerError = std::format(" [{}]", node.error);
+        }
+
+        fullText += std::format(
+            "{}{}{}: {:.2f}% ({:.2f}% ({}))\n",
+            prefix,
+            node.layerType,
+            layerError,
+            relativePercentage,
+            absolutePercentage,
+            node.count);
+        fullText += printNodes(std::format("{}-", prefix), node);
+    }
+
+    return fullText;
+}
+
+void LayerCounter::printNodes()
+{
+    if (m_rootNode.count == 0) {
+        return;
+    }
+
+    std::string fullText;
+    const std::string prefix;
+    {
+        const std::lock_guard<std::mutex> lock(m_memberMutex);
+        fullText = printNodes(prefix, m_rootNode);
+    }
+    std::print("{}", fullText);
+
+    std::flush(std::cout);
+}
+
+static LayerNode& count(const amon::Packet& packet, LayerNode& parentNode, size_t layerIndex)
+{
+    auto error = amon::layers::LayerError::NONE;
+    const amon::layers::LayerType layer = amon::match(
+        packet.layers[layerIndex],
+        [&](const amon::PacketLayer& packetLayer) { return packetLayer.type; },
+        [&](const amon::ErrorLayer& errorLayer) {
+            error = errorLayer.error;
+            return errorLayer.type;
+        });
+
+    for (auto& node : parentNode.nodes) {
+        if (node.layerType == layer && node.error == error) {
+            node.count++;
+            return node;
+        }
+    }
+
+    return parentNode.nodes.emplace_back(layer, error, 1);
+}
+
+void LayerCounter::countAll(amon::Packet& packet)
+{
+    const std::lock_guard<std::mutex> lock(m_memberMutex);
+
+    m_rootNode.count++;
+    LayerNode* currentNode = &m_rootNode;
+    for (size_t i = 0; i < packet.layers.size(); i++) {
+        currentNode = &count(packet, *currentNode, i);
+    }
+}
