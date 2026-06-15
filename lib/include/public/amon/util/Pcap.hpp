@@ -160,13 +160,14 @@ public:
 
     /**
      * @brief Returns the current position in the underlying file stream.
-     * @return The current position as an unsigned 64-bit integer.
+     * @return Current position in the file stream, returns std::numeric_limits<uint64_t>::max() if
+     * it's an interface
      */
     uint64_t tell() const;
 
     /**
      * @brief Returns the position at the end of the underlying file stream.
-     * @return The end position as an unsigned 64-bit integer.
+     * @return End position of the file stream, returns 0 if it's an interface
      */
     uint64_t tellEnd() const;
 

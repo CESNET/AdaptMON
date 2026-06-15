@@ -244,12 +244,22 @@ int PcapReader::linkLayerType() const
 
 uint64_t PcapReader::tell() const
 {
-    return ftellCurrPos(pcap_file(m_pcap.get()));
+    FILE* file = pcap_file(m_pcap.get());
+    if (file == nullptr) {
+        return 0;
+    }
+
+    return ftellCurrPos(file);
 }
 
 uint64_t PcapReader::tellEnd() const
 {
-    return ftellEndPos(pcap_file(m_pcap.get()));
+    FILE* file = pcap_file(m_pcap.get());
+    if (file == nullptr) {
+        return std::numeric_limits<uint64_t>::max();
+    }
+
+    return ftellEndPos(file);
 }
 
 PcapWriter::PcapWriter(
