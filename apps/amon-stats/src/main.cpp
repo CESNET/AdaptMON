@@ -10,15 +10,56 @@
 #include <amon/Error.hpp>
 #include <amon/Logger.hpp>
 #include <amon/PacketParser.hpp>
+#include <amon/SignalHandler.hpp>
 #include <amon/util/ArgParser.hpp>
 #include <amon/util/Pcap.hpp>
 #include <amon/util/ansi.hpp>
 #include <amon/util/string.hpp>
 
+#include <atomic>
 #include <condition_variable>
 #include <print>
 #include <string>
 #include <thread>
+
+static std::atomic_bool g_stop;
+static std::atomic<amon::util::PcapReader*> g_reader {nullptr};
+
+// A signal handler may only access lock-free atomic objects.
+static_assert(std::atomic<amon::util::PcapReader*>::is_always_lock_free);
+
+static void stopSignalHandler(int /*sigNum*/) noexcept
+{
+    g_stop.store(true);
+    if (amon::util::PcapReader* reader = g_reader.load(std::memory_order_acquire)) {
+        reader->breakLoop();
+    }
+}
+
+namespace {
+
+/**
+ * @brief Publishes a reader to the stop signal handler for the duration of the scope.
+ *
+ * Guarantees the handler never observes a pointer to an already destroyed reader, including
+ * when the scope is left by an exception.
+ */
+class SignalReaderScope {
+public:
+    explicit SignalReaderScope(amon::util::PcapReader& reader) noexcept
+    {
+        g_reader.store(&reader, std::memory_order_release);
+    }
+
+    ~SignalReaderScope() { g_reader.store(nullptr, std::memory_order_release); }
+
+    SignalReaderScope(const SignalReaderScope&) = delete;
+    SignalReaderScope& operator=(const SignalReaderScope&) = delete;
+    SignalReaderScope(SignalReaderScope&&) = delete;
+    SignalReaderScope& operator=(SignalReaderScope&&) = delete;
+};
+
+} // namespace
 
 static constexpr amon::layers::LayerType dltToLayerType(int dataLinkType)
 {
@@ -98,6 +139,8 @@ static void run(const amon::util::ParsedArgs& args)
         throw amon::Error("No input specified. Use --file or --interface.");
     }();
 
+    const SignalReaderScope signalReaderScope {reader};
+
     auto printEvery = amon::util::string::parse<uint32_t>(args["--print-every"].value_or("0"));
 
     const amon::PacketParser parser;
@@ -110,6 +153,11 @@ static void run(const amon::util::ParsedArgs& args)
     std::jthread printWorker(printTimedWorkerLoop, std::ref(counter), printEvery);
 
     while (true) {
+        if (g_stop.load(std::memory_order_relaxed)) {
+            logger.info("Stop signal received... Stopping early.");
+            break;
+        }
+
         // packet reading
         std::optional<amon::util::PcapPacket> pcapPacket = reader.readPacket();
         if (!pcapPacket) {
@@ -144,7 +192,11 @@ static void run(const amon::util::ParsedArgs& args)
 
 int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
 {
+    amon::SignalHandler::installBasic();
+    amon::SignalHandler::installSigAction({SIGINT, SIGTERM}, &stopSignalHandler);
+
     const amon::Logger logger = amon::LoggerProvider::get("main");
+
     static const auto argParser = amon::util::ArgParser(
         {
             amon::util::PosArg("OUTPUT_FILE")
