@@ -220,6 +220,35 @@ public:
 
 protected:
     /**
+     * @brief Construct the context object for the current packet and call processFirstLayer method.
+     *
+     * Method is intended to be overridden in a child to provide an extended parsing context.
+     * Extended context must inherit from PacketParserContext to properly work with default parser
+     * implementations but can be up-casted in custom-overridden virtual methods.
+     *
+     * @param packet Packet object propagated from parse method.
+     * @param firstLayer Type of the first layer in the packet propagated from parse method.
+     * @param startOffset Offset in the packet data propagated from parse method.
+     * @return LayerError indicating success or type of error encountered.
+     */
+    virtual layers::LayerError
+    createContextAndParse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset) const;
+
+    /**
+     * @brief Parse raw packet data and populate Packet structure.
+     * @param ctx Parser context holding state for the current packet.
+     * @param packet Packet object propagated from parse method.
+     * @param firstLayer Type of the first layer in the packet propagated from parse method.
+     * @param startOffset Offset in the packet data propagated from parse method.
+     * @return LayerError indicating success or type of error encountered.
+     */
+    layers::LayerError processFirstLayer(
+        PacketParserContext& ctx,
+        Packet& packet,
+        LayerTypeVariant firstLayer,
+        uint16_t startOffset = 0) const;
+
+    /**
      * @brief Add a layer info (PacketLayer) into layers vector in packet. If layer view
      * construction fails, ErrorLayer is added.
      * @tparam LayerViewT Type of the layer view to add into the layers vector.

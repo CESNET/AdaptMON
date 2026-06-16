@@ -37,8 +37,24 @@ PacketParser::parse(Packet& packet, LayerType firstLayer, const uint16_t startOf
 LayerError
 PacketParser::parse(Packet& packet, LayerTypeVariant firstLayer, const uint16_t startOffset) const
 {
-    PacketParserContext ctx;
+    return createContextAndParse(packet, firstLayer, startOffset);
+}
 
+LayerError PacketParser::createContextAndParse(
+    Packet& packet,
+    LayerTypeVariant firstLayer,
+    uint16_t startOffset) const
+{
+    PacketParserContext ctx;
+    return processFirstLayer(ctx, packet, firstLayer, startOffset);
+}
+
+LayerError PacketParser::processFirstLayer(
+    PacketParserContext& ctx,
+    Packet& packet,
+    LayerTypeVariant firstLayer,
+    uint16_t startOffset) const
+{
     if (std::holds_alternative<PacketParserLinkType>(firstLayer)) {
         return processLinktype(
             ctx,
