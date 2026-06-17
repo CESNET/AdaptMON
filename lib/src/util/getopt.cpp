@@ -144,7 +144,9 @@ Result getOpt(const std::vector<Opt>& opts, int argc, const char* const* argv)
     return res;
 }
 
-TEST_CASE("getOpt parses short options")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonUtilGetopt, GetoptParsesShortOptions)
 {
     const std::vector<Opt> opts
         = {{.shortOpt = 'a', .longOpt = "alpha", .hasArg = NO_ARG},
@@ -152,14 +154,14 @@ TEST_CASE("getOpt parses short options")
     const char* const argv[] = {"prog", "-a", "-b", "val"};
     auto result = getOpt(opts, 4, argv);
 
-    REQUIRE(result.kwArgs.size() == 2);
-    CHECK(result.kwArgs[0].first.shortOpt == 'a');
-    CHECK(!result.kwArgs[0].second.has_value());
-    CHECK(result.kwArgs[1].first.shortOpt == 'b');
-    CHECK(result.kwArgs[1].second == "val");
+    ASSERT_TRUE(result.kwArgs.size() == 2);
+    EXPECT_TRUE(result.kwArgs[0].first.shortOpt == 'a');
+    EXPECT_TRUE(!result.kwArgs[0].second.has_value());
+    EXPECT_TRUE(result.kwArgs[1].first.shortOpt == 'b');
+    EXPECT_TRUE(result.kwArgs[1].second == "val");
 }
 
-TEST_CASE("getOpt parses long options")
+TEST(AmonUtilGetopt, GetoptParsesLongOptions)
 {
     const std::vector<Opt> opts
         = {{.shortOpt = 'a', .longOpt = "alpha", .hasArg = NO_ARG},
@@ -167,14 +169,14 @@ TEST_CASE("getOpt parses long options")
     const char* const argv[] = {"prog", "--alpha", "--beta", "val"};
     auto result = getOpt(opts, 4, argv);
 
-    REQUIRE(result.kwArgs.size() == 2);
-    CHECK(result.kwArgs[0].first.longOpt == "alpha");
-    CHECK(!result.kwArgs[0].second.has_value());
-    CHECK(result.kwArgs[1].first.longOpt == "beta");
-    CHECK(result.kwArgs[1].second == "val");
+    ASSERT_TRUE(result.kwArgs.size() == 2);
+    EXPECT_TRUE(result.kwArgs[0].first.longOpt == "alpha");
+    EXPECT_TRUE(!result.kwArgs[0].second.has_value());
+    EXPECT_TRUE(result.kwArgs[1].first.longOpt == "beta");
+    EXPECT_TRUE(result.kwArgs[1].second == "val");
 }
 
-TEST_CASE("getOpt parses with omitted options")
+TEST(AmonUtilGetopt, GetoptParsesWithOmittedOptions)
 {
     const std::vector<Opt> opts
         = {{.shortOpt = std::nullopt, .longOpt = "alpha", .hasArg = REQUIRED_ARG},
@@ -183,50 +185,50 @@ TEST_CASE("getOpt parses with omitted options")
     const char* const argv[] = {"prog", "--alpha", "a", "-b", "b", "-c", "c"};
     auto result = getOpt(opts, 7, argv);
 
-    REQUIRE(result.kwArgs.size() == 3);
+    ASSERT_TRUE(result.kwArgs.size() == 3);
 
-    CHECK(result.kwArgs[0].first.longOpt == "alpha");
-    CHECK(result.kwArgs[0].second == "a");
+    EXPECT_TRUE(result.kwArgs[0].first.longOpt == "alpha");
+    EXPECT_TRUE(result.kwArgs[0].second == "a");
 
-    CHECK(result.kwArgs[1].first.shortOpt == 'b');
-    CHECK(result.kwArgs[1].second == "b");
+    EXPECT_TRUE(result.kwArgs[1].first.shortOpt == 'b');
+    EXPECT_TRUE(result.kwArgs[1].second == "b");
 
-    CHECK(result.kwArgs[2].first.shortOpt == 'c');
-    CHECK(result.kwArgs[2].second == "c");
+    EXPECT_TRUE(result.kwArgs[2].first.shortOpt == 'c');
+    EXPECT_TRUE(result.kwArgs[2].second == "c");
 }
 
-TEST_CASE("getOpt throws UnknownOpt")
+TEST(AmonUtilGetopt, GetoptThrowsUnknownopt)
 {
     std::vector<Opt> opts;
     const char* const argv[] = {"prog", "-x"};
 
     opts = {{.shortOpt = 'a', .longOpt = "alpha", .hasArg = NO_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 2, argv), UnknownOpt);
+    EXPECT_THROW(getOpt(opts, 2, argv), UnknownOpt);
 
     opts = {{.shortOpt = std::nullopt, .longOpt = "alpha", .hasArg = NO_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 2, argv), UnknownOpt);
+    EXPECT_THROW(getOpt(opts, 2, argv), UnknownOpt);
 
     opts = {{.shortOpt = 'a', .longOpt = std::nullopt, .hasArg = NO_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 2, argv), UnknownOpt);
+    EXPECT_THROW(getOpt(opts, 2, argv), UnknownOpt);
 
     const char* const argv2[] = {"prog", "-a", "-x"};
     opts = {{.shortOpt = 'a', .longOpt = std::nullopt, .hasArg = NO_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 3, argv2), UnknownOpt);
+    EXPECT_THROW(getOpt(opts, 3, argv2), UnknownOpt);
 }
 
-TEST_CASE("getOpt throws MissingOptArg")
+TEST(AmonUtilGetopt, GetoptThrowsMissingoptarg)
 {
     std::vector<Opt> opts;
     const char* const argv[] = {"prog", "-b"};
 
     opts = {{.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 2, argv), MissingOptArg);
+    EXPECT_THROW(getOpt(opts, 2, argv), MissingOptArg);
 
     opts = {{.shortOpt = 'b', .longOpt = std::nullopt, .hasArg = REQUIRED_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 2, argv), MissingOptArg);
+    EXPECT_THROW(getOpt(opts, 2, argv), MissingOptArg);
 }
 
-TEST_CASE("getOpt detects invalid options")
+TEST(AmonUtilGetopt, GetoptDetectsInvalidOptions)
 {
     std::vector<Opt> opts;
     const char* const argv[] = {"prog"};
@@ -234,17 +236,19 @@ TEST_CASE("getOpt detects invalid options")
     opts
         = {{.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG},
            {.shortOpt = std::nullopt, .longOpt = "beta", .hasArg = REQUIRED_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 1, argv), Error);
+    EXPECT_THROW(getOpt(opts, 1, argv), Error);
 
     opts
         = {{.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG},
            {.shortOpt = 'b', .longOpt = std::nullopt, .hasArg = REQUIRED_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 1, argv), Error);
+    EXPECT_THROW(getOpt(opts, 1, argv), Error);
 
     opts
         = {{.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG},
            {.shortOpt = std::nullopt, .longOpt = std::nullopt, .hasArg = REQUIRED_ARG}};
-    CHECK_THROWS_AS(getOpt(opts, 1, argv), Error);
+    EXPECT_THROW(getOpt(opts, 1, argv), Error);
 }
 
-}; // namespace amon::util::getopt
+#endif
+
+} // namespace amon::util::getopt

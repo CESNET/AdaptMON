@@ -151,12 +151,12 @@ const amon::conf::Struct SimpleScalarDefault::SCHEMA {
         .defaultValue = "hello"},
 };
 
-TEST_CASE("YamlConf simple scalar and default")
+TEST(AmonConfYaml, YAMLconfSimpleScalarAndDefault)
 {
     const std::string yaml = "a: 42\n";
     auto s = amon::conf::yaml::parseInto<SimpleScalarDefault>(yaml);
-    CHECK(s.a == 42);
-    CHECK(s.b == "hello");
+    EXPECT_TRUE(s.a == 42);
+    EXPECT_TRUE(s.b == "hello");
 }
 
 struct SimpleMissingRequired {
@@ -172,12 +172,10 @@ const amon::conf::Struct SimpleMissingRequired::SCHEMA {
         .required = true},
 };
 
-TEST_CASE("YamlConf missing required field throws")
+TEST(AmonConfYaml, YAMLconfMissingRequiredFieldThrows)
 {
     const std::string yaml = "b: 1\n";
-    CHECK_THROWS_AS(
-        amon::conf::yaml::parseInto<SimpleMissingRequired>(yaml),
-        amon::conf::ConfigError);
+    EXPECT_THROW(amon::conf::yaml::parseInto<SimpleMissingRequired>(yaml), amon::conf::ConfigError);
 }
 
 struct SimpleExtraKey {
@@ -193,10 +191,10 @@ const amon::conf::Struct SimpleExtraKey::SCHEMA {
         .required = true},
 };
 
-TEST_CASE("YamlConf extra key throws")
+TEST(AmonConfYaml, YAMLconfExtraKeyThrows)
 {
     const std::string yaml = "a: 1\nc: 2\n";
-    CHECK_THROWS_AS(amon::conf::yaml::parseInto<SimpleExtraKey>(yaml), amon::conf::ConfigError);
+    EXPECT_THROW(amon::conf::yaml::parseInto<SimpleExtraKey>(yaml), amon::conf::ConfigError);
 }
 
 struct Inner {
@@ -239,7 +237,7 @@ const amon::conf::Struct Outer::SCHEMA {
         .required = false},
 };
 
-TEST_CASE("YamlConf nested struct and list parsing")
+TEST(AmonConfYaml, YAMLconfNestedStructAndListParsing)
 {
     const std::string yaml = R"(
 name: test
@@ -252,25 +250,25 @@ dict:
 opt: 99
 )";
     auto o = amon::conf::yaml::parseInto<Outer>(yaml);
-    CHECK(o.name == "test");
-    REQUIRE(o.items.size() == 2);
-    CHECK(o.items[0].x == 1);
-    CHECK(o.items[1].x == 2);
-    CHECK(o.dict.at("foo") == 10);
-    CHECK(o.dict.at("bar") == 20);
-    REQUIRE(o.opt.has_value());
-    CHECK(o.opt.value() == 99); // NOLINT(bugprone-unchecked-optional-access)
+    EXPECT_TRUE(o.name == "test");
+    ASSERT_TRUE(o.items.size() == 2);
+    EXPECT_TRUE(o.items[0].x == 1);
+    EXPECT_TRUE(o.items[1].x == 2);
+    EXPECT_TRUE(o.dict.at("foo") == 10);
+    EXPECT_TRUE(o.dict.at("bar") == 20);
+    ASSERT_TRUE(o.opt.has_value());
+    EXPECT_TRUE(o.opt.value() == 99); // NOLINT(bugprone-unchecked-optional-access)
 }
 
-TEST_CASE("YamlConf optional field default")
+TEST(AmonConfYaml, YAMLconfOptionalFieldDefault)
 {
     const std::string yaml = R"(
 name: test
 )";
     auto o = amon::conf::yaml::parseInto<Outer>(yaml);
-    CHECK(o.opt == std::nullopt);
-    CHECK(o.items.empty());
-    CHECK(o.dict.empty());
+    EXPECT_TRUE(o.opt == std::nullopt);
+    EXPECT_TRUE(o.items.empty());
+    EXPECT_TRUE(o.dict.empty());
 }
 
 struct DuplicateFieldStruct {
@@ -279,9 +277,9 @@ struct DuplicateFieldStruct {
     static const amon::conf::Struct SCHEMA;
 };
 
-TEST_CASE("YamlConf duplicate field names throws")
+TEST(AmonConfYaml, YAMLconfDuplicateFieldNamesThrows)
 {
-    CHECK_THROWS_AS(
+    EXPECT_THROW(
         amon::conf::Struct(
             amon::conf::Field {
                 .field = &DuplicateFieldStruct::a,

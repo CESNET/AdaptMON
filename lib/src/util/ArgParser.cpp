@@ -389,7 +389,9 @@ ParsedArgs ArgParser::parse(int argc, const char* const* argv) const
     }
 }
 
-TEST_CASE("ArgParser parse positional arguments")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonUtilArgParser, ArgparserParsePositionalArguments)
 {
     auto parser = ArgParser {
         {PosArg("input").required(true), PosArg("output").defaultValue("out.txt")},
@@ -398,21 +400,21 @@ TEST_CASE("ArgParser parse positional arguments")
     const char* const argv[] = {"prog", "file.txt"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
-    CHECK_EQ(args["input"], "file.txt");
-    CHECK_EQ(args["output"], "out.txt");
+    EXPECT_EQ(args["input"], "file.txt");
+    EXPECT_EQ(args["output"], "out.txt");
 }
 
-TEST_CASE("ArgParser parse positional arguments with multiple values")
+TEST(AmonUtilArgParser, ArgparserParsePositionalArgumentsWithMultipleValues)
 {
     auto parser = ArgParser {{PosArg("input").allowMultiple(true)}, {}}.setAutoHelp(false);
 
     const char* const argv[] = {"prog", "file.txt", "file2.txt"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
-    CHECK_EQ(args.getAll("input"), std::vector<std::string> {"file.txt", "file2.txt"});
+    EXPECT_EQ(args.getAll("input"), (std::vector<std::string> {"file.txt", "file2.txt"}));
 }
 
-TEST_CASE("ArgParser parse keyword arguments")
+TEST(AmonUtilArgParser, ArgparserParseKeywordArguments)
 {
     auto parser = ArgParser{
         {},
@@ -422,11 +424,11 @@ TEST_CASE("ArgParser parse keyword arguments")
     const char* const argv[] = {"prog", "-v", "-o", "result.txt"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
-    CHECK(args["--verbose"]);
-    CHECK_EQ(args["--output"], "result.txt");
+    EXPECT_TRUE(args["--verbose"]);
+    EXPECT_EQ(args["--output"], "result.txt");
 }
 
-TEST_CASE("ArgParser parse keyword arguments with multiple occurences")
+TEST(AmonUtilArgParser, ArgparserParseKeywordArgumentsWithMultipleOccurences)
 {
     auto parser
         = ArgParser {{}, {KwArg('v', "verbose").allowMultiple(true).help("Increase verbosity")}}
@@ -435,10 +437,10 @@ TEST_CASE("ArgParser parse keyword arguments with multiple occurences")
     const char* const argv[] = {"prog", "-vvv"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
-    CHECK_EQ(args.count("-v"), 3);
+    EXPECT_EQ(args.count("-v"), 3);
 }
 
-TEST_CASE("ArgParser parse keyword arguments with multiple occurences and value")
+TEST(AmonUtilArgParser, ArgparserParseKeywordArgumentsWithMultipleOccurencesAndValue)
 {
     auto parser = ArgParser {{}, {KwArg('a', "alpha").hasArg(true).allowMultiple(true).help("")}}
                       .setAutoHelp(false);
@@ -446,17 +448,17 @@ TEST_CASE("ArgParser parse keyword arguments with multiple occurences and value"
     const char* const argv[] = {"prog", "-a", "1", "-a", "2", "--alpha", "3", "--alpha", "4"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), (argv));
 
-    CHECK_EQ(
+    EXPECT_EQ(
         args.getAll("-a"),
-        std::vector<std::string> {
+        (std::vector<std::string> {
             "1",
             "2",
             "3",
             "4",
-        });
+        }));
 }
 
-TEST_CASE("ArgParser parse keyword arguments with different ways of specifying them")
+TEST(AmonUtilArgParser, ArgparserParseKeywordArgumentsWithDifferentWaysOfSpecifyingThem)
 {
     auto parser = ArgParser {{}, {KwArg('a', "alpha").hasArg(true).allowMultiple(true).help("")}}
                       .setAutoHelp(false);
@@ -465,52 +467,52 @@ TEST_CASE("ArgParser parse keyword arguments with different ways of specifying t
         = {"prog", "-a1", "-a", "2", "--alpha", "3", "--alpha", "4", "-a", "5", "-a6", "--alpha=7"};
     auto args = parser.parse(12, (argv));
 
-    CHECK_EQ(args.getAll("-a"), std::vector<std::string> {"1", "2", "3", "4", "5", "6", "7"});
+    EXPECT_EQ(args.getAll("-a"), (std::vector<std::string> {"1", "2", "3", "4", "5", "6", "7"}));
 }
 
-TEST_CASE("ArgParser missing required positional argument throws")
+TEST(AmonUtilArgParser, ArgparserMissingRequiredPositionalArgumentThrows)
 {
     auto parser = ArgParser {{PosArg("input").required(true)}, {}}.setAutoHelp(false);
 
     const char* const argv[] = {"prog"};
-    CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+    EXPECT_THROW(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
-TEST_CASE("ArgParser default values for keyword arguments")
+TEST(AmonUtilArgParser, ArgparserDefaultValuesForKeywordArguments)
 {
     auto parser = ArgParser {{}, {KwArg('o', "output").hasArg(true).defaultValue("default.txt")}}
                       .setAutoHelp(false);
 
     const char* const argv[] = {"prog"};
     auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
-    CHECK(args["--output"] == "default.txt");
+    EXPECT_TRUE(args["--output"] == "default.txt");
 }
 
-TEST_CASE("ArgParser unknown keyword argument throws")
+TEST(AmonUtilArgParser, ArgparserUnknownKeywordArgumentThrows)
 {
     auto parser = ArgParser {{}, {KwArg('v', "verbose")}}.setAutoHelp(false);
 
     const char* const argv[] = {"prog", "--unknown"};
-    CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+    EXPECT_THROW(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
-TEST_CASE("ArgParser extra positional argument throws")
+TEST(AmonUtilArgParser, ArgparserExtraPositionalArgumentThrows)
 {
     auto parser = ArgParser {{PosArg("input").required(true)}, {}}.setAutoHelp(false);
 
     const char* const argv[] = {"prog", "file.txt", "extra.txt"};
-    CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+    EXPECT_THROW(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
-TEST_CASE("ArgParser extra keyword argument throws")
+TEST(AmonUtilArgParser, ArgparserExtraKeywordArgumentThrows)
 {
     auto parser = ArgParser {{}, {KwArg('v', "verbose")}}.setAutoHelp(false);
 
     const char* const argv[] = {"prog", "-v", "-x"};
-    CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+    EXPECT_THROW(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
-TEST_CASE("ArgParser missing required keyword argument throws")
+TEST(AmonUtilArgParser, ArgparserMissingRequiredKeywordArgumentThrows)
 {
     auto parser = ArgParser {
         {},
@@ -520,16 +522,31 @@ TEST_CASE("ArgParser missing required keyword argument throws")
         }}.setAutoHelp(false);
 
     const char* const argv[] = {"prog"};
-    CHECK_THROWS_AS(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+    EXPECT_THROW(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
 }
 
-TEST_CASE("ArgParser positional argument with multiple values not last throws")
+TEST(AmonUtilArgParser, ArgparserPositionalArgumentWithMultipleValuesNotLastThrows)
 {
-    CHECK_THROWS(
-        ArgParser {{PosArg("input").allowMultiple(true), PosArg("output")}, {}}.setAutoHelp(false));
-    CHECK_THROWS(
-        ArgParser {{PosArg("input").allowMultiple(true), PosArg("output").required(false)}, {}}
-            .setAutoHelp(false));
+    EXPECT_THROW(
+        ([] {
+            (void) ArgParser {
+                {PosArg("input").allowMultiple(true), PosArg("output")},
+                {},
+            }
+                .setAutoHelp(false);
+        }()),
+        amon::Error);
+    EXPECT_THROW(
+        ([] {
+            (void) ArgParser {
+                {PosArg("input").allowMultiple(true), PosArg("output").required(false)},
+                {},
+            }
+                .setAutoHelp(false);
+        }()),
+        amon::Error);
 }
+
+#endif
 
 } // namespace amon::util

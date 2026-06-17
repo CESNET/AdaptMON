@@ -76,7 +76,9 @@ static_assert(sizeof(IPv6FragmentHeader) == 8, "IPv6FragmentHeader size must be 
 static_assert(sizeof(IPv6RoutingHeader) == 4, "IPv6RoutingHeader size must be 4 bytes");
 static_assert(sizeof(IPv6ExtensionHeader) == 2, "IPv6ExtensionHeader size must be 2 bytes");
 
-TEST_CASE("IPv6View create valid IPv6 header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersIPv6, IPv6viewCreateValidIPv6Header)
 {
     /* clang-format off */
     const unsigned char packet[] = {
@@ -96,43 +98,43 @@ TEST_CASE("IPv6View create valid IPv6 header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = IPv6View::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 40);
-    CHECK(view.nextHeader() == 0x3A);
-    CHECK(view.hopLimit() == 0x40);
-    CHECK(view.payload().size() == 0); // Payload is empty in this minimal example
-    CHECK(view.payloadLength() == 20);
+    EXPECT_TRUE(view.headerLength() == 40);
+    EXPECT_TRUE(view.nextHeader() == 0x3A);
+    EXPECT_TRUE(view.hopLimit() == 0x40);
+    EXPECT_TRUE(view.payload().size() == 0); // Payload is empty in this minimal example
+    EXPECT_TRUE(view.payloadLength() == 20);
     // Check source and destination addresses are accessible
     // FIXME: check IPs when better IP address type API will be implemented
     (void) view.srcIP();
     (void) view.dstIP();
 }
 
-TEST_CASE("IPv6View header too short")
+TEST(AmonLayersIPv6, IPv6viewHeaderTooShort)
 {
     std::vector<std::byte> bytes(10, std::byte {0});
     auto result = IPv6View::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("IPv6View bad version")
+TEST(AmonLayersIPv6, IPv6viewBadVersion)
 {
     std::vector<std::byte> bytes(40, std::byte {0});
     bytes[0] = std::byte {0x40}; // Version=4, should be 6
     auto result = IPv6View::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::BAD_MAGIC);
+    EXPECT_TRUE(result.error() == LayerError::BAD_MAGIC);
 }
 
-TEST_CASE("IPv6ExtensionView header too short")
+TEST(AmonLayersIPv6, IPv6extensionviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(1, std::byte {0});
     auto result = IPv6ExtensionView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("IPv6ExtensionView create valid extension header")
+TEST(AmonLayersIPv6, IPv6extensionviewCreateValidExtensionHeader)
 {
     // Example: Next Header = 0x3A (ICMPv6), Length = 2 (header is 24 bytes: 2*8+8)
     // Options: 22 bytes (arbitrary values)
@@ -144,23 +146,23 @@ TEST_CASE("IPv6ExtensionView create valid extension header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = IPv6ExtensionView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 24);
-    CHECK(view.nextHeader() == 0x3A);
-    CHECK(view.options().size() == 22);
-    CHECK(view.payload().size() == 0);
+    EXPECT_TRUE(view.headerLength() == 24);
+    EXPECT_TRUE(view.nextHeader() == 0x3A);
+    EXPECT_TRUE(view.options().size() == 22);
+    EXPECT_TRUE(view.payload().size() == 0);
 }
 
-TEST_CASE("IPv6FragmentView header too short")
+TEST(AmonLayersIPv6, IPv6fragmentviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(4, std::byte {0});
     auto result = IPv6FragmentView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("IPv6FragmentView create valid fragment header")
+TEST(AmonLayersIPv6, IPv6fragmentviewCreateValidFragmentHeader)
 {
     // Example: Next Header = 0x06 (TCP), Reserved = 0,
     // Fragment Offset = 0x0018 (24 bytes), More Fragments flag set, Identification = 0x12345678
@@ -175,24 +177,24 @@ TEST_CASE("IPv6FragmentView create valid fragment header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = IPv6FragmentView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 8);
-    CHECK(view.nextHeader() == 0x06);
-    CHECK(view.fragmentOffset() == 181); // Only upper 13 bits, in 8-byte units
-    CHECK(view.moreFragmentsFollow());
-    CHECK(view.payload().size() == 0);
+    EXPECT_TRUE(view.headerLength() == 8);
+    EXPECT_TRUE(view.nextHeader() == 0x06);
+    EXPECT_TRUE(view.fragmentOffset() == 181); // Only upper 13 bits, in 8-byte units
+    EXPECT_TRUE(view.moreFragmentsFollow());
+    EXPECT_TRUE(view.payload().size() == 0);
 }
 
-TEST_CASE("IPv6RoutingView header too short")
+TEST(AmonLayersIPv6, IPv6routingviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(2, std::byte {0});
     auto result = IPv6RoutingView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("IPv6RoutingView create valid routing header")
+TEST(AmonLayersIPv6, IPv6routingviewCreateValidRoutingHeader)
 {
     // Next Header = 0x3A (ICMPv6), Length = 2 (header is 24 bytes: 2*8+8)
     // Routing Type = 1, Segments Left = 3, Routing Data = 20 bytes (arbitrary)
@@ -210,20 +212,22 @@ TEST_CASE("IPv6RoutingView create valid routing header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = IPv6RoutingView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 24);
-    CHECK(view.nextHeader() == 0x3A);
-    CHECK(view.routingType() == 0x01);
-    CHECK(view.segmentsLeft() == 0x03);
-    CHECK(view.routingData().size() == 20);
-    CHECK(view.payload().size() == 0);
+    EXPECT_TRUE(view.headerLength() == 24);
+    EXPECT_TRUE(view.nextHeader() == 0x3A);
+    EXPECT_TRUE(view.routingType() == 0x01);
+    EXPECT_TRUE(view.segmentsLeft() == 0x03);
+    EXPECT_TRUE(view.routingData().size() == 20);
+    EXPECT_TRUE(view.payload().size() == 0);
 
     // Optionally check routingData contents
     const auto routingData = view.routingData();
-    CHECK(reinterpret_cast<const unsigned char*>(routingData.data())[0] == 0xAA);
-    CHECK(reinterpret_cast<const unsigned char*>(routingData.data())[19] == 0x78);
+    EXPECT_TRUE(reinterpret_cast<const unsigned char*>(routingData.data())[0] == 0xAA);
+    EXPECT_TRUE(reinterpret_cast<const unsigned char*>(routingData.data())[19] == 0x78);
 }
+
+#endif
 
 } // namespace amon::layers

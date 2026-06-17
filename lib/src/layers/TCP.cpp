@@ -36,7 +36,9 @@ static_assert(
     "Unexpected construction for TCPHeader");
 static_assert(sizeof(TCPHeader) == 20, "TCPHeader size must be 20 bytes");
 
-TEST_CASE("TCPView create valid TCP header with payload")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersTCP, TCPviewCreateValidTCPHeaderWithPayload)
 {
     // Minimal valid TCP header (20 bytes) + 4 bytes payload
     const unsigned char packet[] = {
@@ -54,27 +56,27 @@ TEST_CASE("TCPView create valid TCP header with payload")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = TCPView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 20);
-    CHECK(view.srcPort() == 4660);
-    CHECK(view.dstPort() == 22136);
-    CHECK(view.sequenceNumber() == 0x01020304);
-    CHECK(view.acknowledgeNumber() == 0x05060708);
-    CHECK(view.payload().size() == 4);
-    CHECK(view.payload()[0] == std::byte {0xDE});
-    CHECK(view.payload()[3] == std::byte {0xEF});
+    EXPECT_TRUE(view.headerLength() == 20);
+    EXPECT_TRUE(view.srcPort() == 4660);
+    EXPECT_TRUE(view.dstPort() == 22136);
+    EXPECT_TRUE(view.sequenceNumber() == 0x01020304);
+    EXPECT_TRUE(view.acknowledgeNumber() == 0x05060708);
+    EXPECT_TRUE(view.payload().size() == 4);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[3] == std::byte {0xEF});
 }
 
-TEST_CASE("TCPView header too short")
+TEST(AmonLayersTCP, TCPviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(10, std::byte {0});
     auto result = TCPView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("TCPView options missing")
+TEST(AmonLayersTCP, TCPviewOptionsMissing)
 {
     // Data offset field indicates header longer than actual data
     const unsigned char packet[] = {
@@ -91,10 +93,10 @@ TEST_CASE("TCPView options missing")
     };
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
     auto result = TCPView::create(frame);
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("TCPView bad length field")
+TEST(AmonLayersTCP, TCPviewBadLengthField)
 {
     // Data offset field indicates header shorted than allowed
     const unsigned char packet[] = {
@@ -110,7 +112,9 @@ TEST_CASE("TCPView bad length field")
     };
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
     auto result = TCPView::create(frame);
-    CHECK(result.error() == LayerError::BAD_LEN_FIELD);
+    EXPECT_TRUE(result.error() == LayerError::BAD_LEN_FIELD);
 }
+
+#endif
 
 } // namespace amon::layers

@@ -28,26 +28,30 @@ static_assert(
     "Unexpected construction for MPLSHeader");
 static_assert(sizeof(MPLSHeader) == 4, "MPLSHeader size must be 4 bytes");
 
-TEST_CASE("MPLSView create valid MPLS header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersMPLS, MPLSviewCreateValidMPLSHeader)
 {
     // Example MPLS header: 0x00 0x01 0x23 0x45
     std::vector<std::byte> bytes
         = {std::byte {0x00}, std::byte {0x01}, std::byte {0x23}, std::byte {0x45}};
 
     auto result = MPLSView::create(std::span<const std::byte>(bytes));
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
     // API: label() returns 20 bits, bottomOfStack() returns bool
-    CHECK(view.label() == 0x00012);
-    CHECK(view.bottomOfStack() == true);
+    EXPECT_TRUE(view.label() == 0x00012);
+    EXPECT_TRUE(view.bottomOfStack() == true);
 }
 
-TEST_CASE("MPLSView header too short")
+TEST(AmonLayersMPLS, MPLSviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(2, std::byte {0});
     auto result = MPLSView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
+
+#endif
 
 } // namespace amon::layers

@@ -26,11 +26,20 @@ std::string errnoToString(int errNum)
     return std::string {buf.data()};
 }
 
-TEST_CASE("ErrnoError")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonError, Errnoerror)
 {
-    CHECK_THROWS_WITH(
-        [] { throw ErrnoError(int(0), "fopen", "thing.xml"); }(),
-        "fopen(\"thing.xml\") has failed: Success (0)");
+    try {
+        throw ErrnoError(int(0), "fopen", "thing.xml");
+    } catch (const ErrnoError& e) {
+        EXPECT_STREQ("fopen(\"thing.xml\") has failed: Success (0)", e.what());
+        return;
+    }
+
+    FAIL() << "Expected ErrnoError";
 }
+
+#endif
 
 } // namespace amon

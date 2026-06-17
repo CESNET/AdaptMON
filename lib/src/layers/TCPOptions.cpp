@@ -98,7 +98,9 @@ static_assert(
     "Unexpected construction for TCPOptionHeader");
 static_assert(sizeof(TCPOptionHeader) == 1, "TCPOptionHeader size must be 1 byte");
 
-TEST_CASE("TCPOptionRange iteration over multiple valid options")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersTCPOptions, TCPoptionrangeIterationOverMultipleValidOptions)
 {
     // clang-format off
     const std::vector<std::byte> rawData = {
@@ -122,28 +124,28 @@ TEST_CASE("TCPOptionRange iteration over multiple valid options")
     const TCPOptionRange optionRange(rawData);
     std::size_t optionIndex = 0;
     for (const auto& option : optionRange) {
-        REQUIRE(option.has_value());
+        ASSERT_TRUE(option.has_value());
 
         if (optionIndex == 0) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::MSS));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::MSS));
         } else if (optionIndex == 1) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::SACK_PERMITTED));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::SACK_PERMITTED));
         } else if (optionIndex == 2) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::TIMESTAMP));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::TIMESTAMP));
         } else if (optionIndex == 3) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::NOP));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::NOP));
         } else if (optionIndex == 4) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::SCALE));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::SCALE));
         } else if (optionIndex == 5) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::EOL));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::EOL));
         }
         ++optionIndex;
     }
 
-    CHECK(optionIndex == 6);
+    EXPECT_TRUE(optionIndex == 6);
 }
 
-TEST_CASE("TCPOptionRange iteration with EOL termination")
+TEST(AmonLayersTCPOptions, TCPoptionrangeIterationWithEolTermination)
 {
     // clang-format off
     const std::vector<std::byte> rawData = {
@@ -169,24 +171,24 @@ TEST_CASE("TCPOptionRange iteration with EOL termination")
     const TCPOptionRange optionRange(rawData);
     std::size_t optionIndex = 0;
     for (const auto& option : optionRange) {
-        REQUIRE(option.has_value());
+        ASSERT_TRUE(option.has_value());
 
         if (optionIndex == 0) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::MSS));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::MSS));
         } else if (optionIndex == 1) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::SACK_PERMITTED));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::SACK_PERMITTED));
         } else if (optionIndex == 2) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::TIMESTAMP));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::TIMESTAMP));
         } else if (optionIndex == 3) {
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::EOL));
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::EOL));
         }
         ++optionIndex;
     }
 
-    CHECK(optionIndex == 4);
+    EXPECT_TRUE(optionIndex == 4);
 }
 
-TEST_CASE("TCPOptionRange iteration with invalid option size")
+TEST(AmonLayersTCPOptions, TCPoptionrangeIterationWithInvalidSackOptionSize)
 {
     // clang-format off
     const std::vector<std::byte> rawData = {
@@ -201,19 +203,19 @@ TEST_CASE("TCPOptionRange iteration with invalid option size")
     std::size_t optionIndex = 0;
     for (const auto& option : optionRange) {
         if (optionIndex == 0) {
-            REQUIRE(option.has_value());
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::MSS));
+            ASSERT_TRUE(option.has_value());
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::MSS));
         } else if (optionIndex == 1) {
-            REQUIRE(!option.has_value());
-            CHECK(option.error() == LayerError::BAD_LEN_FIELD);
+            ASSERT_TRUE(!option.has_value());
+            EXPECT_TRUE(option.error() == LayerError::BAD_LEN_FIELD);
         }
         ++optionIndex;
     }
 
-    CHECK(optionIndex == 2);
+    EXPECT_TRUE(optionIndex == 2);
 }
 
-TEST_CASE("TCPOptionRange iteration with invalid option size")
+TEST(AmonLayersTCPOptions, TCPoptionrangeIterationWithInvalidTimestampOptionSize)
 {
     // clang-format off
     const std::vector<std::byte> rawData = {
@@ -230,43 +232,45 @@ TEST_CASE("TCPOptionRange iteration with invalid option size")
     std::size_t optionIndex = 0;
     for (const auto& option : optionRange) {
         if (optionIndex == 0) {
-            REQUIRE(option.has_value());
-            CHECK(option->kind() == std::to_underlying(TCPOptionKind::MSS));
+            ASSERT_TRUE(option.has_value());
+            EXPECT_TRUE(option->kind() == std::to_underlying(TCPOptionKind::MSS));
         } else if (optionIndex == 1) {
-            REQUIRE(!option.has_value());
-            CHECK(option.error() == LayerError::BAD_LEN_FIELD);
+            ASSERT_TRUE(!option.has_value());
+            EXPECT_TRUE(option.error() == LayerError::BAD_LEN_FIELD);
         }
         ++optionIndex;
     }
 
-    CHECK(optionIndex == 2);
+    EXPECT_TRUE(optionIndex == 2);
 }
 
-TEST_CASE("TCPOptionView create")
+TEST(AmonLayersTCPOptions, TCPoptionviewCreate)
 {
     const std::vector<std::byte> rawDataShort = {std::byte {0xb4}};
     const std::vector<std::byte> rawDataBadLen = {std::byte {0xb4}, std::byte {0xb4}};
 
-    CHECK(TCPOptionView::create({}) == std::unexpected(LayerError::HEADER_SHORT));
-    CHECK(TCPOptionView::create(rawDataShort) == std::unexpected(LayerError::HEADER_SHORT));
-    CHECK(TCPOptionView::create(rawDataBadLen) == std::unexpected(LayerError::BAD_LEN_FIELD));
+    EXPECT_TRUE(TCPOptionView::create({}) == std::unexpected(LayerError::HEADER_SHORT));
+    EXPECT_TRUE(TCPOptionView::create(rawDataShort) == std::unexpected(LayerError::HEADER_SHORT));
+    EXPECT_TRUE(TCPOptionView::create(rawDataBadLen) == std::unexpected(LayerError::BAD_LEN_FIELD));
 }
 
-TEST_CASE("TCPOptionView data accessors validation")
+TEST(AmonLayersTCPOptions, TCPoptionviewDataAccessorsValidation)
 {
     const std::vector<std::byte> rawData
         = {std::byte {0x02}, std::byte {0x04}, std::byte {0x05}, std::byte {0xb4}};
 
     const auto optionView = TCPOptionView::create(rawData);
-    REQUIRE(optionView.has_value());
+    ASSERT_TRUE(optionView.has_value());
     if (optionView.has_value()) {
-        CHECK(optionView->kind() == 0x02);
-        CHECK(optionView->optionLength() == 0x04);
+        EXPECT_TRUE(optionView->kind() == 0x02);
+        EXPECT_TRUE(optionView->optionLength() == 0x04);
         const auto valueSpan = optionView->getValueSpan();
-        CHECK(valueSpan.size() == 2);
-        CHECK(valueSpan[0] == std::byte {0x05});
-        CHECK(valueSpan[1] == std::byte {0xb4});
+        EXPECT_TRUE(valueSpan.size() == 2);
+        EXPECT_TRUE(valueSpan[0] == std::byte {0x05});
+        EXPECT_TRUE(valueSpan[1] == std::byte {0xb4});
     }
 }
+
+#endif
 
 } // namespace amon::layers

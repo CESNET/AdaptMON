@@ -28,7 +28,9 @@ static_assert(
     "Unexpected construction for ICMPHeader");
 static_assert(sizeof(ICMPHeader) == 4, "ICMPHeader size must be 4 bytes");
 
-TEST_CASE("ICMPView create valid ICMP header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersICMP, ICMPviewCreateValidICMPHeader)
 {
     // Minimal valid ICMP header (8 bytes) + 4 bytes payload
     /* clang-format off */
@@ -42,25 +44,27 @@ TEST_CASE("ICMPView create valid ICMP header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = ICMPView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.type() == 8);
-    CHECK(view.code() == 0);
+    EXPECT_TRUE(view.type() == 8);
+    EXPECT_TRUE(view.code() == 0);
     // Rest (sometimes noted in ICMP header) is part of payload
-    CHECK(view.payload().size() == 8);
-    CHECK(view.payload()[0] == std::byte {0x00});
-    CHECK(view.payload()[3] == std::byte {0x02});
+    EXPECT_TRUE(view.payload().size() == 8);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0x00});
+    EXPECT_TRUE(view.payload()[3] == std::byte {0x02});
     // Continuous ICMP data
-    CHECK(view.payload()[4] == std::byte {0xDE});
-    CHECK(view.payload()[7] == std::byte {0xEF});
+    EXPECT_TRUE(view.payload()[4] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[7] == std::byte {0xEF});
 }
 
-TEST_CASE("ICMPView header too short")
+TEST(AmonLayersICMP, ICMPviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(2, std::byte {0});
     auto result = ICMPView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
+
+#endif
 
 } // namespace amon::layers

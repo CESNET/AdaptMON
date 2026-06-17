@@ -16,96 +16,101 @@
 
 namespace amon::util::numeric {
 
-TEST_CASE("safeAdd normal addition")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonUtilNumeric, SafeaddNormalAddition)
 {
-    CHECK(safeAdd(1, 2) == 3);
-    CHECK(safeAdd(0, 0) == 0);
-    CHECK(safeAdd(123456789, 987654321) == 1111111110);
+    EXPECT_TRUE(safeAdd(1, 2) == 3);
+    EXPECT_TRUE(safeAdd(0, 0) == 0);
+    EXPECT_TRUE(safeAdd(123456789, 987654321) == 1111111110);
 }
 
-TEST_CASE("safeAdd edge cases")
+TEST(AmonUtilNumeric, SafeaddEdgeCases)
 {
-    CHECK(safeAdd(0, std::numeric_limits<uint64_t>::max()) == std::numeric_limits<uint64_t>::max());
-    CHECK(safeAdd(std::numeric_limits<uint64_t>::max(), 0) == std::numeric_limits<uint64_t>::max());
+    EXPECT_TRUE(
+        safeAdd(0, std::numeric_limits<uint64_t>::max()) == std::numeric_limits<uint64_t>::max());
+    EXPECT_TRUE(
+        safeAdd(std::numeric_limits<uint64_t>::max(), 0) == std::numeric_limits<uint64_t>::max());
 }
 
-TEST_CASE("safeAdd overflow")
+TEST(AmonUtilNumeric, SafeaddOverflow)
 {
-    CHECK_THROWS_AS(safeAdd(std::numeric_limits<uint64_t>::max(), 1), std::overflow_error);
-    CHECK_THROWS_AS(safeAdd(1, std::numeric_limits<uint64_t>::max()), std::overflow_error);
+    EXPECT_THROW(safeAdd(std::numeric_limits<uint64_t>::max(), 1), std::overflow_error);
+    EXPECT_THROW(safeAdd(1, std::numeric_limits<uint64_t>::max()), std::overflow_error);
 }
 
-TEST_CASE("safeMul normal multiplication")
+TEST(AmonUtilNumeric, SafemulNormalMultiplication)
 {
-    CHECK(safeMul(2, 3) == 6);
-    CHECK(safeMul(0, 123456) == 0);
-    CHECK(safeMul(1, 987654321) == 987654321);
+    EXPECT_TRUE(safeMul(2, 3) == 6);
+    EXPECT_TRUE(safeMul(0, 123456) == 0);
+    EXPECT_TRUE(safeMul(1, 987654321) == 987654321);
 }
 
-TEST_CASE("safeMul edge cases")
+TEST(AmonUtilNumeric, SafemulEdgeCases)
 {
-    CHECK(safeMul(0, std::numeric_limits<uint64_t>::max()) == 0);
-    CHECK(safeMul(std::numeric_limits<uint64_t>::max(), 0) == 0);
-    CHECK(safeMul(std::numeric_limits<uint64_t>::max(), 1) == std::numeric_limits<uint64_t>::max());
+    EXPECT_TRUE(safeMul(0, std::numeric_limits<uint64_t>::max()) == 0);
+    EXPECT_TRUE(safeMul(std::numeric_limits<uint64_t>::max(), 0) == 0);
+    EXPECT_TRUE(
+        safeMul(std::numeric_limits<uint64_t>::max(), 1) == std::numeric_limits<uint64_t>::max());
 }
 
-TEST_CASE("safeMul overflow")
+TEST(AmonUtilNumeric, SafemulOverflow)
 {
-    CHECK_THROWS_AS(safeMul(std::numeric_limits<uint64_t>::max(), 2), std::overflow_error);
-    CHECK_THROWS_AS(
-        safeMul((std::numeric_limits<uint64_t>::max() / 2) + 1, 2),
-        std::overflow_error);
-    CHECK_THROWS_AS(
+    EXPECT_THROW(safeMul(std::numeric_limits<uint64_t>::max(), 2), std::overflow_error);
+    EXPECT_THROW(safeMul((std::numeric_limits<uint64_t>::max() / 2) + 1, 2), std::overflow_error);
+    EXPECT_THROW(
         safeMul(std::numeric_limits<uint64_t>::max(), std::numeric_limits<uint64_t>::max()),
         std::overflow_error);
 }
 
-TEST_CASE("safeCast unsigned to unsigned, no overflow")
+TEST(AmonUtilNumeric, SafecastUnsignedToUnsignedNoOverflow)
 {
     const uint8_t val = 42;
-    CHECK(safeCast<uint16_t>(val) == 42);
+    EXPECT_TRUE(safeCast<uint16_t>(val) == 42);
 }
 
-TEST_CASE("safeCast signed to signed, no overflow")
+TEST(AmonUtilNumeric, SafecastSignedToSignedNoOverflow)
 {
     const int8_t val = -42;
-    CHECK(safeCast<int16_t>(val) == -42);
+    EXPECT_TRUE(safeCast<int16_t>(val) == -42);
 }
 
-TEST_CASE("safeCast unsigned to signed, within range")
+TEST(AmonUtilNumeric, SafecastUnsignedToSignedWithinRange)
 {
     const uint8_t val = 127;
-    CHECK(safeCast<int8_t>(val) == 127);
+    EXPECT_TRUE(safeCast<int8_t>(val) == 127);
 }
 
-TEST_CASE("safeCast unsigned to signed, overflow")
+TEST(AmonUtilNumeric, SafecastUnsignedToSignedOverflow)
 {
     const uint16_t val = 300;
-    CHECK_THROWS_AS(safeCast<int8_t>(val), std::overflow_error);
+    EXPECT_THROW(safeCast<int8_t>(val), std::overflow_error);
 }
 
-TEST_CASE("safeCast signed to unsigned, negative value")
+TEST(AmonUtilNumeric, SafecastSignedToUnsignedNegativeValue)
 {
     const int8_t val = -1;
-    CHECK_THROWS_AS(safeCast<uint8_t>(val), std::overflow_error);
+    EXPECT_THROW(safeCast<uint8_t>(val), std::overflow_error);
 }
 
-TEST_CASE("safeCast signed to unsigned, positive value")
+TEST(AmonUtilNumeric, SafecastSignedToUnsignedPositiveValue)
 {
     const int8_t val = 42;
-    CHECK(safeCast<uint8_t>(val) == 42);
+    EXPECT_TRUE(safeCast<uint8_t>(val) == 42);
 }
 
-TEST_CASE("safeCast value exceeds OutputT max")
+TEST(AmonUtilNumeric, SafecastValueExceedsOutputtMax)
 {
     const int32_t val = std::numeric_limits<int16_t>::max() + 1;
-    CHECK_THROWS_AS(safeCast<int16_t>(val), std::overflow_error);
+    EXPECT_THROW(safeCast<int16_t>(val), std::overflow_error);
 }
 
-TEST_CASE("safeCast value below OutputT min")
+TEST(AmonUtilNumeric, SafecastValueBelowOutputtMin)
 {
     const int32_t val = std::numeric_limits<int16_t>::min() - 1;
-    CHECK_THROWS_AS(safeCast<int16_t>(val), std::overflow_error);
+    EXPECT_THROW(safeCast<int16_t>(val), std::overflow_error);
 }
+
+#endif
 
 } // namespace amon::util::numeric

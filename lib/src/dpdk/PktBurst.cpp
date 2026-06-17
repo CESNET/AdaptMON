@@ -70,124 +70,122 @@ struct TestCtx {
 } // namespace
 // NOLINTEND
 
-TEST_CASE("PktBurst test erase single")
+TEST(AmonDpdkPktBurst, PktburstTestEraseSingle)
 {
     TestCtx c(4);
 
     c.burst.erase(c.burst.begin() + 1);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 0);
-    CHECK(c.mbufs[2]->refcnt == 1);
-    CHECK(c.mbufs[3]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 3);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 2);
-    CHECK(c.burst[2]->id == 3);
+    ASSERT_TRUE(c.burst.size() == 3);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 2);
+    EXPECT_TRUE(c.burst[2]->id == 3);
 }
 
-TEST_CASE("PktBurst test erase range")
+TEST(AmonDpdkPktBurst, PktburstTestEraseRange)
 {
     TestCtx c(4);
 
     c.burst.erase(c.burst.begin(), c.burst.begin() + 2);
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 0);
-    CHECK(c.mbufs[2]->refcnt == 1);
-    CHECK(c.mbufs[3]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 2);
-    CHECK(c.burst[0]->id == 2);
-    CHECK(c.burst[1]->id == 3);
+    ASSERT_TRUE(c.burst.size() == 2);
+    EXPECT_TRUE(c.burst[0]->id == 2);
+    EXPECT_TRUE(c.burst[1]->id == 3);
 }
 
-TEST_CASE("PktBurst test erase invalid range")
+TEST(AmonDpdkPktBurst, PktburstTestEraseInvalidRange)
 {
     TestCtx c(4);
 
-    CHECK_THROWS_AS(c.burst.erase(c.burst.begin() + 4), std::invalid_argument);
-    CHECK_THROWS_AS(c.burst.erase(c.burst.begin() + 1, c.burst.end() + 1), std::invalid_argument);
+    EXPECT_THROW(c.burst.erase(c.burst.begin() + 4), std::invalid_argument);
+    EXPECT_THROW(c.burst.erase(c.burst.begin() + 1, c.burst.end() + 1), std::invalid_argument);
 }
 
-TEST_CASE("PktBurst test release")
+TEST(AmonDpdkPktBurst, PktburstTestRelease)
 {
     TestCtx c(3);
 
     c.burst.release(c.burst.begin(), c.burst.begin() + 2);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 2);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 2);
 }
 
-TEST_CASE("PktBurst test release invalid range")
+TEST(AmonDpdkPktBurst, PktburstTestReleaseInvalidRange)
 {
     TestCtx c(4);
 
-    CHECK_THROWS_AS(
-        c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1),
-        std::invalid_argument);
+    EXPECT_THROW(c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1), std::invalid_argument);
 }
 
-TEST_CASE("PktBurst test copy")
+TEST(AmonDpdkPktBurst, PktburstTestCopy)
 {
     TestCtx c(3);
 
     std::vector<MockMbuf*> out(2);
     c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out.begin());
 
-    REQUIRE(out[0] != nullptr);
-    CHECK(out[0]->id == 0);
-    REQUIRE(out[1] != nullptr);
-    CHECK(out[1]->id == 1);
+    ASSERT_TRUE(out[0] != nullptr);
+    EXPECT_TRUE(out[0]->id == 0);
+    ASSERT_TRUE(out[1] != nullptr);
+    EXPECT_TRUE(out[1]->id == 1);
 
-    CHECK(c.mbufs[0]->refcnt == 2);
-    CHECK(c.mbufs[1]->refcnt == 2);
-    CHECK(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 3);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
-    CHECK(c.burst[2]->id == 2);
+    ASSERT_TRUE(c.burst.size() == 3);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.burst[2]->id == 2);
 }
 
-TEST_CASE("PktBurst test copy to burst")
+TEST(AmonDpdkPktBurst, PktburstTestCopyToBurst)
 {
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(2);
     c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out);
 
-    REQUIRE(out.size() == 2);
-    REQUIRE(out[0] != nullptr);
-    CHECK(out[0]->id == 0);
-    REQUIRE(out[1] != nullptr);
-    CHECK(out[1]->id == 1);
+    ASSERT_TRUE(out.size() == 2);
+    ASSERT_TRUE(out[0] != nullptr);
+    EXPECT_TRUE(out[0]->id == 0);
+    ASSERT_TRUE(out[1] != nullptr);
+    EXPECT_TRUE(out[1]->id == 1);
 
-    CHECK(c.mbufs[0]->refcnt == 2);
-    CHECK(c.mbufs[1]->refcnt == 2);
-    CHECK(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 3);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
-    CHECK(c.burst[2]->id == 2);
+    ASSERT_TRUE(c.burst.size() == 3);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.burst[2]->id == 2);
 }
 
-TEST_CASE("PktBurst test copy to burst that is too small")
+TEST(AmonDpdkPktBurst, PktburstTestCopyToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(1);
-    CHECK_THROWS_AS(c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out), std::length_error);
+    EXPECT_THROW(c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out), std::length_error);
 }
 
-TEST_CASE("PktBurst test copyIf")
+TEST(AmonDpdkPktBurst, PktburstTestCopyif)
 {
     TestCtx c(3);
 
@@ -195,23 +193,23 @@ TEST_CASE("PktBurst test copyIf")
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     auto it = c.burst.copyIf(pred, out.begin());
 
-    CHECK(it == out.begin() + 2);
-    REQUIRE(out[0] != nullptr);
-    CHECK(out[0]->id == 0);
-    REQUIRE(out[1] != nullptr);
-    CHECK(out[1]->id == 2);
+    EXPECT_TRUE(it == out.begin() + 2);
+    ASSERT_TRUE(out[0] != nullptr);
+    EXPECT_TRUE(out[0]->id == 0);
+    ASSERT_TRUE(out[1] != nullptr);
+    EXPECT_TRUE(out[1]->id == 2);
 
-    CHECK(c.mbufs[0]->refcnt == 2);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 2);
 
-    REQUIRE(c.burst.size() == 3);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
-    CHECK(c.burst[2]->id == 2);
+    ASSERT_TRUE(c.burst.size() == 3);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.burst[2]->id == 2);
 }
 
-TEST_CASE("PktBurst test copyIf to burst")
+TEST(AmonDpdkPktBurst, PktburstTestCopyifToBurst)
 {
     TestCtx c(3);
 
@@ -219,81 +217,81 @@ TEST_CASE("PktBurst test copyIf to burst")
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     c.burst.copyIf(pred, out);
 
-    REQUIRE(out.size() == 2);
-    REQUIRE(out[0] != nullptr);
-    CHECK(out[0]->id == 0);
-    REQUIRE(out[1] != nullptr);
-    CHECK(out[1]->id == 2);
+    ASSERT_TRUE(out.size() == 2);
+    ASSERT_TRUE(out[0] != nullptr);
+    EXPECT_TRUE(out[0]->id == 0);
+    ASSERT_TRUE(out[1] != nullptr);
+    EXPECT_TRUE(out[1]->id == 2);
 
-    CHECK(c.mbufs[0]->refcnt == 2);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 2);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 2);
 
-    REQUIRE(c.burst.size() == 3);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
-    CHECK(c.burst[2]->id == 2);
+    ASSERT_TRUE(c.burst.size() == 3);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.burst[2]->id == 2);
 }
 
-TEST_CASE("PktBurst test copyIf to burst that is too small")
+TEST(AmonDpdkPktBurst, PktburstTestCopyifToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(2);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
-    CHECK_THROWS_AS(c.burst.copyIf(pred, out), std::length_error);
+    EXPECT_THROW(c.burst.copyIf(pred, out), std::length_error);
 }
 
-TEST_CASE("PktBurst test move")
+TEST(AmonDpdkPktBurst, PktburstTestMove)
 {
     TestCtx c(3);
 
     std::vector<MockMbuf*> out(2);
     c.burst.move(c.burst.begin(), c.burst.begin() + 2, out.begin());
 
-    REQUIRE(out[0] != nullptr);
-    CHECK(out[0]->id == 0);
-    REQUIRE(out[1] != nullptr);
-    CHECK(out[1]->id == 1);
+    ASSERT_TRUE(out[0] != nullptr);
+    EXPECT_TRUE(out[0]->id == 0);
+    ASSERT_TRUE(out[1] != nullptr);
+    EXPECT_TRUE(out[1]->id == 1);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 2);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 2);
 }
 
-TEST_CASE("PktBurst test move to burst")
+TEST(AmonDpdkPktBurst, PktburstTestMoveToBurst)
 {
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(2);
     c.burst.move(c.burst.begin(), c.burst.begin() + 2, out);
 
-    REQUIRE(out.size() == 2);
-    REQUIRE(out[0] != nullptr);
-    CHECK(out[0]->id == 0);
-    REQUIRE(out[1] != nullptr);
-    CHECK(out[1]->id == 1);
+    ASSERT_TRUE(out.size() == 2);
+    ASSERT_TRUE(out[0] != nullptr);
+    EXPECT_TRUE(out[0]->id == 0);
+    ASSERT_TRUE(out[1] != nullptr);
+    EXPECT_TRUE(out[1]->id == 1);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 2);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 2);
 }
 
-TEST_CASE("PktBurst test move to burst that is too small")
+TEST(AmonDpdkPktBurst, PktburstTestMoveToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(1);
-    CHECK_THROWS_AS(c.burst.move(c.burst.begin(), c.burst.begin() + 2, out), std::length_error);
+    EXPECT_THROW(c.burst.move(c.burst.begin(), c.burst.begin() + 2, out), std::length_error);
 }
 
-TEST_CASE("PktBurst test moveIf")
+TEST(AmonDpdkPktBurst, PktburstTestMoveif)
 {
     TestCtx c(3);
 
@@ -301,19 +299,19 @@ TEST_CASE("PktBurst test moveIf")
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     auto it = c.burst.moveIf(pred, out.begin());
 
-    CHECK(it == out.begin() + 2);
-    CHECK(out[0]->id == 0);
-    CHECK(out[1]->id == 2);
+    EXPECT_TRUE(it == out.begin() + 2);
+    EXPECT_TRUE(out[0]->id == 0);
+    EXPECT_TRUE(out[1]->id == 2);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 1);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 1);
 }
 
-TEST_CASE("PktBurst test moveIf to burst")
+TEST(AmonDpdkPktBurst, PktburstTestMoveifToBurst)
 {
     TestCtx c(3);
 
@@ -321,268 +319,268 @@ TEST_CASE("PktBurst test moveIf to burst")
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     c.burst.moveIf(pred, out);
 
-    REQUIRE(out.size() == 2);
-    CHECK(out[0]->id == 0);
-    CHECK(out[1]->id == 2);
+    ASSERT_TRUE(out.size() == 2);
+    EXPECT_TRUE(out[0]->id == 0);
+    EXPECT_TRUE(out[1]->id == 2);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 1);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 1);
 }
 
-TEST_CASE("PktBurst test moveIf to burst that is too small")
+TEST(AmonDpdkPktBurst, PktburstTestMoveifToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
     PktBurstImpl<MockRte> out(2);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
-    CHECK_THROWS_AS(c.burst.moveIf(pred, out), std::length_error);
+    EXPECT_THROW(c.burst.moveIf(pred, out), std::length_error);
 }
 
-TEST_CASE("PktBurst test eraseIf")
+TEST(AmonDpdkPktBurst, PktburstTestEraseif)
 {
     TestCtx c(3);
 
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     c.burst.eraseIf(pred);
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 1);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 1);
 }
 
-TEST_CASE("PktBurst test resize smaller")
+TEST(AmonDpdkPktBurst, PktburstTestResizeSmaller)
 {
     TestCtx c(3);
 
     c.burst.resize(2);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
 
-    REQUIRE(c.burst.size() == 2);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
+    ASSERT_TRUE(c.burst.size() == 2);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
 }
 
-TEST_CASE("PktBurst test resize larger")
+TEST(AmonDpdkPktBurst, PktburstTestResizeLarger)
 {
     TestCtx c(4);
 
     c.burst.resize(2);
     c.burst.resize(4);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 0);
-    CHECK(c.mbufs[3]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 0);
 
-    REQUIRE(c.burst.size() == 4);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
-    CHECK(c.burst[2] == nullptr);
-    CHECK(c.burst[3] == nullptr);
+    ASSERT_TRUE(c.burst.size() == 4);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.burst[2] == nullptr);
+    EXPECT_TRUE(c.burst[3] == nullptr);
 }
 
-TEST_CASE("PktBurst test resize beyond capacity")
+TEST(AmonDpdkPktBurst, PktburstTestResizeBeyondCapacity)
 {
     TestCtx c(4);
 
-    CHECK_THROWS_AS(c.burst.resize(5), std::length_error);
+    EXPECT_THROW(c.burst.resize(5), std::length_error);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 1);
-    CHECK(c.mbufs[3]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 4);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
-    CHECK(c.burst[2]->id == 2);
-    CHECK(c.burst[3]->id == 3);
+    ASSERT_TRUE(c.burst.size() == 4);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.burst[2]->id == 2);
+    EXPECT_TRUE(c.burst[3]->id == 3);
 }
 
-TEST_CASE("PktBurst test clear")
+TEST(AmonDpdkPktBurst, PktburstTestClear)
 {
     TestCtx c(3);
 
     c.burst.clear();
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 0);
-    CHECK(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
 
-    CHECK(c.burst.size() == 0);
+    EXPECT_TRUE(c.burst.size() == 0);
 }
 
-TEST_CASE("PktBurst test operator[]")
+TEST(AmonDpdkPktBurst, PktburstTestOperator)
 {
     TestCtx c(2);
 
-    CHECK(c.burst[0] == c.mbufs[0].get()); // NOLINT
-    CHECK(c.burst[1] == c.mbufs[1].get());
+    EXPECT_TRUE(c.burst[0] == c.mbufs[0].get()); // NOLINT
+    EXPECT_TRUE(c.burst[1] == c.mbufs[1].get());
 
     c.burst[1] = nullptr;
-    CHECK(c.burst[1] == nullptr);
-    CHECK(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.burst[1] == nullptr);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
 }
 
-TEST_CASE("PktBurst test available/capacity")
+TEST(AmonDpdkPktBurst, PktburstTestAvailableCapacity)
 {
     TestCtx c(4);
 
     c.burst.resize(2);
-    CHECK(c.burst.available() == 2);
-    CHECK(c.burst.capacity() == 4);
+    EXPECT_TRUE(c.burst.available() == 2);
+    EXPECT_TRUE(c.burst.capacity() == 4);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.mbufs[2]->refcnt == 0);
-    CHECK(c.mbufs[3]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 0);
 }
 
-TEST_CASE("PktBurst test resize to zero")
+TEST(AmonDpdkPktBurst, PktburstTestResizeToZero)
 {
     TestCtx c(2);
 
     c.burst.resize(0);
 
-    REQUIRE(c.burst.size() == 0);
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 0);
+    ASSERT_TRUE(c.burst.size() == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
 }
 
-TEST_CASE("PktBurst test erase single-item range")
+TEST(AmonDpdkPktBurst, PktburstTestEraseSingleItemRange)
 {
     TestCtx c(2);
 
     c.burst.erase(c.burst.begin(), c.burst.begin() + 1);
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 1);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 1);
 }
 
-TEST_CASE("PktBurst test erase all one by one")
+TEST(AmonDpdkPktBurst, PktburstTestEraseAllOneByOne)
 {
     TestCtx c(2);
 
     c.burst.erase(c.burst.begin());
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
 
-    REQUIRE(c.burst.size() == 1);
-    CHECK(c.burst[0]->id == 1);
+    ASSERT_TRUE(c.burst.size() == 1);
+    EXPECT_TRUE(c.burst[0]->id == 1);
 
     c.burst.erase(c.burst.begin());
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
 
-    REQUIRE(c.burst.size() == 0);
+    ASSERT_TRUE(c.burst.size() == 0);
 }
 
-TEST_CASE("PktBurst erase on empty burst")
+TEST(AmonDpdkPktBurst, PktburstEraseOnEmptyBurst)
 {
     TestCtx c(4);
 
     c.burst.resize(0);
-    REQUIRE(c.burst.size() == 0);
-    REQUIRE(c.burst.begin() == c.burst.end());
+    ASSERT_TRUE(c.burst.size() == 0);
+    ASSERT_TRUE(c.burst.begin() == c.burst.end());
 
-    CHECK_THROWS_AS(c.burst.erase(c.burst.begin()), std::invalid_argument);
+    EXPECT_THROW(c.burst.erase(c.burst.begin()), std::invalid_argument);
 }
 
-TEST_CASE("PktBurst release on empty burst")
+TEST(AmonDpdkPktBurst, PktburstReleaseOnEmptyBurst)
 {
     TestCtx c(4);
 
     c.burst.resize(0);
-    REQUIRE(c.burst.size() == 0);
-    REQUIRE(c.burst.begin() == c.burst.end());
+    ASSERT_TRUE(c.burst.size() == 0);
+    ASSERT_TRUE(c.burst.begin() == c.burst.end());
 
     c.burst.release(c.burst.begin(), c.burst.begin());
-    CHECK(c.burst.size() == 0);
-    CHECK(c.burst.capacity() == 4);
+    EXPECT_TRUE(c.burst.size() == 0);
+    EXPECT_TRUE(c.burst.capacity() == 4);
 }
 
-TEST_CASE("PktBurst clear on empty burst")
+TEST(AmonDpdkPktBurst, PktburstClearOnEmptyBurst)
 {
     TestCtx c(4);
 
     c.burst.resize(0);
-    REQUIRE(c.burst.size() == 0);
-    REQUIRE(c.burst.capacity() == 4);
-    REQUIRE(c.mbufs[0]->refcnt == 0);
-    REQUIRE(c.mbufs[1]->refcnt == 0);
-    REQUIRE(c.mbufs[2]->refcnt == 0);
-    REQUIRE(c.mbufs[3]->refcnt == 0);
+    ASSERT_TRUE(c.burst.size() == 0);
+    ASSERT_TRUE(c.burst.capacity() == 4);
+    ASSERT_TRUE(c.mbufs[0]->refcnt == 0);
+    ASSERT_TRUE(c.mbufs[1]->refcnt == 0);
+    ASSERT_TRUE(c.mbufs[2]->refcnt == 0);
+    ASSERT_TRUE(c.mbufs[3]->refcnt == 0);
 
     c.burst.clear();
-    CHECK(c.burst.size() == 0);
-    CHECK(c.burst.capacity() == 4);
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 0);
-    CHECK(c.mbufs[2]->refcnt == 0);
-    CHECK(c.mbufs[3]->refcnt == 0);
+    EXPECT_TRUE(c.burst.size() == 0);
+    EXPECT_TRUE(c.burst.capacity() == 4);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 0);
 }
 
-TEST_CASE("PktBurst resize to same size")
+TEST(AmonDpdkPktBurst, PktburstResizeToSameSize)
 {
     TestCtx c(2);
 
     c.burst.resize(2);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.burst.size() == 2);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.burst.size() == 2);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
 }
 
-TEST_CASE("PktBurst erase with out of bounds iterator throws")
+TEST(AmonDpdkPktBurst, PktburstEraseWithOutOfBoundsIteratorThrows)
 {
     TestCtx c(2);
 
-    CHECK_THROWS_AS(c.burst.erase(c.burst.end()), std::invalid_argument);
+    EXPECT_THROW(c.burst.erase(c.burst.end()), std::invalid_argument);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.burst.size() == 2);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.burst.size() == 2);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
 }
 
-TEST_CASE("PktBurst release with invalid range throws")
+TEST(AmonDpdkPktBurst, PktburstReleaseWithInvalidRangeThrows)
 {
     TestCtx c(2);
 
-    CHECK_THROWS_AS(c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1), std::exception);
+    EXPECT_THROW(c.burst.release(c.burst.begin() + 2, c.burst.begin() + 1), std::exception);
 
-    CHECK(c.mbufs[0]->refcnt == 1);
-    CHECK(c.mbufs[1]->refcnt == 1);
-    CHECK(c.burst.size() == 2);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+    EXPECT_TRUE(c.burst.size() == 2);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
 }
 
-TEST_CASE("PktBurst fill")
+TEST(AmonDpdkPktBurst, PktburstFill)
 {
     TestCtx c(4);
 
     c.burst.resize(0);
-    REQUIRE(c.burst.size() == 0);
-    REQUIRE(c.burst.begin() == c.burst.end());
+    ASSERT_TRUE(c.burst.size() == 0);
+    ASSERT_TRUE(c.burst.begin() == c.burst.end());
 
     c.burst.fill([&](std::span<MockRte::mbuf*> mbufs) -> size_t {
         for (unsigned i = 0; i < 2; ++i) {
@@ -591,12 +589,12 @@ TEST_CASE("PktBurst fill")
         }
         return 2;
     });
-    REQUIRE(c.burst.size() == 2);
-    CHECK(c.burst[0]->id == 0);
-    CHECK(c.burst[1]->id == 1);
+    ASSERT_TRUE(c.burst.size() == 2);
+    EXPECT_TRUE(c.burst[0]->id == 0);
+    EXPECT_TRUE(c.burst[1]->id == 1);
 }
 
-TEST_CASE("PktBurst test destructor")
+TEST(AmonDpdkPktBurst, PktburstTestDestructor)
 {
     TestCtx c(4);
 
@@ -604,21 +602,21 @@ TEST_CASE("PktBurst test destructor")
         PktBurstImpl<MockRte> burst2(c.burst.size());
         c.burst.move(c.burst.begin(), c.burst.end(), burst2);
 
-        REQUIRE(c.burst.size() == 0);
-        REQUIRE(burst2.size() == 4);
-        REQUIRE(c.mbufs[0]->refcnt == 1);
-        REQUIRE(c.mbufs[1]->refcnt == 1);
-        REQUIRE(c.mbufs[2]->refcnt == 1);
-        REQUIRE(c.mbufs[3]->refcnt == 1);
+        ASSERT_TRUE(c.burst.size() == 0);
+        ASSERT_TRUE(burst2.size() == 4);
+        ASSERT_TRUE(c.mbufs[0]->refcnt == 1);
+        ASSERT_TRUE(c.mbufs[1]->refcnt == 1);
+        ASSERT_TRUE(c.mbufs[2]->refcnt == 1);
+        ASSERT_TRUE(c.mbufs[3]->refcnt == 1);
     }
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 0);
-    CHECK(c.mbufs[2]->refcnt == 0);
-    CHECK(c.mbufs[3]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 0);
 }
 
-TEST_CASE("PktBurst test move constructor")
+TEST(AmonDpdkPktBurst, PktburstTestMoveConstructor)
 {
     TestCtx c(4);
 
@@ -626,20 +624,20 @@ TEST_CASE("PktBurst test move constructor")
         const PktBurstImpl<MockRte> burst2 {std::move(c.burst)};
 
         // c.burst.size() is undefined at this point (moved from object)
-        CHECK(burst2.size() == 4);
-        CHECK(c.mbufs[0]->refcnt == 1);
-        CHECK(c.mbufs[1]->refcnt == 1);
-        CHECK(c.mbufs[2]->refcnt == 1);
-        CHECK(c.mbufs[3]->refcnt == 1);
+        EXPECT_TRUE(burst2.size() == 4);
+        EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+        EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+        EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
+        EXPECT_TRUE(c.mbufs[3]->refcnt == 1);
     }
 
-    CHECK(c.mbufs[0]->refcnt == 0);
-    CHECK(c.mbufs[1]->refcnt == 0);
-    CHECK(c.mbufs[2]->refcnt == 0);
-    CHECK(c.mbufs[3]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(c.mbufs[3]->refcnt == 0);
 }
 
-TEST_CASE("PktBurst test move assignment operator")
+TEST(AmonDpdkPktBurst, PktburstTestMoveAssignmentOperator)
 {
     std::vector<std::unique_ptr<MockMbuf>> mbufs;
 
@@ -651,20 +649,20 @@ TEST_CASE("PktBurst test move assignment operator")
 
             burst2 = std::move(c.burst);
             // c.burst size() is undefined at this point (moved from object)
-            CHECK(burst2.size() == 4);
-            CHECK(c.mbufs[0]->refcnt == 1);
-            CHECK(c.mbufs[1]->refcnt == 1);
-            CHECK(c.mbufs[2]->refcnt == 1);
-            CHECK(c.mbufs[3]->refcnt == 1);
+            EXPECT_TRUE(burst2.size() == 4);
+            EXPECT_TRUE(c.mbufs[0]->refcnt == 1);
+            EXPECT_TRUE(c.mbufs[1]->refcnt == 1);
+            EXPECT_TRUE(c.mbufs[2]->refcnt == 1);
+            EXPECT_TRUE(c.mbufs[3]->refcnt == 1);
         }
 
         mbufs = std::move(c.mbufs);
     }
 
-    CHECK(mbufs[0]->refcnt == 0);
-    CHECK(mbufs[1]->refcnt == 0);
-    CHECK(mbufs[2]->refcnt == 0);
-    CHECK(mbufs[3]->refcnt == 0);
+    EXPECT_TRUE(mbufs[0]->refcnt == 0);
+    EXPECT_TRUE(mbufs[1]->refcnt == 0);
+    EXPECT_TRUE(mbufs[2]->refcnt == 0);
+    EXPECT_TRUE(mbufs[3]->refcnt == 0);
 }
 
 #endif
