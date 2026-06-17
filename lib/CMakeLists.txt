@@ -29,6 +29,7 @@ add_library(amon-lib
     src/PacketParser.cpp
     src/SignalHandler.cpp
     src/Stacktrace.cpp
+    src/Strerror.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
