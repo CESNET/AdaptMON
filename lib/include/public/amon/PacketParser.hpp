@@ -170,13 +170,22 @@ struct PacketParserConfig {
 };
 
 /**
+ * @brief Struct holding state while parsing packet. It is constructed for each packet and passed to
+ * layers parsing methods.
+ */
+struct PacketParserContext {
+    /// Index of last layer added to PacketLayout while packet parsing (2=L2, 3=L3, 4=L4). Max
+    /// unsigned value is used as resetted value.
+    unsigned layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
+};
+
+/**
  * @brief Packet parser class.
  *
  * Provides method to parse raw packet data and populate Packet structure.
  *
- * @warning This class is NOT thread-safe. Do not call parse() method concurrently from multiple
- * threads on the same PacketParser instance. Each thread should use its own PacketParser instance
- * for thread-safe operation.
+ * @note This class is thread-safe. The parse() method can be called concurrently from multiple
+ * threads on the same PacketParser instance.
  */
 class PacketParser {
 public:
@@ -196,7 +205,7 @@ public:
      * @return LayerError indicating success or type of error encountered.
      */
     layers::LayerError
-    parse(Packet& packet, layers::LayerType firstLayer, uint16_t startOffset = 0);
+    parse(Packet& packet, layers::LayerType firstLayer, uint16_t startOffset = 0) const;
 
     /**
      * @brief Parse raw packet data and populate Packet structure.
@@ -206,13 +215,44 @@ public:
      * @param startOffset Offset in the packet data where parsing should start.
      * @return LayerError indicating success or type of error encountered.
      */
-    layers::LayerError parse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset = 0);
+    layers::LayerError
+    parse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset = 0) const;
 
 protected:
+    /**
+     * @brief Construct the context object for the current packet and call processFirstLayer method.
+     *
+     * Method is intended to be overridden in a child to provide an extended parsing context.
+     * Extended context must inherit from PacketParserContext to properly work with default parser
+     * implementations but can be up-casted in custom-overridden virtual methods.
+     *
+     * @param packet Packet object propagated from parse method.
+     * @param firstLayer Type of the first layer in the packet propagated from parse method.
+     * @param startOffset Offset in the packet data propagated from parse method.
+     * @return LayerError indicating success or type of error encountered.
+     */
+    virtual layers::LayerError
+    createContextAndParse(Packet& packet, LayerTypeVariant firstLayer, uint16_t startOffset) const;
+
+    /**
+     * @brief Parse raw packet data and populate Packet structure.
+     * @param ctx Parser context holding state for the current packet.
+     * @param packet Packet object propagated from parse method.
+     * @param firstLayer Type of the first layer in the packet propagated from parse method.
+     * @param startOffset Offset in the packet data propagated from parse method.
+     * @return LayerError indicating success or type of error encountered.
+     */
+    layers::LayerError processFirstLayer(
+        PacketParserContext& ctx,
+        Packet& packet,
+        LayerTypeVariant firstLayer,
+        uint16_t startOffset = 0) const;
+
     /**
      * @brief Add a layer info (PacketLayer) into layers vector in packet. If layer view
      * construction fails, ErrorLayer is added.
      * @tparam LayerViewT Type of the layer view to add into the layers vector.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      * @param currentOffset Current offset in the packet data.
      * @return Expected containing the added layer view on success, or LayerError on failure.
@@ -221,7 +261,7 @@ protected:
      */
     template <typename LayerViewT>
     std::expected<LayerViewT, layers::LayerError>
-    addLayer(Packet& packet, const uint16_t currentOffset)
+    addLayer(PacketParserContext& ctx, Packet& packet, const uint16_t currentOffset) const
     {
         if (packet.layers.full()) {
             return std::unexpected(layers::LayerError::LAYER_VECTOR_FULL);
@@ -231,7 +271,7 @@ protected:
         if (layerOrError) {
             PacketLayer layer {.type = LayerViewT::LAYER_TYPE, .offset = currentOffset};
             packet.layers.pushBack(layer);
-            addToLayout<LayerViewT::LAYER_TYPE>(packet);
+            addToLayout<LayerViewT::LAYER_TYPE>(ctx, packet);
         } else {
             ErrorLayer error {
                 .type = LayerViewT::LAYER_TYPE,
@@ -245,94 +285,122 @@ protected:
     /**
      * @brief Add last inserted layer to packet layout based on its type.
      * @tparam LayerType_ Type of the layer being added.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      */
     template <layers::LayerType LayerType_>
-    void addToLayout(Packet& packet)
+    void addToLayout(PacketParserContext& ctx, Packet& packet) const
     {
         assert(!packet.layers.empty());
 
         if constexpr (layerTypeIsKey(LayerType_)) {
             if constexpr (layerTypeBase(LayerType_) == layers::LAYERTYPE_L2) {
-                addToLayoutHelper<&PacketLayout::l2, 2>(packet);
+                addToLayoutHelper<&PacketLayout::l2, 2>(ctx, packet);
             } else if constexpr (layerTypeBase(LayerType_) == layers::LAYERTYPE_L3) {
-                addToLayoutHelper<&PacketLayout::l3, 3>(packet);
+                addToLayoutHelper<&PacketLayout::l3, 3>(ctx, packet);
             } else if constexpr (layerTypeBase(LayerType_) == layers::LAYERTYPE_L4) {
-                addToLayoutHelper<&PacketLayout::l4, 4>(packet);
+                addToLayoutHelper<&PacketLayout::l4, 4>(ctx, packet);
             } else if constexpr (LayerType_ == layers::LayerType::PAYLOAD_APP) {
-                addToLayoutHelper<&PacketLayout::l7, 7>(packet);
+                addToLayoutHelper<&PacketLayout::l7, 7>(ctx, packet);
             }
         }
     }
 
     /**
      * @brief Process layer after link layer.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      * @param offset Offset in the packet data.
      * @param linktype Link type indicating the next layer type.
      * @return LayerError indicating success or type of error encountered.
      */
-    virtual layers::LayerError
-    processLinktype(Packet& packet, uint16_t offset, PacketParserLinkType linktype);
+    virtual layers::LayerError processLinktype(
+        PacketParserContext& ctx,
+        Packet& packet,
+        uint16_t offset,
+        PacketParserLinkType linktype) const;
     /**
      * @brief Process layer after ethernet.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      * @param offset Offset in the packet data.
      * @param ethertype Ethertype indicating the next layer type.
      * @return LayerError indicating success or type of error encountered.
      */
-    virtual layers::LayerError
-    processEthertype(Packet& packet, uint16_t offset, PacketParserEtherType ethertype);
+    virtual layers::LayerError processEthertype(
+        PacketParserContext& ctx,
+        Packet& packet,
+        uint16_t offset,
+        PacketParserEtherType ethertype) const;
     /**
      * @brief Process layer after IP layer.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      * @param offset Offset in the packet data.
      * @param prototype Protocol number indicating the next layer type.
      * @return LayerError indicating success or type of error encountered.
      */
-    virtual layers::LayerError
-    processPrototype(Packet& packet, uint16_t offset, PacketParserProtoType prototype);
+    virtual layers::LayerError processPrototype(
+        PacketParserContext& ctx,
+        Packet& packet,
+        uint16_t offset,
+        PacketParserProtoType prototype) const;
     /**
      * @brief Process rest of the packet – payload.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      * @param offset Offset in the packet data.
      * @param payloadType Type of the payload layer.
      * @return LayerError indicating success or type of error encountered.
      */
-    virtual layers::LayerError
-    processPayload(Packet& packet, uint16_t offset, layers::LayerType payloadType);
+    virtual layers::LayerError processPayload(
+        PacketParserContext& ctx,
+        Packet& packet,
+        uint16_t offset,
+        layers::LayerType payloadType) const;
 
     /**
      * @brief Process rest of the packet – payload as LayerType::PAYLOAD_APP.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      * @param offset Offset in the packet data.
      * @return LayerError indicating success or type of error encountered.
      */
-    layers::LayerError processPayload(Packet& packet, uint16_t offset)
+    layers::LayerError
+    processPayload(PacketParserContext& ctx, Packet& packet, uint16_t offset) const
     {
-        return processPayload(packet, offset, layers::LayerType::PAYLOAD_APP);
+        return processPayload(ctx, packet, offset, layers::LayerType::PAYLOAD_APP);
     };
 
 private:
     // Following functions are handlers for the given single protocol. Each of them should check
     // whether the packet's layers vector is not full before appending or use addLayer function
     // which checks it internally.
-    layers::LayerError processEthernet(Packet& packet, uint16_t offset);
-    layers::LayerError processVLAN(Packet& packet, uint16_t offset);
     layers::LayerError
-    processMPLS(Packet& packet, uint16_t offset, PacketParserEtherType ethertype);
-    layers::LayerError processMPLSBottomOfStack(Packet& packet, uint16_t offset);
-    layers::LayerError processIPFromPayload(Packet& packet, uint16_t offset);
-    layers::LayerError processIPv4(Packet& packet, uint16_t offset);
-    layers::LayerError processIPv6(Packet& packet, uint16_t offset);
-    layers::LayerError processIPv6Fragment(Packet& packet, uint16_t offset);
+    processEthernet(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError processVLAN(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError processMPLS(
+        PacketParserContext& ctx,
+        Packet& packet,
+        uint16_t offset,
+        PacketParserEtherType ethertype) const;
+    layers::LayerError
+    processMPLSBottomOfStack(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError
+    processIPFromPayload(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError processIPv4(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError processIPv6(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError
+    processIPv6Fragment(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
     template <typename LayerViewT>
-    layers::LayerError processIPv6Extension(Packet& packet, uint16_t offset);
+    layers::LayerError
+    processIPv6Extension(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
     template <typename LayerViewT, bool payloadFollows>
-    layers::LayerError processSimpleProtoType(Packet& packet, uint16_t offset);
-    layers::LayerError processGRE(Packet& packet, uint16_t offset);
-    layers::LayerError processESP(Packet& packet, uint16_t offset);
-    layers::LayerError processAH(Packet& packet, uint16_t offset);
+    layers::LayerError
+    processSimpleProtoType(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError processGRE(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError processESP(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
+    layers::LayerError processAH(PacketParserContext& ctx, Packet& packet, uint16_t offset) const;
     static layers::LayerError processUnknown(Packet& packet, uint16_t offset);
 
     /**
@@ -340,18 +408,19 @@ private:
      * @tparam PacketLayoutMember Pointer to a member in PacketLayout structure which should be
      * updated.
      * @tparam LayerIndex OSI layer number (2=L2, 3=L3, 4=L4) for tracking the current layer level.
+     * @param ctx Parser context holding state for the current packet.
      * @param packet Packet being parsed.
      */
     template <auto PacketLayoutMember, unsigned LayerIndex>
         requires std::is_member_object_pointer_v<decltype(PacketLayoutMember)>
-    void addToLayoutHelper(Packet& packet)
+    void addToLayoutHelper(PacketParserContext& ctx, Packet& packet) const
     {
-        if (m_layoutLastLayerIndex >= LayerIndex) {
+        if (ctx.layoutLastLayerIndex >= LayerIndex) {
             // new encapsulation level detected
             if (packet.layout.full()) {
                 // parsed packet has more encapsulations than supported by packet layout
                 // ensure that any layer will not be added to the layout
-                m_layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
+                ctx.layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
                 return;
             }
             packet.layout.emplaceBack();
@@ -360,12 +429,11 @@ private:
         auto& layout = packet.layout.back();
         if (!(layout.*PacketLayoutMember)) {
             layout.*PacketLayoutMember = packet.layers.size() - 1;
-            m_layoutLastLayerIndex = LayerIndex;
+            ctx.layoutLastLayerIndex = LayerIndex;
         }
     }
 
     PacketParserConfig m_config;
-    unsigned m_layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
 };
 
 } // namespace amon

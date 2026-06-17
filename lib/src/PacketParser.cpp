@@ -28,44 +28,76 @@ namespace amon {
 
 using namespace layers;
 
-LayerError PacketParser::parse(Packet& packet, LayerType firstLayer, const uint16_t startOffset)
+LayerError
+PacketParser::parse(Packet& packet, LayerType firstLayer, const uint16_t startOffset) const
 {
     return parse(packet, layerTypeToVariant(firstLayer), startOffset);
 }
 
 LayerError
-PacketParser::parse(Packet& packet, LayerTypeVariant firstLayer, const uint16_t startOffset)
+PacketParser::parse(Packet& packet, LayerTypeVariant firstLayer, const uint16_t startOffset) const
 {
-    m_layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
+    return createContextAndParse(packet, firstLayer, startOffset);
+}
 
+LayerError PacketParser::createContextAndParse(
+    Packet& packet,
+    LayerTypeVariant firstLayer,
+    uint16_t startOffset) const
+{
+    PacketParserContext ctx;
+    return processFirstLayer(ctx, packet, firstLayer, startOffset);
+}
+
+LayerError PacketParser::processFirstLayer(
+    PacketParserContext& ctx,
+    Packet& packet,
+    LayerTypeVariant firstLayer,
+    uint16_t startOffset) const
+{
     if (std::holds_alternative<PacketParserLinkType>(firstLayer)) {
-        return processLinktype(packet, startOffset, std::get<PacketParserLinkType>(firstLayer));
+        return processLinktype(
+            ctx,
+            packet,
+            startOffset,
+            std::get<PacketParserLinkType>(firstLayer));
     }
     if (std::holds_alternative<PacketParserEtherType>(firstLayer)) {
-        return processEthertype(packet, startOffset, std::get<PacketParserEtherType>(firstLayer));
+        return processEthertype(
+            ctx,
+            packet,
+            startOffset,
+            std::get<PacketParserEtherType>(firstLayer));
     }
     if (std::holds_alternative<PacketParserProtoType>(firstLayer)) {
-        return processPrototype(packet, startOffset, std::get<PacketParserProtoType>(firstLayer));
+        return processPrototype(
+            ctx,
+            packet,
+            startOffset,
+            std::get<PacketParserProtoType>(firstLayer));
     }
     if (std::holds_alternative<PacketParserPayloadType>(firstLayer)) {
         if (std::get<PacketParserPayloadType>(firstLayer)
             == PacketParserPayloadType::PAYLOAD_IP_FRAGMENT) {
-            return processPayload(packet, startOffset, LayerType::PAYLOAD_IP_FRAGMENT);
+            return processPayload(ctx, packet, startOffset, LayerType::PAYLOAD_IP_FRAGMENT);
         }
-        return processPayload(packet, startOffset);
+        return processPayload(ctx, packet, startOffset);
     }
     // unknown first layer
     return processUnknown(packet, startOffset);
 }
 
-LayerError
-PacketParser::processLinktype(Packet& packet, const uint16_t offset, PacketParserLinkType linktype)
+LayerError PacketParser::processLinktype(
+    PacketParserContext& ctx,
+    Packet& packet,
+    const uint16_t offset,
+    PacketParserLinkType linktype) const
 {
     switch (linktype) {
     case ETHERNET:
-        return processEthernet(packet, offset);
+        return processEthernet(ctx, packet, offset);
     case RAW:
-        return processIPFromPayload(packet, offset);
+        return processIPFromPayload(ctx, packet, offset);
     }
 
     // PacketParserLinkType is simple enum, handle undefined values
@@ -73,21 +105,22 @@ PacketParser::processLinktype(Packet& packet, const uint16_t offset, PacketParse
 }
 
 LayerError PacketParser::processEthertype(
+    PacketParserContext& ctx,
     Packet& packet,
     const uint16_t offset,
-    PacketParserEtherType ethertype)
+    PacketParserEtherType ethertype) const
 {
     switch (ethertype) {
     case VLAN_8021Q:
     case VLAN_8021AD:
-        return processVLAN(packet, offset);
+        return processVLAN(ctx, packet, offset);
     case MPLS:
     case MPLS_MULTICAST:
-        return processMPLS(packet, offset, ethertype);
+        return processMPLS(ctx, packet, offset, ethertype);
     case IPV4:
-        return processIPv4(packet, offset);
+        return processIPv4(ctx, packet, offset);
     case IPV6:
-        return processIPv6(packet, offset);
+        return processIPv6(ctx, packet, offset);
     }
 
     // PacketParserEtherType is simple enum, handle undefined values
@@ -95,28 +128,29 @@ LayerError PacketParser::processEthertype(
 }
 
 LayerError PacketParser::processPrototype(
+    PacketParserContext& ctx,
     Packet& packet,
     const uint16_t offset,
-    PacketParserProtoType prototype)
+    PacketParserProtoType prototype) const
 {
     switch (prototype) {
     case IPV6_OPT_FRAGMENT:
-        return processIPv6Fragment(packet, offset);
+        return processIPv6Fragment(ctx, packet, offset);
     case IPV6_OPT_HOPBYHOP:
-        return processIPv6Extension<IPv6HopByHopView>(packet, offset);
+        return processIPv6Extension<IPv6HopByHopView>(ctx, packet, offset);
     case IPV6_OPT_ROUTING:
-        return processIPv6Extension<IPv6RoutingView>(packet, offset);
+        return processIPv6Extension<IPv6RoutingView>(ctx, packet, offset);
     case ESP:
-        return processESP(packet, offset);
+        return processESP(ctx, packet, offset);
     case AUTHENTICATION_HEADER:
-        return processAH(packet, offset);
+        return processAH(ctx, packet, offset);
     case IPV6_OPT_DESTINATION_OPTIONS:
-        return processIPv6Extension<IPv6DestinationOptionsView>(packet, offset);
+        return processIPv6Extension<IPv6DestinationOptionsView>(ctx, packet, offset);
     case IPV6_OPT_GENERIC:
     case IPV6_MOBILITY:
     case IPV6_HOST_IDENTITY:
     case IPV6_SHIM6:
-        return processIPv6Extension<IPv6ExtensionView>(packet, offset);
+        return processIPv6Extension<IPv6ExtensionView>(ctx, packet, offset);
     case IPV6_NO_NEXT: {
         const auto data = packet.data.subspan(offset);
         if (!data.empty()) {
@@ -125,19 +159,19 @@ LayerError PacketParser::processPrototype(
         return LayerError::NONE;
     }
     case TCP:
-        return processSimpleProtoType<TCPView, true>(packet, offset);
+        return processSimpleProtoType<TCPView, true>(ctx, packet, offset);
     case UDP:
-        return processSimpleProtoType<UDPView, true>(packet, offset);
+        return processSimpleProtoType<UDPView, true>(ctx, packet, offset);
     case ICMP:
-        return processSimpleProtoType<ICMPView, false>(packet, offset);
+        return processSimpleProtoType<ICMPView, false>(ctx, packet, offset);
     case ICMPV6:
-        return processSimpleProtoType<ICMPv6View, false>(packet, offset);
+        return processSimpleProtoType<ICMPv6View, false>(ctx, packet, offset);
     case GRE:
-        return processGRE(packet, offset);
+        return processGRE(ctx, packet, offset);
     case IPV4_ENCAPSULATION:
-        return processIPv4(packet, offset);
+        return processIPv4(ctx, packet, offset);
     case IPV6_ENCAPSULATION:
-        return processIPv6(packet, offset);
+        return processIPv6(ctx, packet, offset);
     case RESERVED1:
     case RESERVED2:
         return processUnknown(packet, offset);
@@ -147,8 +181,11 @@ LayerError PacketParser::processPrototype(
     return processUnknown(packet, offset);
 }
 
-LayerError
-PacketParser::processPayload(Packet& packet, const uint16_t offset, LayerType payloadType)
+LayerError PacketParser::processPayload(
+    PacketParserContext& ctx,
+    Packet& packet,
+    const uint16_t offset,
+    LayerType payloadType) const
 {
     assert(payloadType == LayerType::PAYLOAD_APP || payloadType == LayerType::PAYLOAD_IP_FRAGMENT);
 
@@ -159,53 +196,63 @@ PacketParser::processPayload(Packet& packet, const uint16_t offset, LayerType pa
         PacketLayer layer {.type = payloadType, .offset = offset};
         packet.layers.pushBack(layer);
         if (payloadType == LayerType::PAYLOAD_APP) {
-            addToLayout<LayerType::PAYLOAD_APP>(packet);
+            addToLayout<LayerType::PAYLOAD_APP>(ctx, packet);
         }
     }
     return LayerError::NONE;
 }
 
-LayerError PacketParser::processEthernet(Packet& packet, const uint16_t offset)
+LayerError
+PacketParser::processEthernet(PacketParserContext& ctx, Packet& packet, const uint16_t offset) const
 {
-    auto ethOrError = addLayer<EthernetView>(packet, offset);
+    auto ethOrError = addLayer<EthernetView>(ctx, packet, offset);
     if (!ethOrError) {
         return ethOrError.error();
     }
     return processEthertype(
+        ctx,
         packet,
         offset + ethOrError->headerLength(),
         static_cast<PacketParserEtherType>(ethOrError->protocol()));
 }
 
-LayerError PacketParser::processVLAN(Packet& packet, const uint16_t offset)
+LayerError
+PacketParser::processVLAN(PacketParserContext& ctx, Packet& packet, const uint16_t offset) const
 {
-    auto vlanOrError = addLayer<VLANView>(packet, offset);
+    auto vlanOrError = addLayer<VLANView>(ctx, packet, offset);
     if (!vlanOrError) {
         return vlanOrError.error();
     }
     return processEthertype(
+        ctx,
         packet,
         offset + vlanOrError->headerLength(),
         static_cast<PacketParserEtherType>(vlanOrError->protocol()));
 }
 
-LayerError
-PacketParser::processMPLS(Packet& packet, const uint16_t offset, PacketParserEtherType ethertype)
+LayerError PacketParser::processMPLS(
+    PacketParserContext& ctx,
+    Packet& packet,
+    const uint16_t offset,
+    PacketParserEtherType ethertype) const
 {
     assert(ethertype == MPLS || ethertype == MPLS_MULTICAST);
 
-    auto mplsOrError = addLayer<MPLSView>(packet, offset);
+    auto mplsOrError = addLayer<MPLSView>(ctx, packet, offset);
     if (!mplsOrError) {
         return mplsOrError.error();
     }
     if (mplsOrError->bottomOfStack()) {
-        return processMPLSBottomOfStack(packet, offset + mplsOrError->headerLength());
+        return processMPLSBottomOfStack(ctx, packet, offset + mplsOrError->headerLength());
     }
     // propagating MPLS or MPLS_MULTICAST
-    return processEthertype(packet, offset + mplsOrError->headerLength(), ethertype);
+    return processEthertype(ctx, packet, offset + mplsOrError->headerLength(), ethertype);
 }
 
-LayerError PacketParser::processMPLSBottomOfStack(Packet& packet, uint16_t offset)
+LayerError PacketParser::processMPLSBottomOfStack(
+    PacketParserContext& ctx,
+    Packet& packet,
+    uint16_t offset) const
 {
     auto nextLayerIndex = packet.layers.size();
     std::optional<LayerType> nextLayerType = std::nullopt;
@@ -214,7 +261,7 @@ LayerError PacketParser::processMPLSBottomOfStack(Packet& packet, uint16_t offse
     case PacketParserConfig::MPLSMode::AUTO:
     case PacketParserConfig::MPLSMode::IP_ONLY: {
         // normally it is expected IPv4 or IPv6 continuing
-        const LayerError ipError = processIPFromPayload(packet, offset);
+        const LayerError ipError = processIPFromPayload(ctx, packet, offset);
         if (m_config.mplsMode == PacketParserConfig::MPLSMode::IP_ONLY) {
             // do not try another protocols other than IP
             return ipError;
@@ -241,7 +288,7 @@ LayerError PacketParser::processMPLSBottomOfStack(Packet& packet, uint16_t offse
     case PacketParserConfig::MPLSMode::PW_AUTO: {
         // pseudo-wire continues, auto check control word
 
-        // From RFC 4448 – Encapsulation Methods for Transport of Ethernet over MPLS Networks:
+        // From RFC 4448 – Encapsulation Methods for Transport of Ethernet over MPLS Networks:
         //     The control word is defined as follows:
         //     0                   1                   2                   3
         //     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -266,126 +313,148 @@ LayerError PacketParser::processMPLSBottomOfStack(Packet& packet, uint16_t offse
     }
     case PacketParserConfig::MPLSMode::PW_NOCW:
         // pseudo-wire without control word
-        return processEthernet(packet, offset);
+        return processEthernet(ctx, packet, offset);
     }
     std::unreachable();
 }
 
-LayerError PacketParser::processIPFromPayload(Packet& packet, const uint16_t offset)
+LayerError PacketParser::processIPFromPayload(
+    PacketParserContext& ctx,
+    Packet& packet,
+    const uint16_t offset) const
 {
     const auto data = packet.data.subspan(offset);
     if (data.size() >= sizeof(IPv4Header) && (static_cast<uint8_t>(data[0]) >> 4) == 4) {
-        return processIPv4(packet, offset);
+        return processIPv4(ctx, packet, offset);
     }
     if (data.size() >= sizeof(IPv6Header) && (static_cast<uint8_t>(data[0]) >> 4) == 6) {
-        return processIPv6(packet, offset);
+        return processIPv6(ctx, packet, offset);
     }
     return processUnknown(packet, offset);
 }
 
-LayerError PacketParser::processIPv4(Packet& packet, const uint16_t offset)
+LayerError
+PacketParser::processIPv4(PacketParserContext& ctx, Packet& packet, const uint16_t offset) const
 {
-    auto ipOrError = addLayer<IPv4View>(packet, offset);
+    auto ipOrError = addLayer<IPv4View>(ctx, packet, offset);
     if (!ipOrError) {
         return ipOrError.error();
     }
     if (ipOrError->isFragmented() && ipOrError->fragmentOffset() > 0) {
         return processPayload(
+            ctx,
             packet,
             offset + ipOrError->headerLength(),
             LayerType::PAYLOAD_IP_FRAGMENT);
     }
     return processPrototype(
+        ctx,
         packet,
         offset + ipOrError->headerLength(),
         static_cast<PacketParserProtoType>(ipOrError->protocol()));
 }
 
-LayerError PacketParser::processIPv6(Packet& packet, const uint16_t offset)
+LayerError
+PacketParser::processIPv6(PacketParserContext& ctx, Packet& packet, const uint16_t offset) const
 {
-    auto ipOrError = addLayer<IPv6View>(packet, offset);
+    auto ipOrError = addLayer<IPv6View>(ctx, packet, offset);
     if (!ipOrError) {
         return ipOrError.error();
     }
     return processPrototype(
+        ctx,
         packet,
         offset + ipOrError->headerLength(),
         static_cast<PacketParserProtoType>(ipOrError->nextHeader()));
 }
 
 template <typename LayerViewT>
-LayerError PacketParser::processIPv6Extension(Packet& packet, const uint16_t offset)
+LayerError
+PacketParser::processIPv6Extension(PacketParserContext& ctx, Packet& packet, const uint16_t offset)
+    const
 {
-    auto extOrError = addLayer<LayerViewT>(packet, offset);
+    auto extOrError = addLayer<LayerViewT>(ctx, packet, offset);
     if (!extOrError) {
         return extOrError.error();
     }
     return processPrototype(
+        ctx,
         packet,
         offset + extOrError->headerLength(),
         static_cast<PacketParserProtoType>(extOrError->nextHeader()));
 }
 
-LayerError PacketParser::processIPv6Fragment(Packet& packet, const uint16_t offset)
+LayerError PacketParser::processIPv6Fragment(
+    PacketParserContext& ctx,
+    Packet& packet,
+    const uint16_t offset) const
 {
-    auto fragOrError = addLayer<IPv6FragmentView>(packet, offset);
+    auto fragOrError = addLayer<IPv6FragmentView>(ctx, packet, offset);
     if (!fragOrError) {
         return fragOrError.error();
     }
     if (fragOrError->fragmentOffset() > 0) {
         return processPayload(
+            ctx,
             packet,
             offset + fragOrError->headerLength(),
             LayerType::PAYLOAD_IP_FRAGMENT);
     }
     return processPrototype(
+        ctx,
         packet,
         offset + fragOrError->headerLength(),
         static_cast<PacketParserProtoType>(fragOrError->nextHeader()));
 }
 
 template <typename LayerViewT, bool payloadFollows>
-LayerError PacketParser::processSimpleProtoType(Packet& packet, const uint16_t offset)
+LayerError PacketParser::processSimpleProtoType(
+    PacketParserContext& ctx,
+    Packet& packet,
+    const uint16_t offset) const
 {
-    auto viewOrError = addLayer<LayerViewT>(packet, offset);
+    auto viewOrError = addLayer<LayerViewT>(ctx, packet, offset);
     if (!viewOrError) {
         return viewOrError.error();
     }
     if constexpr (payloadFollows) {
-        return processPayload(packet, offset + viewOrError->headerLength());
+        return processPayload(ctx, packet, offset + viewOrError->headerLength());
     } else {
         return LayerError::NONE;
     }
 }
 
-LayerError PacketParser::processGRE(Packet& packet, const uint16_t offset)
+LayerError
+PacketParser::processGRE(PacketParserContext& ctx, Packet& packet, const uint16_t offset) const
 {
-    auto greOrError = addLayer<GREView>(packet, offset);
+    auto greOrError = addLayer<GREView>(ctx, packet, offset);
     if (!greOrError) {
         return greOrError.error();
     }
     return processEthertype(
+        ctx,
         packet,
         offset + greOrError->headerLength(),
         static_cast<PacketParserEtherType>(greOrError->protocolType()));
 }
 
-LayerError PacketParser::processESP(Packet& packet, uint16_t offset)
+LayerError PacketParser::processESP(PacketParserContext& ctx, Packet& packet, uint16_t offset) const
 {
-    auto espOrError = addLayer<ESPView>(packet, offset);
+    auto espOrError = addLayer<ESPView>(ctx, packet, offset);
     if (!espOrError) {
         return espOrError.error();
     }
     return processUnknown(packet, offset + espOrError->headerLength());
 }
 
-LayerError PacketParser::processAH(Packet& packet, uint16_t offset)
+LayerError PacketParser::processAH(PacketParserContext& ctx, Packet& packet, uint16_t offset) const
 {
-    auto ahOrError = addLayer<AuthenticationHeaderView>(packet, offset);
+    auto ahOrError = addLayer<AuthenticationHeaderView>(ctx, packet, offset);
     if (!ahOrError) {
         return ahOrError.error();
     }
     return processPrototype(
+        ctx,
         packet,
         offset + ahOrError->headerLength(),
         static_cast<PacketParserProtoType>(ahOrError->nextHeader()));
@@ -421,7 +490,7 @@ TEST_CASE("PacketParser simple packet parsing")
 
     Packet packet;
     packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-    PacketParser parser;
+    const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
@@ -460,7 +529,7 @@ TEST_CASE("PacketParser IP in IP parsing")
 
         Packet packet;
         packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-        PacketParser parser;
+        const PacketParser parser;
         parser.parse(packet, LayerType::ETHERNET);
 
         CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
@@ -500,7 +569,7 @@ TEST_CASE("PacketParser IP in IP parsing")
 
         Packet packet;
         packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-        PacketParser parser;
+        const PacketParser parser;
         parser.parse(packet, LayerType::ETHERNET);
 
         CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
@@ -540,7 +609,7 @@ TEST_CASE("PacketParser SYN TCP parsing")
 
     Packet packet;
     packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-    PacketParser parser;
+    const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
@@ -573,7 +642,7 @@ TEST_CASE("PacketParser standard MPLS with IP continuing")
 
     Packet packet;
     packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-    PacketParser parser;
+    const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
@@ -612,7 +681,7 @@ TEST_CASE("PacketParser pseudo-wire MPLS without control-word packet parsing")
 
     Packet packet;
     packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-    PacketParser parser;
+    const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
     CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
