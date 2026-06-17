@@ -23,6 +23,7 @@ RUN dnf install sudo; \
 USER $USERID:$GROUPID
 
 COPY prepare-machine /prepare-machine
+COPY shell.nix /shell.nix
 
 RUN /prepare-machine dev-docker && \
     sudo dnf clean all && \
