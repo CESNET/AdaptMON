@@ -100,16 +100,24 @@ auto match(Variant&& variant, Callables&&... callables)
 namespace detail {
 
 template <typename... Args>
-[[noreturn]] void assertFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args)
+[[noreturn]] void
+assertFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args) noexcept
 {
-    std::stringstream ss;
-    ss << "--- ASSERTION FAILED -----------------------------------------------------------\n";
-    ss << "Condition: " << cond << "\n";
-    ss << "Message:   " << std::format(fmt, std::forward<Args>(args)...) << "\n";
-    ss << "\n";
-    ss << "Stacktrace:\n";
-    ss << StacktraceProvider::createStacktrace(1).str() << "\n";
-    std::cerr << ss.str();
+    std::cerr
+        << "--- ASSERTION FAILED -----------------------------------------------------------\n";
+    std::cerr << "Condition: " << cond << "\n";
+    try {
+        std::cerr << "Message:   " << std::format(fmt, std::forward<Args>(args)...) << "\n";
+    } catch (...) { // NOLINT(bugprone-empty-catch)
+        std::cerr << "Message:   <failed to generate message>\n";
+    }
+    std::cerr << "\n";
+    std::cerr << "Stacktrace:\n";
+    try {
+        std::cerr << StacktraceProvider::createStacktrace(1).str() << "\n";
+    } catch (...) { // NOLINT(bugprone-empty-catch)
+        std::cerr << "<failed to generate stacktrace>\n";
+    }
     std::abort();
 }
 
