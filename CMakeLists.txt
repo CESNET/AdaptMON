@@ -14,6 +14,12 @@ option(ENABLE_TESTS      "Enable building of tests"                      OFF)
 option(ENABLE_SANITIZERS "Enable building with sanitizers (ASAN, UBSAN)" OFF)
 option(BUILD_SHARED_LIBS "Enable building as shared library"             OFF)
 
+set(ENABLE_ASSERTS "AUTO" CACHE STRING "Enable assertions (AUTO, ON, OFF)")
+set_property(CACHE ENABLE_ASSERTS PROPERTY STRINGS AUTO ON OFF)
+if (NOT ENABLE_ASSERTS MATCHES "^(AUTO|ON|OFF)$")
+    message(FATAL_ERROR "ENABLE_ASSERTS must be one of: AUTO, ON, OFF")
+endif()
+
 set(DEFAULT_BUILD_TYPE "Release")
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS

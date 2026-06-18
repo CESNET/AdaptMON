@@ -145,18 +145,18 @@ template <typename... Args>
  * @def AMON_ASSERT
  * @brief Asserts that a condition is true, otherwise prints diagnostic info and aborts.
  *
- * Unlike classical `assert`, AMON_ASSERT is intended to work in release mode as well.
- * The motivation is to replace the `if (!condition) throw std::logic_error(...);` pattern that
- * could not be replaced by a regular assert due to it being optimized away in release mode.
- *
  * AMON_ASSERT also prints a stack trace when triggered to aid in debugging.
  *
  * @param CONDITION The condition to assert.
  * @param ... Format string and arguments for the format string if you want to print a message.
  */
+#ifdef AMON_ENABLE_ASSERTS
 #define AMON_ASSERT(CONDITION, ...)                                                                \
     if (!(CONDITION)) [[unlikely]] {                                                               \
         amon::detail::assertFail(#CONDITION, ##__VA_ARGS__);                                       \
     }
+#else
+#define AMON_ASSERT(CONDITION, ...)
+#endif
 
 } // namespace amon
