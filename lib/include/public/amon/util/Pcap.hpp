@@ -171,6 +171,12 @@ public:
      */
     uint64_t tellEnd() const;
 
+    /**
+     * @brief Returns if reader hit an EOF.
+     * @return Boolean value for EOF.
+     */
+    bool eof() const { return m_eof; }
+
 private:
     explicit PcapReader(PcapTimestampPrecision precision)
         : m_precision(precision)
@@ -179,6 +185,7 @@ private:
 
     std::unique_ptr<pcap_t, detail::PcapClose> m_pcap;
     PcapTimestampPrecision m_precision;
+    bool m_eof = false; // Used for checking if reading hit an end
 };
 
 } // namespace amon::util

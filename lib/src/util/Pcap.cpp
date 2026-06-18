@@ -202,7 +202,11 @@ std::optional<PcapPacket> PcapReader::readPacket()
     const u_char* data;
 
     const int ret = pcap_next_ex(m_pcap.get(), &hdr, &data);
-    if (ret == PCAP_ERROR_BREAK) { // No more packets in file
+    if (ret == PCAP_ERROR_BREAK) { // No more packets in file or break loop called
+        m_eof = true;
+        return std::nullopt;
+    }
+    if (ret == 0) { // Packet buffer timeout expired
         return std::nullopt;
     }
     if (ret == PCAP_ERROR) {
@@ -210,7 +214,7 @@ std::optional<PcapPacket> PcapReader::readPacket()
         throw Error("pcap_next_ex() failed: {}", err);
     }
     if (ret != 1) {
-        // Other errors should never happen in case of a file
+        // Other errors should never happen in case of a file or interface
         throw amon::Error("pcap_next_ex() returned an unexpected value {}", ret);
     }
 
