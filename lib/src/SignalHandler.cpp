@@ -199,7 +199,7 @@ struct __attribute__((packed)) SignalInfo {
 };
 } // namespace
 
-static void dumpSigInfo(int sigNum, siginfo_t* sigInfo, util::CharBuffer<>& printBuf)
+static void dumpSigInfo(int sigNum, const siginfo_t* sigInfo, util::CharBuffer<>& printBuf)
 {
     printBuf.append("Signal: ", sigToStr(sigNum), " (", sigNum, ")\n");
     printBuf
@@ -220,6 +220,7 @@ static void dumpSigInfo(int sigNum, siginfo_t* sigInfo, util::CharBuffer<>& prin
     }
 }
 
+// NOLINTNEXTLINE(misc-const-correctness)
 void deadlySignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noexcept
 {
     util::CharBuffer<4096> printBuf;
@@ -234,6 +235,7 @@ void deadlySignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noe
     rethrowSignal(sigNum);
 }
 
+// NOLINTNEXTLINE(misc-const-correctness)
 void debugSignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noexcept
 {
     util::CharBuffer<4096> printBuf;
@@ -247,6 +249,7 @@ void debugSignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noex
     write(STDERR_FILENO, printBuf.data(), printBuf.size());
 }
 
+// NOLINTNEXTLINE(misc-const-correctness,bugprone-exception-escape)
 void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/) noexcept
 {
     SignalInfo info;
@@ -256,7 +259,9 @@ void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/)
     // is written to the pipe as a contiguous sequence.
     static_assert(sizeof(SignalInfo) <= PIPE_BUF);
     for (;;) {
-        const ssize_t nWrote = write(SignalHandler::instance().m_pipeWr.get(), &info, sizeof(info));
+        const int wrPipe
+            = SignalHandler::instance().m_pipeWr.get(); // Instance is already created, cannot throw
+        const ssize_t nWrote = write(wrPipe, &info, sizeof(info));
         if (nWrote < 0) {
             if (errno == EAGAIN || errno == EINTR) {
                 continue;
@@ -269,7 +274,7 @@ void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/)
     }
 }
 
-static void terminateHandler [[noreturn]] () noexcept
+[[noreturn]] static void terminateHandler() noexcept
 {
     util::CharBuffer printBuf;
     printBuf.append(
@@ -346,6 +351,10 @@ int SignalHandler::waitForSignals()
 
 void SignalHandler::installSigAction(int signal, SigActionCallback callback)
 {
+    // Before we install a callback, ensure that the singleton instance is created, so it does not
+    // happen inside the signal handler
+    SignalHandler::instance();
+
     struct sigaction action {};
     action.sa_handler = callback;
 
@@ -357,6 +366,10 @@ void SignalHandler::installSigAction(int signal, SigActionCallback callback)
 
 void SignalHandler::installSigAction(int signal, SigActionExtendedCallback callback)
 {
+    // Before we install a callback, ensure that the singleton instance is created, so it does not
+    // happen inside the signal handler
+    SignalHandler::instance();
+
     struct sigaction action {};
     action.sa_flags = SA_SIGINFO;
     action.sa_sigaction = callback;

@@ -38,12 +38,12 @@ editorconfig:
 clang-tidy:
   extends: .check
   script:
-    - "make tidy"
+    - "nix-shell --run 'make tidy'"
 
 clang-format:
   extends: .check
   script:
-    - "make format"
+    - "nix-shell --run 'make format'"
 
 atomic-commits:
   extends: .check

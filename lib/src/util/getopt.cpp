@@ -149,7 +149,7 @@ TEST_CASE("getOpt parses short options")
     const std::vector<Opt> opts
         = {{.shortOpt = 'a', .longOpt = "alpha", .hasArg = NO_ARG},
            {.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG}};
-    const char* argv[] = {"prog", "-a", "-b", "val"};
+    const char* const argv[] = {"prog", "-a", "-b", "val"};
     auto result = getOpt(opts, 4, argv);
 
     REQUIRE(result.kwArgs.size() == 2);
@@ -164,7 +164,7 @@ TEST_CASE("getOpt parses long options")
     const std::vector<Opt> opts
         = {{.shortOpt = 'a', .longOpt = "alpha", .hasArg = NO_ARG},
            {.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG}};
-    const char* argv[] = {"prog", "--alpha", "--beta", "val"};
+    const char* const argv[] = {"prog", "--alpha", "--beta", "val"};
     auto result = getOpt(opts, 4, argv);
 
     REQUIRE(result.kwArgs.size() == 2);
@@ -180,7 +180,7 @@ TEST_CASE("getOpt parses with omitted options")
         = {{.shortOpt = std::nullopt, .longOpt = "alpha", .hasArg = REQUIRED_ARG},
            {.shortOpt = 'b', .longOpt = std::nullopt, .hasArg = REQUIRED_ARG},
            {.shortOpt = 'c', .longOpt = "gamma", .hasArg = REQUIRED_ARG}};
-    const char* argv[] = {"prog", "--alpha", "a", "-b", "b", "-c", "c"};
+    const char* const argv[] = {"prog", "--alpha", "a", "-b", "b", "-c", "c"};
     auto result = getOpt(opts, 7, argv);
 
     REQUIRE(result.kwArgs.size() == 3);
@@ -198,7 +198,7 @@ TEST_CASE("getOpt parses with omitted options")
 TEST_CASE("getOpt throws UnknownOpt")
 {
     std::vector<Opt> opts;
-    const char* argv[] = {"prog", "-x"};
+    const char* const argv[] = {"prog", "-x"};
 
     opts = {{.shortOpt = 'a', .longOpt = "alpha", .hasArg = NO_ARG}};
     CHECK_THROWS_AS(getOpt(opts, 2, argv), UnknownOpt);
@@ -209,7 +209,7 @@ TEST_CASE("getOpt throws UnknownOpt")
     opts = {{.shortOpt = 'a', .longOpt = std::nullopt, .hasArg = NO_ARG}};
     CHECK_THROWS_AS(getOpt(opts, 2, argv), UnknownOpt);
 
-    const char* argv2[] = {"prog", "-a", "-x"};
+    const char* const argv2[] = {"prog", "-a", "-x"};
     opts = {{.shortOpt = 'a', .longOpt = std::nullopt, .hasArg = NO_ARG}};
     CHECK_THROWS_AS(getOpt(opts, 3, argv2), UnknownOpt);
 }
@@ -217,7 +217,7 @@ TEST_CASE("getOpt throws UnknownOpt")
 TEST_CASE("getOpt throws MissingOptArg")
 {
     std::vector<Opt> opts;
-    const char* argv[] = {"prog", "-b"};
+    const char* const argv[] = {"prog", "-b"};
 
     opts = {{.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG}};
     CHECK_THROWS_AS(getOpt(opts, 2, argv), MissingOptArg);
@@ -229,7 +229,7 @@ TEST_CASE("getOpt throws MissingOptArg")
 TEST_CASE("getOpt detects invalid options")
 {
     std::vector<Opt> opts;
-    const char* argv[] = {"prog"};
+    const char* const argv[] = {"prog"};
 
     opts
         = {{.shortOpt = 'b', .longOpt = "beta", .hasArg = REQUIRED_ARG},

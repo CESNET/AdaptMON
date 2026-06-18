@@ -136,7 +136,7 @@ static void run(const amon::util::ParsedArgs& args)
     anon.stats().print();
 }
 
-int main(int argc, char** argv) // NOLINT(bugprone-exception-escape)
+int main(int argc, char* const* argv) // NOLINT(bugprone-exception-escape)
 {
     amon::SignalHandler::installBasic();
     amon::SignalHandler::installSigAction({SIGINT, SIGTERM}, &stopSignalHandler);
