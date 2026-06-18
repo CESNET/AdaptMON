@@ -100,7 +100,7 @@ auto match(Variant&& variant, Callables&&... callables)
 namespace detail {
 
 template <typename... Args>
-[[noreturn]] void failImpl(
+[[gnu::noinline]] [[noreturn]] void failImpl(
     std::string_view title,
     std::string_view cond,
     std::format_string<Args...> fmt,
@@ -127,27 +127,27 @@ template <typename... Args>
 }
 
 template <typename... Args>
-[[noreturn]] void
+[[gnu::noinline]] [[noreturn]] void
 assertFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args) noexcept
 {
     failImpl("ASSERTION FAILED", cond, fmt, std::forward<Args>(args)...);
 }
 
 template <typename... Args>
-[[noreturn]] void assertFail(std::string_view cond) noexcept
+[[gnu::noinline]] [[noreturn]] void assertFail(std::string_view cond) noexcept
 {
     failImpl("ASSERTION FAILED", cond, "");
 }
 
 template <typename... Args>
-[[noreturn]] void
+[[gnu::noinline]] [[noreturn]] void
 requireFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args) noexcept
 {
     failImpl("REQUIREMENT FAILED", cond, fmt, std::forward<Args>(args)...);
 }
 
 template <typename... Args>
-[[noreturn]] void requireFail(std::string_view cond) noexcept
+[[gnu::noinline]] [[noreturn]] void requireFail(std::string_view cond) noexcept
 {
     failImpl("REQUIREMENT FAILED", cond, "");
 }
