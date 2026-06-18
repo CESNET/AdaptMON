@@ -100,13 +100,14 @@ auto match(Variant&& variant, Callables&&... callables)
 namespace detail {
 
 template <typename... Args>
-[[noreturn]] void assertFailImpl(
+[[noreturn]] void failImpl(
+    std::string_view title,
     std::string_view cond,
     std::format_string<Args...> fmt,
     Args&&... args) noexcept
 {
-    std::cerr
-        << "--- ASSERTION FAILED -----------------------------------------------------------\n";
+    std::cerr << "--- " << title
+              << " -----------------------------------------------------------\n";
     std::cerr << "Condition: " << cond << "\n";
     if (!fmt.get().empty()) {
         try {
@@ -129,13 +130,26 @@ template <typename... Args>
 [[noreturn]] void
 assertFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args) noexcept
 {
-    assertFailImpl(cond, fmt, std::forward<Args>(args)...);
+    failImpl("ASSERTION FAILED", cond, fmt, std::forward<Args>(args)...);
 }
 
 template <typename... Args>
 [[noreturn]] void assertFail(std::string_view cond) noexcept
 {
-    assertFailImpl(cond, "");
+    failImpl("ASSERTION FAILED", cond, "");
+}
+
+template <typename... Args>
+[[noreturn]] void
+requireFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args) noexcept
+{
+    failImpl("REQUIREMENT FAILED", cond, fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+[[noreturn]] void requireFail(std::string_view cond) noexcept
+{
+    failImpl("REQUIREMENT FAILED", cond, "");
 }
 
 } // namespace detail
@@ -158,5 +172,20 @@ template <typename... Args>
 #else
 #define AMON_ASSERT(CONDITION, ...)
 #endif
+
+/**
+ * @def AMON_REQUIRE
+ * @brief Requires that a condition is true, otherwise prints diagnostic info and aborts. Unlike
+ * AMON_ASSERT, this is a hard check that cannot be turned off.
+ *
+ * AMON_REQUIRE also prints a stack trace when triggered to aid in debugging.
+ *
+ * @param CONDITION The condition to assert.
+ * @param ... Format string and arguments for the format string if you want to print a message.
+ */
+#define AMON_REQUIRE(CONDITION, ...)                                                               \
+    if (!(CONDITION)) [[unlikely]] {                                                               \
+        amon::detail::requireFail(#CONDITION, ##__VA_ARGS__);                                      \
+    }
 
 } // namespace amon
