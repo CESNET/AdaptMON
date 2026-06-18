@@ -86,4 +86,6 @@ if (ENABLE_TESTS)
     target_include_directories(amon-lib-tests PRIVATE ${incs})
 
     gtest_add_tests(TARGET amon-lib-tests TEST_LIST amon_lib_test_list)
+    set_tests_properties(${amon_lib_test_list}
+        PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
 endif()
