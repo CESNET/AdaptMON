@@ -27,43 +27,47 @@ static_assert(sizeof(UInt16BE) == 2, "UInt16BE size must be 2 bytes");
 static_assert(sizeof(UInt32BE) == 4, "UInt32BE size must be 4 bytes");
 static_assert(sizeof(UInt64BE) == 8, "UInt64BE size must be 8 bytes");
 
-TEST_CASE("UIntBE Assignment and Conversion UInt16BE")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonTypesUIntBE, UintbeAssignmentAndConversionUint16be)
 {
     UInt16BE be;
     const uint16_t hostValue = 0x1234;
     be = hostValue;
-    CHECK(static_cast<uint16_t>(be) == hostValue);
+    EXPECT_TRUE(static_cast<uint16_t>(be) == hostValue);
 }
 
-TEST_CASE("UIntBE Assignment and Conversion UInt32BE")
+TEST(AmonTypesUIntBE, UintbeAssignmentAndConversionUint32be)
 {
     UInt32BE be;
     const uint32_t hostValue = 0x12345678;
     be = hostValue;
-    CHECK(static_cast<uint32_t>(be) == hostValue);
+    EXPECT_TRUE(static_cast<uint32_t>(be) == hostValue);
 }
 
-TEST_CASE("UIntBE Assignment and Conversion UInt64BE")
+TEST(AmonTypesUIntBE, UintbeAssignmentAndConversionUint64be)
 {
     UInt64BE be;
     const uint64_t hostValue = 0x123456789ABCDEF0ULL;
     be = hostValue;
-    CHECK(static_cast<uint64_t>(be) == hostValue);
+    EXPECT_TRUE(static_cast<uint64_t>(be) == hostValue);
 }
 
-TEST_CASE("UIntBE Data is saved in big-endian")
+TEST(AmonTypesUIntBE, UintbeDataIsSavedInBigEndian)
 {
     UInt64BE be;
     be = 0x123456789ABCDEF0ULL;
     const uint8_t expectedBytes[] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0};
     auto* actualBytes = reinterpret_cast<uint8_t*>(&be);
-    CHECK(std::memcmp(expectedBytes, actualBytes, 8) == 0);
+    EXPECT_TRUE(std::memcmp(expectedBytes, actualBytes, 8) == 0);
 }
 
-TEST_CASE("UIntBE Assignment and Conversion UInt8")
+TEST(AmonTypesUIntBE, UintbeAssignmentAndConversionUint8)
 {
     const UInt8 be = 0xAB;
-    CHECK(be == 0xAB);
+    EXPECT_TRUE(be == 0xAB);
 }
+
+#endif
 
 } // namespace amon::types

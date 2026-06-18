@@ -478,7 +478,9 @@ static_assert(
     std::is_same_v<uint8_t, decltype(std::to_underlying(PacketParserProtoType::ICMP))>,
     "PacketParserProtoType must be uint8_t.");
 
-TEST_CASE("PacketParser simple packet parsing")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonPacketParser, PacketparserSimplePacketParsing)
 {
     unsigned char frame[]
         = {0x00, 0x1c, 0xc5, 0xfe, 0x03, 0xc8, 0x00, 0x19, 0x99, 0x0b, 0x3b, 0x1e, 0x08, 0x00,
@@ -493,113 +495,109 @@ TEST_CASE("PacketParser simple packet parsing")
     const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::UDP);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 34);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::UDP);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 34);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::PAYLOAD_APP);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 42);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::PAYLOAD_APP);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 42);
 
-    CHECK_EQ(packet.layout[0].l2, 0);
-    CHECK_EQ(packet.layout[0].l3, 1);
-    CHECK_EQ(packet.layout[0].l4, 2);
-    CHECK_EQ(packet.layout[0].l7, 3);
+    EXPECT_EQ(packet.layout[0].l2, 0);
+    EXPECT_EQ(packet.layout[0].l3, 1);
+    EXPECT_EQ(packet.layout[0].l4, 2);
+    EXPECT_EQ(packet.layout[0].l7, 3);
 }
 
-TEST_CASE("PacketParser IP in IP parsing")
+TEST(AmonPacketParser, PacketparserIpInIpParsingIPv4InIPv4)
 {
-    SUBCASE("IPv4 in IPv4")
-    {
-        unsigned char frame[]
-            = {0xca, 0x1,  0xb,  0x14, 0x0,  0x8,  0xca, 0x0,  0xb,  0x14, 0x0,  0x8,  0x8,  0x0,
-               0x45, 0x0,  0x0,  0x78, 0x0,  0xf,  0x0,  0x0,  0xff, 0x4,  0xa3, 0x6e, 0xa,  0x1,
-               0x2,  0x1,  0xa,  0x1,  0x2,  0x2,  0x45, 0x0,  0x0,  0x64, 0x0,  0xf,  0x0,  0x0,
-               0xff, 0x1,  0x3a, 0x36, 0xc0, 0xa8, 0x0,  0x1,  0xc0, 0xa8, 0x0,  0x2,  0x8,  0x0,
-               0x2d, 0x16, 0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0xd,  0x51, 0x24,
-               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
-               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
-               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
-               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
-               0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd};
+    unsigned char frame[]
+        = {0xca, 0x1,  0xb,  0x14, 0x0,  0x8,  0xca, 0x0,  0xb,  0x14, 0x0,  0x8,  0x8,  0x0,  0x45,
+           0x0,  0x0,  0x78, 0x0,  0xf,  0x0,  0x0,  0xff, 0x4,  0xa3, 0x6e, 0xa,  0x1,  0x2,  0x1,
+           0xa,  0x1,  0x2,  0x2,  0x45, 0x0,  0x0,  0x64, 0x0,  0xf,  0x0,  0x0,  0xff, 0x1,  0x3a,
+           0x36, 0xc0, 0xa8, 0x0,  0x1,  0xc0, 0xa8, 0x0,  0x2,  0x8,  0x0,  0x2d, 0x16, 0x0,  0x3,
+           0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0xd,  0x51, 0x24, 0xab, 0xcd, 0xab, 0xcd, 0xab,
+           0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
+           0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab,
+           0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd,
+           0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd, 0xab, 0xcd};
 
-        Packet packet;
-        packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-        const PacketParser parser;
-        parser.parse(packet, LayerType::ETHERNET);
+    Packet packet;
+    packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
+    PacketParser parser;
+    parser.parse(packet, LayerType::ETHERNET);
 
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
 
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
 
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::IPV4);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 34);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::IPV4);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 34);
 
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::ICMP);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 54);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::ICMP);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 54);
 
-        // outer
-        CHECK_EQ(packet.layout[0].l2, 0);
-        CHECK_EQ(packet.layout[0].l3, 1);
-        CHECK(!packet.layout[0].l4);
-        CHECK(!packet.layout[0].l7);
-        // inner
-        CHECK_EQ(packet.layout[1].l3, 2);
-        CHECK_EQ(packet.layout[1].l4, 3);
-        CHECK(!packet.layout[1].l7);
-    }
-
-    SUBCASE("IPv6 in IPv4")
-    {
-        unsigned char frame[]
-            = {0xb4, 0x14, 0x89, 0x8,  0x2d, 0x30, 0x20, 0x4e, 0x7f, 0x35, 0x9b, 0xb2, 0x81, 0x0,
-               0x0,  0x4,  0x08, 0x00, 0x45, 0x0,  0x0,  0x5c, 0x0,  0x0,  0x40, 0x0,  0x40, 0x29,
-               0xa1, 0xf0, 0xd5, 0x8d, 0x9a, 0xaa, 0xd5, 0x4f, 0x53, 0x1,  0x60, 0x0,  0x0,  0x0,
-               0x0,  0x20, 0x6,  0x3f, 0x20, 0x1,  0x6,  0x7c, 0x21, 0x58, 0xa0, 0x19, 0x0,  0x0,
-               0x0,  0x0,  0x0,  0x0,  0xa,  0xce, 0x20, 0x1,  0x0,  0x0,  0x5e, 0xf5, 0x79, 0xfd,
-               0x38, 0xc,  0x1d, 0x57, 0xa6, 0x1,  0x24, 0xfa, 0xcf, 0x70, 0x35, 0xdc, 0x44, 0xdd,
-               0xa0, 0x3d, 0x0,  0x0,  0x0,  0x0,  0x80, 0x2,  0x20, 0x0,  0x58, 0xcf, 0x0,  0x0,
-               0x2,  0x4,  0x5,  0x84, 0x1,  0x3,  0x3,  0x2,  0x1,  0x1,  0x4,  0x2};
-
-        Packet packet;
-        packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
-        const PacketParser parser;
-        parser.parse(packet, LayerType::ETHERNET);
-
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
-
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::VLAN);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
-
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::IPV4);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 18);
-
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::IPV6);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 38);
-
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::TCP);
-        CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 78);
-
-        // outer
-        CHECK_EQ(packet.layout[0].l2, 0);
-        CHECK_EQ(packet.layout[0].l3, 2);
-        CHECK(!packet.layout[0].l4);
-        CHECK(!packet.layout[0].l7);
-        // inner
-        CHECK_EQ(packet.layout[1].l3, 3);
-        CHECK_EQ(packet.layout[1].l4, 4);
-        CHECK(!packet.layout[1].l7);
-    }
+    // outer
+    EXPECT_EQ(packet.layout[0].l2, 0);
+    EXPECT_EQ(packet.layout[0].l3, 1);
+    EXPECT_FALSE(packet.layout[0].l4);
+    EXPECT_FALSE(packet.layout[0].l7);
+    // inner
+    EXPECT_EQ(packet.layout[1].l3, 2);
+    EXPECT_EQ(packet.layout[1].l4, 3);
+    EXPECT_FALSE(packet.layout[1].l7);
 }
 
-TEST_CASE("PacketParser SYN TCP parsing")
+TEST(AmonPacketParser, PacketparserIpInIpParsingIPv6InIPv4)
+{
+    unsigned char frame[]
+        = {0xb4, 0x14, 0x89, 0x8,  0x2d, 0x30, 0x20, 0x4e, 0x7f, 0x35, 0x9b, 0xb2, 0x81, 0x0,
+           0x0,  0x4,  0x08, 0x00, 0x45, 0x0,  0x0,  0x5c, 0x0,  0x0,  0x40, 0x0,  0x40, 0x29,
+           0xa1, 0xf0, 0xd5, 0x8d, 0x9a, 0xaa, 0xd5, 0x4f, 0x53, 0x1,  0x60, 0x0,  0x0,  0x0,
+           0x0,  0x20, 0x6,  0x3f, 0x20, 0x1,  0x6,  0x7c, 0x21, 0x58, 0xa0, 0x19, 0x0,  0x0,
+           0x0,  0x0,  0x0,  0x0,  0xa,  0xce, 0x20, 0x1,  0x0,  0x0,  0x5e, 0xf5, 0x79, 0xfd,
+           0x38, 0xc,  0x1d, 0x57, 0xa6, 0x1,  0x24, 0xfa, 0xcf, 0x70, 0x35, 0xdc, 0x44, 0xdd,
+           0xa0, 0x3d, 0x0,  0x0,  0x0,  0x0,  0x80, 0x2,  0x20, 0x0,  0x58, 0xcf, 0x0,  0x0,
+           0x2,  0x4,  0x5,  0x84, 0x1,  0x3,  0x3,  0x2,  0x1,  0x1,  0x4,  0x2};
+
+    Packet packet;
+    packet.data = {reinterpret_cast<std::byte*>(frame), sizeof(frame)};
+    PacketParser parser;
+    parser.parse(packet, LayerType::ETHERNET);
+
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::VLAN);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::IPV4);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 18);
+
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::IPV6);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 38);
+
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::TCP);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 78);
+
+    // outer
+    EXPECT_EQ(packet.layout[0].l2, 0);
+    EXPECT_EQ(packet.layout[0].l3, 2);
+    EXPECT_FALSE(packet.layout[0].l4);
+    EXPECT_FALSE(packet.layout[0].l7);
+    // inner
+    EXPECT_EQ(packet.layout[1].l3, 3);
+    EXPECT_EQ(packet.layout[1].l4, 4);
+    EXPECT_FALSE(packet.layout[1].l7);
+}
+
+TEST(AmonPacketParser, PacketparserSynTCPParsing)
 {
     unsigned char frame[]
         = {0x0,  0xe,  0xc,  0xc0, 0xff, 0xee, 0x0,  0x19, 0x30, 0xc0, 0xff, 0xee, 0x8,  0x0,
@@ -612,24 +610,24 @@ TEST_CASE("PacketParser SYN TCP parsing")
     const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::IPV4);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::TCP);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 34);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::TCP);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 34);
 
-    CHECK_EQ(packet.layers.size(), 3);
+    EXPECT_EQ(packet.layers.size(), 3);
 
-    CHECK_EQ(packet.layout[0].l2, 0);
-    CHECK_EQ(packet.layout[0].l3, 1);
-    CHECK_EQ(packet.layout[0].l4, 2);
-    CHECK_EQ(packet.layout.size(), 1);
+    EXPECT_EQ(packet.layout[0].l2, 0);
+    EXPECT_EQ(packet.layout[0].l3, 1);
+    EXPECT_EQ(packet.layout[0].l4, 2);
+    EXPECT_EQ(packet.layout.size(), 1);
 }
 
-TEST_CASE("PacketParser standard MPLS with IP continuing")
+TEST(AmonPacketParser, PacketparserStandardMPLSWithIpContinuing)
 {
     unsigned char frame[]
         = {0x18, 0xcf, 0x24, 0x14, 0xae, 0xca, 0xac, 0xb3, 0xb5, 0xe1, 0xdf, 0xde, 0x81, 0x0,
@@ -645,30 +643,30 @@ TEST_CASE("PacketParser standard MPLS with IP continuing")
     const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::VLAN);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::VLAN);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::MPLS);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 18);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::MPLS);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 18);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::MPLS);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 22);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::MPLS);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 22);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::IPV6);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 26);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::IPV6);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 26);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::UNKNOWN);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 66);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::UNKNOWN);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 66);
 
-    CHECK_EQ(packet.layout[0].l2, 0);
-    CHECK_EQ(packet.layout[0].l3, 4);
-    CHECK(!packet.layout[0].l7);
+    EXPECT_EQ(packet.layout[0].l2, 0);
+    EXPECT_EQ(packet.layout[0].l3, 4);
+    EXPECT_TRUE(!packet.layout[0].l7);
 }
 
-TEST_CASE("PacketParser pseudo-wire MPLS without control-word packet parsing")
+TEST(AmonPacketParser, PacketparserPseudoWireMPLSWithoutControlWordPacketParsing)
 {
     unsigned char frame[]
         = {0xac, 0xb3, 0xb5, 0xe1, 0xdf, 0xde, 0x18, 0xcf, 0x24, 0x14, 0xae, 0xca, 0x81, 0x0,
@@ -684,34 +682,36 @@ TEST_CASE("PacketParser pseudo-wire MPLS without control-word packet parsing")
     const PacketParser parser;
     parser.parse(packet, LayerType::ETHERNET);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).type, LayerType::ETHERNET);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[0]).offset, 0);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::VLAN);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).type, LayerType::VLAN);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[1]).offset, 14);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::MPLS);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 18);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).type, LayerType::MPLS);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[2]).offset, 18);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::ETHERNET);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 22);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).type, LayerType::ETHERNET);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[3]).offset, 22);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::VLAN);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 36);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[4]).type, LayerType::VLAN);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[4]).offset, 36);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[5]).type, LayerType::IPV4);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers[5]).offset, 40);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[5]).type, LayerType::IPV4);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers[5]).offset, 40);
 
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::TCP);
-    CHECK_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 60);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).type, LayerType::TCP);
+    EXPECT_EQ(std::get<PacketLayer>(packet.layers.back()).offset, 60);
 
-    CHECK_EQ(packet.layers.size(), 7);
+    EXPECT_EQ(packet.layers.size(), 7);
 
-    CHECK_EQ(packet.layout[0].l2, 0);
-    CHECK_EQ(packet.layout[1].l2, 3);
-    CHECK_EQ(packet.layout[1].l3, 5);
-    CHECK_EQ(packet.layout[1].l4, 6);
-    CHECK(!packet.layout[1].l7);
+    EXPECT_EQ(packet.layout[0].l2, 0);
+    EXPECT_EQ(packet.layout[1].l2, 3);
+    EXPECT_EQ(packet.layout[1].l3, 5);
+    EXPECT_EQ(packet.layout[1].l4, 6);
+    EXPECT_TRUE(!packet.layout[1].l7);
 }
+
+#endif
 
 } // namespace amon

@@ -32,7 +32,9 @@ static_assert(
 static_assert(sizeof(EthernetHeader) == 14, "EthernetHeader size must be 14 bytes");
 
 // TESTS
-TEST_CASE("EthernetView creation with valid frame")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersEthernet, EthernetviewCreationWithValidFrame)
 {
     std::array<std::byte, 18> frame {};
     auto* hdr = reinterpret_cast<EthernetHeader*>(frame.data());
@@ -41,24 +43,24 @@ TEST_CASE("EthernetView creation with valid frame")
     hdr->protocol = 0x0800; // IPv4
 
     auto viewOrErr = EthernetView::create(std::span(frame));
-    REQUIRE(viewOrErr.has_value());
+    ASSERT_TRUE(viewOrErr.has_value());
     const EthernetView view = *viewOrErr;
 
-    CHECK(view.protocol() == 0x0800);
-    CHECK(view.dst() == MACAddress("10:20:30:40:50:60"));
-    CHECK(view.src() == MACAddress("01:02:03:04:05:06"));
-    CHECK(view.payload().size() == 4);
+    EXPECT_TRUE(view.protocol() == 0x0800);
+    EXPECT_TRUE(view.dst() == MACAddress("10:20:30:40:50:60"));
+    EXPECT_TRUE(view.src() == MACAddress("01:02:03:04:05:06"));
+    EXPECT_TRUE(view.payload().size() == 4);
 }
 
-TEST_CASE("EthernetView creation fails on short frame")
+TEST(AmonLayersEthernet, EthernetviewCreationFailsOnShortFrame)
 {
     std::array<std::byte, 10> shortFrame {};
     auto viewOrErr = EthernetView::create(std::span(shortFrame));
-    CHECK(!viewOrErr.has_value());
-    CHECK(viewOrErr.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(!viewOrErr.has_value());
+    EXPECT_TRUE(viewOrErr.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("EthernetView payload extraction")
+TEST(AmonLayersEthernet, EthernetviewPayloadExtraction)
 {
     /* clang-format off */
     const unsigned char packet[] = {
@@ -72,17 +74,17 @@ TEST_CASE("EthernetView payload extraction")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto viewOrErr = EthernetView::create(frame);
-    REQUIRE(viewOrErr.has_value());
+    ASSERT_TRUE(viewOrErr.has_value());
     const EthernetView view = *viewOrErr;
 
-    CHECK(view.payload().size() == 6);
+    EXPECT_TRUE(view.payload().size() == 6);
     // Check payload is correct (all zeros in this test)
     for (auto b : view.payload()) {
-        CHECK(b == std::byte {0});
+        EXPECT_TRUE(b == std::byte {0});
     }
 }
 
-TEST_CASE("EthernetView header fields")
+TEST(AmonLayersEthernet, EthernetviewHeaderFields)
 {
     /* clang-format off */
     const unsigned char packet[] = {
@@ -95,12 +97,14 @@ TEST_CASE("EthernetView header fields")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto viewOrErr = EthernetView::create(std::span(frame));
-    REQUIRE(viewOrErr.has_value());
+    ASSERT_TRUE(viewOrErr.has_value());
     const EthernetView view = *viewOrErr;
 
-    CHECK(view.dst() == MACAddress("aa:bb:cc:dd:ee:ff"));
-    CHECK(view.src() == MACAddress("11:22:33:44:55:66"));
-    CHECK(view.protocol() == 0x1234);
+    EXPECT_TRUE(view.dst() == MACAddress("aa:bb:cc:dd:ee:ff"));
+    EXPECT_TRUE(view.src() == MACAddress("11:22:33:44:55:66"));
+    EXPECT_TRUE(view.protocol() == 0x1234);
 }
 
-}; // namespace amon::layers
+#endif
+
+} // namespace amon::layers

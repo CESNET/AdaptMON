@@ -29,6 +29,7 @@ add_library(amon-lib
     src/PacketParser.cpp
     src/SignalHandler.cpp
     src/Stacktrace.cpp
+    src/Strerror.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
@@ -51,7 +52,6 @@ target_include_directories(amon-lib
 
 target_link_libraries(amon-lib
     PRIVATE
-        doctest
         libbacktrace
         spdlog::spdlog
         yaml-cpp
@@ -80,10 +80,12 @@ if (ENABLE_TESTS)
     target_sources(amon-lib-tests PRIVATE ${srcs} src/TestWithMain.cpp)
 
     get_target_property(libs amon-lib LINK_LIBRARIES)
-    target_link_libraries(amon-lib-tests PRIVATE ${libs})
+    target_link_libraries(amon-lib-tests PRIVATE ${libs} GTest::gtest_main)
 
     get_target_property(incs amon-lib INCLUDE_DIRECTORIES)
     target_include_directories(amon-lib-tests PRIVATE ${incs})
 
-    doctest_discover_tests(amon-lib-tests)
+    gtest_add_tests(TARGET amon-lib-tests TEST_LIST amon_lib_test_list)
+    set_tests_properties(${amon_lib_test_list}
+        PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
 endif()

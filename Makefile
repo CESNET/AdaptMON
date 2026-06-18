@@ -43,13 +43,13 @@ compile-commands:
 .PHONY: compile-commands
 
 tidy:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $(shell pwd)
-	run-clang-tidy -p $(BUILD_DIR) -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_TESTS=OFF $(shell pwd)
+	run-clang-tidy -p $(BUILD_DIR) -quiet -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
 .PHONY: tidy
 
 tidy-fix:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $(shell pwd)
-	run-clang-tidy -p $(BUILD_DIR) -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" -extra-arg-before=-DAMON_ENABLE_TESTS=1 lib/ apps/
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_TESTS=OFF $(shell pwd)
+	run-clang-tidy -p $(BUILD_DIR) -quiet -fix -j $(shell nproc) -header-filter "$(shell pwd)/(apps|lib)" lib/ apps/
 .PHONY: tidy-fix
 
 format-cmake:

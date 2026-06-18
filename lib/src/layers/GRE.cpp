@@ -51,7 +51,9 @@ static_assert(
     "Unexpected construction for GREHeader");
 static_assert(sizeof(GREHeader) == 4, "GREHeader size must be 4 bytes");
 
-TEST_CASE("GREView create valid GRE header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersGRE, GREviewCreateValidGREHeader)
 {
     // Minimal valid GRE header (4 bytes) + 4 bytes payload
     /* clang-format off */
@@ -64,17 +66,17 @@ TEST_CASE("GREView create valid GRE header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = GREView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 4);
-    CHECK(view.protocolType() == 0x0800);
-    CHECK(view.payload().size() == 4);
-    CHECK(view.payload()[0] == std::byte {0xDE});
-    CHECK(view.payload()[3] == std::byte {0xEF});
+    EXPECT_TRUE(view.headerLength() == 4);
+    EXPECT_TRUE(view.protocolType() == 0x0800);
+    EXPECT_TRUE(view.payload().size() == 4);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[3] == std::byte {0xEF});
 }
 
-TEST_CASE("GREView create valid GRE header with checksum")
+TEST(AmonLayersGRE, GREviewCreateValidGREHeaderWithChecksum)
 {
     /* clang-format off */
     const unsigned char packet[] = {
@@ -88,17 +90,17 @@ TEST_CASE("GREView create valid GRE header with checksum")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = GREView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 8);
-    CHECK(view.protocolType() == 0x0800);
-    CHECK(view.payload().size() == 4);
-    CHECK(view.payload()[0] == std::byte {0xDE});
-    CHECK(view.payload()[3] == std::byte {0xEF});
+    EXPECT_TRUE(view.headerLength() == 8);
+    EXPECT_TRUE(view.protocolType() == 0x0800);
+    EXPECT_TRUE(view.payload().size() == 4);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[3] == std::byte {0xEF});
 }
 
-TEST_CASE("GREView create valid GRE header with key")
+TEST(AmonLayersGRE, GREviewCreateValidGREHeaderWithKey)
 {
     /* clang-format off */
     const unsigned char packet[] = {
@@ -111,18 +113,17 @@ TEST_CASE("GREView create valid GRE header with key")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = GREView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 8);
-    CHECK(view.protocolType() == 0x0101);
-    CHECK(view.payload().size() == 4);
-    CHECK(view.payload()[0] == std::byte {0xDE});
-    CHECK(view.payload()[3] == std::byte {0xEF});
+    EXPECT_TRUE(view.headerLength() == 8);
+    EXPECT_TRUE(view.protocolType() == 0x0101);
+    EXPECT_TRUE(view.payload().size() == 4);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[3] == std::byte {0xEF});
 }
 
-TEST_CASE(
-    "GREView create valid PPTP GRE (ver. 1) header with sequence number and acknowledgement number")
+TEST(AmonLayersGRE, GREviewCreateValidPptpGREVer1HeaderWithSequenceNumberAndAcknowledgementNumber)
 {
     /* clang-format off */
     const unsigned char packet[] = {
@@ -137,22 +138,22 @@ TEST_CASE(
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = GREView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 16);
-    CHECK(view.protocolType() == 0x0800);
-    CHECK(view.payload().size() == 0);
+    EXPECT_TRUE(view.headerLength() == 16);
+    EXPECT_TRUE(view.protocolType() == 0x0800);
+    EXPECT_TRUE(view.payload().size() == 0);
 }
 
-TEST_CASE("GREView header too short")
+TEST(AmonLayersGRE, GREviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(2, std::byte {0});
     auto result = GREView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("GREView bad magic/version")
+TEST(AmonLayersGRE, GREviewBadMagicVersion)
 {
     // Set version bits to non-zero (invalid)
     /* clang-format off */
@@ -166,10 +167,10 @@ TEST_CASE("GREView bad magic/version")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = GREView::create(frame);
-    CHECK(result.error() == LayerError::BAD_MAGIC);
+    EXPECT_TRUE(result.error() == LayerError::BAD_MAGIC);
 }
 
-TEST_CASE("GREView unsupported routing flag")
+TEST(AmonLayersGRE, GREviewUnsupportedRoutingFlag)
 {
     // Set routing bit to 1 (unsupported)
     /* clang-format off */
@@ -183,10 +184,10 @@ TEST_CASE("GREView unsupported routing flag")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = GREView::create(frame);
-    CHECK(result.error() == LayerError::UNSUPPORTED);
+    EXPECT_TRUE(result.error() == LayerError::UNSUPPORTED);
 }
 
-TEST_CASE("GREView missing options")
+TEST(AmonLayersGRE, GREviewMissingOptions)
 {
     // Key bit set but no key field present
     /* clang-format off */
@@ -198,7 +199,9 @@ TEST_CASE("GREView missing options")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = GREView::create(frame);
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
+
+#endif
 
 } // namespace amon::layers

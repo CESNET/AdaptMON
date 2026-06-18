@@ -29,47 +29,51 @@ ArgvList::ArgvList(const std::vector<std::string>& args)
     m_argv.emplace_back(nullptr);
 }
 
-TEST_CASE("ArgvList basic argument handling")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonUtilArgvList, ArgvlistBasicArgumentHandling)
 {
     const std::vector<std::string> args = {"program", "--test", "value"};
     amon::util::ArgvList argvList(args);
 
-    CHECK(argvList.argc() == 3);
-    CHECK(std::strcmp(argvList.argv()[0], "program") == 0);
-    CHECK(std::strcmp(argvList.argv()[1], "--test") == 0);
-    CHECK(std::strcmp(argvList.argv()[2], "value") == 0);
-    CHECK(argvList.argv()[3] == nullptr);
+    EXPECT_TRUE(argvList.argc() == 3);
+    EXPECT_TRUE(std::strcmp(argvList.argv()[0], "program") == 0);
+    EXPECT_TRUE(std::strcmp(argvList.argv()[1], "--test") == 0);
+    EXPECT_TRUE(std::strcmp(argvList.argv()[2], "value") == 0);
+    EXPECT_TRUE(argvList.argv()[3] == nullptr);
 }
 
-TEST_CASE("ArgvList null termination")
+TEST(AmonUtilArgvList, ArgvlistNullTermination)
 {
     const std::vector<std::string> args = {"one", "two"};
     amon::util::ArgvList argvList(args);
 
     // Verify proper null termination
-    CHECK(argvList.argv()[0][3] == '\0');
-    CHECK(argvList.argv()[1][3] == '\0');
-    CHECK(argvList.argv()[2] == nullptr);
+    EXPECT_TRUE(argvList.argv()[0][3] == '\0');
+    EXPECT_TRUE(argvList.argv()[1][3] == '\0');
+    EXPECT_TRUE(argvList.argv()[2] == nullptr);
 }
 
-TEST_CASE("ArgvList empty argument list")
+TEST(AmonUtilArgvList, ArgvlistEmptyArgumentList)
 {
     const std::vector<std::string> args;
     amon::util::ArgvList argvList(args);
 
-    CHECK(argvList.argc() == 0);
-    CHECK(argvList.argv()[0] == nullptr);
+    EXPECT_TRUE(argvList.argc() == 0);
+    EXPECT_TRUE(argvList.argv()[0] == nullptr);
 }
 
-TEST_CASE("ArgvList special characters")
+TEST(AmonUtilArgvList, ArgvlistSpecialCharacters)
 {
     const std::vector<std::string> args = {"arg with spaces", "!@#$%^&*()", ""};
     amon::util::ArgvList argvList(args);
 
-    CHECK(argvList.argc() == 3);
-    CHECK(std::strcmp(argvList.argv()[0], "arg with spaces") == 0);
-    CHECK(std::strcmp(argvList.argv()[1], "!@#$%^&*()") == 0);
-    CHECK(std::strcmp(argvList.argv()[2], "") == 0);
+    EXPECT_TRUE(argvList.argc() == 3);
+    EXPECT_TRUE(std::strcmp(argvList.argv()[0], "arg with spaces") == 0);
+    EXPECT_TRUE(std::strcmp(argvList.argv()[1], "!@#$%^&*()") == 0);
+    EXPECT_TRUE(std::strcmp(argvList.argv()[2], "") == 0);
 }
+
+#endif
 
 } // namespace amon::util

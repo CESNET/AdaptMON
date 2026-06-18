@@ -28,7 +28,9 @@ static_assert(
     "Unexpected construction for VLANHeader");
 static_assert(sizeof(VLANHeader) == 4, "VLANHeader size must be 4 bytes");
 
-TEST_CASE("VLANView create valid VLAN header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersVLAN, VLANviewCreateValidVLANHeader)
 {
     // Example VLAN header: TCI = 0x1234, Protocol = 0x0800 (IPv4)
 
@@ -42,21 +44,23 @@ TEST_CASE("VLANView create valid VLAN header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = VLANView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.protocol() == 0x0800);
-    CHECK(view.tag() == 564);
-    CHECK(view.payload().size() == 2);
-    CHECK(view.payload()[0] == std::byte {0xDE});
-    CHECK(view.payload()[1] == std::byte {0xAD});
+    EXPECT_TRUE(view.protocol() == 0x0800);
+    EXPECT_TRUE(view.tag() == 564);
+    EXPECT_TRUE(view.payload().size() == 2);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[1] == std::byte {0xAD});
 }
 
-TEST_CASE("VLANView header too short")
+TEST(AmonLayersVLAN, VLANviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(2, std::byte {0});
     auto result = VLANView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
+
+#endif
 
 } // namespace amon::layers

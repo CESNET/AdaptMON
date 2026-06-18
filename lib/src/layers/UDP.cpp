@@ -37,7 +37,9 @@ static_assert(
     "Unexpected construction for UDPHeader");
 static_assert(sizeof(UDPHeader) == 8, "UDPHeader size must be 8 bytes");
 
-TEST_CASE("UDPView create valid UDP header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersUDP, UDPviewCreateValidUDPHeader)
 {
     // Minimal valid UDP header (8 bytes) + 4 bytes payload
     /* clang-format off */
@@ -52,24 +54,24 @@ TEST_CASE("UDPView create valid UDP header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = UDPView::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.srcPort() == 4660);
-    CHECK(view.dstPort() == 22136);
-    CHECK(view.payload().size() == 4);
-    CHECK(view.payload()[0] == std::byte {0xDE});
-    CHECK(view.payload()[3] == std::byte {0xEF});
+    EXPECT_TRUE(view.srcPort() == 4660);
+    EXPECT_TRUE(view.dstPort() == 22136);
+    EXPECT_TRUE(view.payload().size() == 4);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[3] == std::byte {0xEF});
 }
 
-TEST_CASE("UDPView header too short")
+TEST(AmonLayersUDP, UDPviewHeaderTooShort)
 {
     std::vector<std::byte> bytes(6, std::byte {0});
     auto result = UDPView::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("UDPView bad length field")
+TEST(AmonLayersUDP, UDPviewBadLengthField)
 {
     // Length field less than header size
     /* clang-format off */
@@ -83,7 +85,9 @@ TEST_CASE("UDPView bad length field")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = UDPView::create(frame);
-    CHECK(result.error() == LayerError::BAD_LEN_FIELD);
+    EXPECT_TRUE(result.error() == LayerError::BAD_LEN_FIELD);
 }
+
+#endif
 
 } // namespace amon::layers

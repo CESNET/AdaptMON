@@ -112,57 +112,59 @@ static_assert(sizeof(IPv4) == 4, "IPv4 size must be 4 bytes");
 static_assert(sizeof(IPv6) == 16, "IPv6 size must be 16 bytes");
 static_assert(sizeof(IPAddress) == 16U, "IPAddr size must be 16 bytes");
 
-TEST_CASE("IPAddress IPv4 construction and string conversion")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonTypesIPAddress, IpaddressIPv4ConstructionAndStringConversion)
 {
     const IPAddress ip("192.168.1.1");
-    CHECK(ip.isIPv4());
-    CHECK(!ip.isIPv6());
-    CHECK(ip.toString() == "192.168.1.1");
+    EXPECT_TRUE(ip.isIPv4());
+    EXPECT_TRUE(!ip.isIPv6());
+    EXPECT_TRUE(ip.toString() == "192.168.1.1");
 }
 
-TEST_CASE("IPAddress IPv6 construction and string conversion")
+TEST(AmonTypesIPAddress, IpaddressIPv6ConstructionAndStringConversion)
 {
     const IPAddress ip("2001:db8::1");
-    CHECK(ip.isIPv6());
-    CHECK(!ip.isIPv4());
-    CHECK(ip.toString() == "2001:db8::1");
+    EXPECT_TRUE(ip.isIPv6());
+    EXPECT_TRUE(!ip.isIPv4());
+    EXPECT_TRUE(ip.toString() == "2001:db8::1");
 }
 
-TEST_CASE("IPAddress invalid string throws")
+TEST(AmonTypesIPAddress, IpaddressInvalidStringThrows)
 {
-    CHECK_THROWS_AS(IPAddress("invalid_ip"), std::invalid_argument);
+    EXPECT_THROW(IPAddress("invalid_ip"), std::invalid_argument);
 }
 
-TEST_CASE("IPAddress IPv4 comparison")
+TEST(AmonTypesIPAddress, IpaddressIPv4Comparison)
 {
     const IPAddress ip1("192.168.1.1");
     const IPAddress ip2("192.168.1.2");
     const IPAddress ip3("192.168.1.1");
-    CHECK(ip1 < ip2);
-    CHECK(ip2 > ip1);
-    CHECK(ip1 == ip3);
-    CHECK(ip1 <= ip3);
-    CHECK(ip1 >= ip3);
-    CHECK(ip1 != ip2);
+    EXPECT_TRUE(ip1 < ip2);
+    EXPECT_TRUE(ip2 > ip1);
+    EXPECT_TRUE(ip1 == ip3);
+    EXPECT_TRUE(ip1 <= ip3);
+    EXPECT_TRUE(ip1 >= ip3);
+    EXPECT_TRUE(ip1 != ip2);
 }
 
-TEST_CASE("IPAddress IPv6 comparison")
+TEST(AmonTypesIPAddress, IpaddressIPv6Comparison)
 {
     const IPAddress ip1("2001:db8::1");
     const IPAddress ip2("2001:db8::2");
-    CHECK(ip1 < ip2);
-    CHECK(ip2 > ip1);
-    CHECK(ip1 != ip2);
+    EXPECT_TRUE(ip1 < ip2);
+    EXPECT_TRUE(ip2 > ip1);
+    EXPECT_TRUE(ip1 != ip2);
 }
 
-TEST_CASE("IPAddress IPv4 is equal to IPv4-mapped IPv6 address")
+TEST(AmonTypesIPAddress, IpaddressIPv4IsEqualToIPv4MappedIPv6Address)
 {
     const IPAddress ipv4("192.168.1.1");
     const IPAddress ipv6("::ffff:192.168.1.1");
-    CHECK(ipv4 == ipv6);
+    EXPECT_TRUE(ipv4 == ipv6);
 }
 
-TEST_CASE("IPAddress construct from IPv4")
+TEST(AmonTypesIPAddress, IpaddressConstructFromIPv4)
 {
     IPv4 ipv4;
     // 192.168.1.1 in network byte order
@@ -170,12 +172,12 @@ TEST_CASE("IPAddress construct from IPv4")
     std::memcpy(ipv4.data(), bytes, 4);
 
     const IPAddress ip(ipv4);
-    CHECK(ip.isIPv4());
-    CHECK(!ip.isIPv6());
-    CHECK(ip.toString() == "192.168.1.1");
+    EXPECT_TRUE(ip.isIPv4());
+    EXPECT_TRUE(!ip.isIPv6());
+    EXPECT_TRUE(ip.toString() == "192.168.1.1");
 }
 
-TEST_CASE("IPAddress construct from IPv6")
+TEST(AmonTypesIPAddress, IpaddressConstructFromIPv6)
 {
     IPv6 ipv6;
     // 2001:db8::1 in network byte order
@@ -183,56 +185,58 @@ TEST_CASE("IPAddress construct from IPv6")
     std::memcpy(ipv6.data(), bytes, 16);
 
     const IPAddress ip(ipv6);
-    CHECK(ip.isIPv6());
-    CHECK(!ip.isIPv4());
-    CHECK(ip.toString() == "2001:db8::1");
+    EXPECT_TRUE(ip.isIPv6());
+    EXPECT_TRUE(!ip.isIPv4());
+    EXPECT_TRUE(ip.toString() == "2001:db8::1");
 }
 
-TEST_CASE("IPAddress::toIPv4 returns IPv4 for IPv4 address")
+TEST(AmonTypesIPAddress, IpaddressToipv4ReturnsIPv4ForIPv4Address)
 {
     const IPAddress ip("192.168.1.1");
     auto opt = ip.toIPv4();
-    REQUIRE(opt.has_value());
+    ASSERT_TRUE(opt.has_value());
     if (opt.has_value()) { // make clang-tidy happy
         const IPv4 v = *opt;
         const uint8_t expect[4] = {192, 168, 1, 1};
-        CHECK(std::memcmp(v.data(), expect, 4) == 0);
+        EXPECT_TRUE(std::memcmp(v.data(), expect, 4) == 0);
     }
 }
 
-TEST_CASE("IPAddress::toIPv4 returns std::nullopt for native IPv6")
+TEST(AmonTypesIPAddress, IpaddressToipv4ReturnsStdNulloptForNativeIPv6)
 {
     const IPAddress ip("2001:db8::1");
-    CHECK(!ip.toIPv4().has_value());
+    EXPECT_TRUE(!ip.toIPv4().has_value());
 }
 
-TEST_CASE("IPAddress::toIPv4 accepts IPv4-mapped IPv6")
+TEST(AmonTypesIPAddress, IpaddressToipv4AcceptsIPv4MappedIPv6)
 {
     const IPAddress ip("::ffff:192.168.1.1");
     auto opt = ip.toIPv4();
-    REQUIRE(opt.has_value());
+    ASSERT_TRUE(opt.has_value());
     if (opt.has_value()) { // make clang-tidy happy
         const IPv4 v = *opt;
         const uint8_t expect[4] = {192, 168, 1, 1};
-        CHECK(std::memcmp(v.data(), expect, 4) == 0);
+        EXPECT_TRUE(std::memcmp(v.data(), expect, 4) == 0);
     }
 }
 
-TEST_CASE("IPAddress::toIPv6 returns full IPv6 for both IPv6 and IPv4-mapped addresses")
+TEST(AmonTypesIPAddress, IpaddressToipv6ReturnsFullIPv6ForBothIPv6AndIPv4MappedAddresses)
 {
     // IPv6 input -> identical 16 bytes
     const IPAddress ip6("2001:db8::1");
     IPv6 out6 = ip6.toIPv6();
     const uint8_t expect6[16] = {0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-    CHECK(std::memcmp(out6.data(), expect6, 16) == 0);
+    EXPECT_TRUE(std::memcmp(out6.data(), expect6, 16) == 0);
 
     // IPv4 input -> IPv4-mapped IPv6
     const IPAddress ip4("192.168.1.1");
     IPv6 out6m = ip4.toIPv6();
     const uint8_t expect4[4] = {192, 168, 1, 1};
-    CHECK(std::memcmp(out6m.data() + 12, expect4, 4) == 0);
-    CHECK(out6m.data()[10] == std::byte {0xff});
-    CHECK(out6m.data()[11] == std::byte {0xff});
+    EXPECT_TRUE(std::memcmp(out6m.data() + 12, expect4, 4) == 0);
+    EXPECT_TRUE(out6m.data()[10] == std::byte {0xff});
+    EXPECT_TRUE(out6m.data()[11] == std::byte {0xff});
 }
+
+#endif
 
 } // namespace amon::types

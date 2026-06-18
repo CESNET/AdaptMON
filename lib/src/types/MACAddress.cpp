@@ -23,83 +23,87 @@ static_assert(
     "Type unsigned char must be equal to std::byte for conversion in MACAddress constructor.");
 
 // TESTS
-TEST_CASE("MACAddress copy construction")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonTypesMACAddress, MacaddressCopyConstruction)
 {
     const std::array<uint8_t, 6> mac = {1, 2, 3, 4, 5, 6};
     const auto addr1 = MACAddress(std::span(mac));
     const MACAddress addr2(addr1);
-    CHECK(addr1 == addr2);
+    EXPECT_TRUE(addr1 == addr2);
 }
 
-TEST_CASE("MACAddress construct from span")
+TEST(AmonTypesMACAddress, MacaddressConstructFromSpan)
 {
     const std::array<uint8_t, 6> mac = {10, 20, 30, 40, 50, 60};
     const MACAddress addr = std::span<const uint8_t>(mac);
     for (size_t i = 0; i < 6; ++i) {
-        CHECK(addr[i] == static_cast<std::byte>(mac[i]));
+        EXPECT_TRUE(addr[i] == static_cast<std::byte>(mac[i]));
     }
 }
 
-TEST_CASE("MACAddress construction from span with wrong size throws")
+TEST(AmonTypesMACAddress, MacaddressConstructionFromSpanWithWrongSizeThrows)
 {
     const std::array<uint8_t, 5> mac = {1, 2, 3, 4, 5};
-    CHECK_THROWS_AS(MACAddress(std::span(mac)), std::logic_error);
+    EXPECT_THROW(MACAddress(std::span(mac)), std::logic_error);
 }
 
-TEST_CASE("MACAddress string constructor valid")
+TEST(AmonTypesMACAddress, MacaddressStringConstructorValid)
 {
     const MACAddress addr("01:23:45:67:89:ab");
-    CHECK(addr[0] == std::byte {0x01});
-    CHECK(addr[1] == std::byte {0x23});
-    CHECK(addr[2] == std::byte {0x45});
-    CHECK(addr[3] == std::byte {0x67});
-    CHECK(addr[4] == std::byte {0x89});
-    CHECK(addr[5] == std::byte {0xab});
+    EXPECT_TRUE(addr[0] == std::byte {0x01});
+    EXPECT_TRUE(addr[1] == std::byte {0x23});
+    EXPECT_TRUE(addr[2] == std::byte {0x45});
+    EXPECT_TRUE(addr[3] == std::byte {0x67});
+    EXPECT_TRUE(addr[4] == std::byte {0x89});
+    EXPECT_TRUE(addr[5] == std::byte {0xab});
 }
 
-TEST_CASE("MACAddress string constructor invalid length throws")
+TEST(AmonTypesMACAddress, MacaddressStringConstructorInvalidLengthThrows)
 {
-    CHECK_THROWS_AS(MACAddress("01:23:45:67:89"), std::invalid_argument);
+    EXPECT_THROW(MACAddress("01:23:45:67:89"), std::invalid_argument);
 }
 
-TEST_CASE("MACAddress string constructor invalid format throws")
+TEST(AmonTypesMACAddress, MacaddressStringConstructorInvalidFormatThrows)
 {
-    CHECK_THROWS_AS(MACAddress("01:23:45:67:89:ZZ"), std::invalid_argument);
-    CHECK_THROWS_AS(MACAddress("notamacaddress"), std::invalid_argument);
+    EXPECT_THROW(MACAddress("01:23:45:67:89:ZZ"), std::invalid_argument);
+    EXPECT_THROW(MACAddress("notamacaddress"), std::invalid_argument);
 }
 
-TEST_CASE("MACAddress comparison operators")
+TEST(AmonTypesMACAddress, MacaddressComparisonOperators)
 {
     const MACAddress addr1("01:23:45:67:89:ab");
     const MACAddress addr2("01:23:45:67:89:ac");
     const MACAddress addr3("01:23:45:67:89:ab");
-    CHECK(addr1 == addr3);
-    CHECK(addr1 != addr2);
-    CHECK(addr1 < addr2);
-    CHECK(addr2 > addr1);
+    EXPECT_TRUE(addr1 == addr3);
+    EXPECT_TRUE(addr1 != addr2);
+    EXPECT_TRUE(addr1 < addr2);
+    EXPECT_TRUE(addr2 > addr1);
 }
 
-TEST_CASE("MACAddress indexing out of bounds throws")
+TEST(AmonTypesMACAddress, MacaddressIndexingOutOfBoundsThrows)
 {
     const MACAddress addr("01:23:45:67:89:ab");
-    CHECK_THROWS_AS(addr.at(6), std::out_of_range);
-    CHECK_THROWS_AS(addr.at(100), std::out_of_range);
+    EXPECT_THROW(addr.at(6), std::out_of_range);
+    EXPECT_THROW(addr.at(100), std::out_of_range);
 }
 
-TEST_CASE("MACAddress mutable indexing")
+TEST(AmonTypesMACAddress, MacaddressMutableIndexing)
 {
     MACAddress addr("01:23:45:67:89:ab");
     addr[0] = static_cast<std::byte>(0xff);
-    CHECK(addr[0] == static_cast<std::byte>(0xff));
+    EXPECT_TRUE(addr[0] == static_cast<std::byte>(0xff));
 }
 
-TEST_CASE("MACAddress construct with reinterpret_cast")
+TEST(AmonTypesMACAddress, MacaddressConstructWithReinterpretCast)
 {
     std::array<uint8_t, 6> mac = {0xde, 0xad, 0xbe, 0xef, 0x00, 0x01};
     const auto* addr = reinterpret_cast<const MACAddress*>(mac.data());
     for (size_t i = 0; i < 6; ++i) {
-        CHECK((*addr)[i] == static_cast<std::byte>(mac[i]));
+        EXPECT_TRUE((*addr)[i] == static_cast<std::byte>(mac[i]));
     }
 }
+
+#endif
 
 } // namespace amon::types

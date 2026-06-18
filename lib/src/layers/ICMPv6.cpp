@@ -30,7 +30,9 @@ static_assert(
     "Unexpected construction for ICMPv6Header");
 static_assert(sizeof(ICMPv6Header) == 4, "ICMPv6Header size must be 4 bytes");
 
-TEST_CASE("ICMPv6View create valid ICMPv6 header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersICMPv6, ICMPv6viewCreateValidICMPv6Header)
 {
     // Minimal valid ICMPv6 header (4 bytes) + 4 bytes payload
     /* clang-format off */
@@ -43,21 +45,23 @@ TEST_CASE("ICMPv6View create valid ICMPv6 header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = ICMPv6View::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.type() == 8);
-    CHECK(view.code() == 0);
-    CHECK(view.payload().size() == 4);
-    CHECK(view.payload()[0] == std::byte {0xDE});
-    CHECK(view.payload()[3] == std::byte {0xEF});
+    EXPECT_TRUE(view.type() == 8);
+    EXPECT_TRUE(view.code() == 0);
+    EXPECT_TRUE(view.payload().size() == 4);
+    EXPECT_TRUE(view.payload()[0] == std::byte {0xDE});
+    EXPECT_TRUE(view.payload()[3] == std::byte {0xEF});
 }
 
-TEST_CASE("ICMPv6View header too short")
+TEST(AmonLayersICMPv6, ICMPv6viewHeaderTooShort)
 {
     std::vector<std::byte> bytes(2, std::byte {0});
     auto result = ICMPv6View::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
+
+#endif
 
 } // namespace amon::layers

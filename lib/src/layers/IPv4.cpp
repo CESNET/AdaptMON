@@ -47,7 +47,9 @@ static_assert(
     "Unexpected construction for IPv4Header");
 static_assert(sizeof(IPv4Header) == 20, "IPv4Header size must be 20 bytes");
 
-TEST_CASE("IPv4View create valid IPv4 header")
+#ifdef AMON_ENABLE_TESTS
+
+TEST(AmonLayersIPv4, IPv4viewCreateValidIPv4Header)
 {
     // Minimal valid IPv4 header (20 bytes)
     const unsigned char packet[] = {
@@ -65,50 +67,50 @@ TEST_CASE("IPv4View create valid IPv4 header")
     const std::span frame {reinterpret_cast<const std::byte*>(packet), sizeof(packet)};
 
     auto result = IPv4View::create(frame);
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
 
-    CHECK(view.headerLength() == 20);
-    CHECK(view.protocol() == 0x06);
-    CHECK(view.srcIP()[0] == std::byte {192});
-    CHECK(view.srcIP()[1] == std::byte {168});
-    CHECK(view.srcIP()[2] == std::byte {1});
-    CHECK(view.srcIP()[3] == std::byte {1});
-    CHECK(view.dstIP()[0] == std::byte {8});
-    CHECK(view.dstIP()[1] == std::byte {8});
-    CHECK(view.dstIP()[2] == std::byte {8});
-    CHECK(view.dstIP()[3] == std::byte {8});
-    CHECK_FALSE(view.isFragmented());
-    CHECK(view.fragmentOffset() == 0);
-    CHECK(view.payload().size() == 0);
-    CHECK(view.ttl() == 0x40);
-    CHECK(view.totalLength() == 20);
+    EXPECT_TRUE(view.headerLength() == 20);
+    EXPECT_TRUE(view.protocol() == 0x06);
+    EXPECT_TRUE(view.srcIP()[0] == std::byte {192});
+    EXPECT_TRUE(view.srcIP()[1] == std::byte {168});
+    EXPECT_TRUE(view.srcIP()[2] == std::byte {1});
+    EXPECT_TRUE(view.srcIP()[3] == std::byte {1});
+    EXPECT_TRUE(view.dstIP()[0] == std::byte {8});
+    EXPECT_TRUE(view.dstIP()[1] == std::byte {8});
+    EXPECT_TRUE(view.dstIP()[2] == std::byte {8});
+    EXPECT_TRUE(view.dstIP()[3] == std::byte {8});
+    EXPECT_FALSE(view.isFragmented());
+    EXPECT_TRUE(view.fragmentOffset() == 0);
+    EXPECT_TRUE(view.payload().size() == 0);
+    EXPECT_TRUE(view.ttl() == 0x40);
+    EXPECT_TRUE(view.totalLength() == 20);
 }
 
-TEST_CASE("IPv4View header too short")
+TEST(AmonLayersIPv4, IPv4viewHeaderTooShort)
 {
     std::vector<std::byte> bytes(10, std::byte {0});
     auto result = IPv4View::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::HEADER_SHORT);
+    EXPECT_TRUE(result.error() == LayerError::HEADER_SHORT);
 }
 
-TEST_CASE("IPv4View bad version")
+TEST(AmonLayersIPv4, IPv4viewBadVersion)
 {
     std::vector<std::byte> bytes(20, std::byte {0});
     bytes[0] = std::byte {0x55}; // Version=5, IHL=5
     auto result = IPv4View::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::BAD_MAGIC);
+    EXPECT_TRUE(result.error() == LayerError::BAD_MAGIC);
 }
 
-TEST_CASE("IPv4View bad IHL")
+TEST(AmonLayersIPv4, IPv4viewBadIhl)
 {
     std::vector<std::byte> bytes(20, std::byte {0});
     bytes[0] = std::byte {0x41}; // Version=4, IHL=1 (too short)
     auto result = IPv4View::create(std::span<const std::byte>(bytes));
-    CHECK(result.error() == LayerError::BAD_LEN_FIELD);
+    EXPECT_TRUE(result.error() == LayerError::BAD_LEN_FIELD);
 }
 
-TEST_CASE("IPv4View fragmented packet")
+TEST(AmonLayersIPv4, IPv4viewFragmentedPacket)
 {
     // First: More fragments follow, offset = 0
     std::vector<std::byte> bytes(20, std::byte {0});
@@ -117,11 +119,11 @@ TEST_CASE("IPv4View fragmented packet")
     bytes[3] = std::byte {0x14};
     bytes[6] = std::byte {0x20}; // Flags=1 (More Fragments), Fragment Offset=0
     auto result = IPv4View::create(std::span<const std::byte>(bytes));
-    REQUIRE(result.has_value());
+    ASSERT_TRUE(result.has_value());
     auto view = result.value();
-    CHECK(view.isFragmented());
-    CHECK(view.moreFragmentsFollow());
-    CHECK(view.fragmentOffset() == 0);
+    EXPECT_TRUE(view.isFragmented());
+    EXPECT_TRUE(view.moreFragmentsFollow());
+    EXPECT_TRUE(view.fragmentOffset() == 0);
 
     // Second: Last fragment, non-zero offset
     std::vector<std::byte> lastFrag(20, std::byte {0});
@@ -131,11 +133,13 @@ TEST_CASE("IPv4View fragmented packet")
     lastFrag[6] = std::byte {0x01}; // Flags=0 (last fragment), Fragment Offset high bits
     lastFrag[7] = std::byte {0x20}; // Fragment Offset low bits (0x120 = 288 bytes)
     auto result2 = IPv4View::create(std::span<const std::byte>(lastFrag));
-    REQUIRE(result2.has_value());
+    ASSERT_TRUE(result2.has_value());
     auto view2 = result2.value();
-    CHECK(view2.isFragmented());
-    CHECK_FALSE(view2.moreFragmentsFollow());
-    CHECK(view2.fragmentOffset() == 288);
+    EXPECT_TRUE(view2.isFragmented());
+    EXPECT_FALSE(view2.moreFragmentsFollow());
+    EXPECT_TRUE(view2.fragmentOffset() == 288);
 }
+
+#endif
 
 } // namespace amon::layers

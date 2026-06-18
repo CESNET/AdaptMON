@@ -78,7 +78,7 @@ endif()
 # Add external dependencies
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
-include(cmake/doctest.cmake)
+include(cmake/gtest.cmake)
 include(cmake/libpcap.cmake)
 include(cmake/yaml-cpp.cmake)
 include(cmake/libdpdk.cmake)
