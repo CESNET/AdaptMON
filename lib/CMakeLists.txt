@@ -68,6 +68,14 @@ target_link_options(amon-lib PRIVATE
     -Wl,--version-script=${CMAKE_BINARY_DIR}/export.map
 )
 
+if (ENABLE_ASSERTS STREQUAL "ON" OR
+        (ENABLE_ASSERTS STREQUAL "AUTO" AND CMAKE_BUILD_TYPE STREQUAL "Debug"))
+    message(STATUS "AMON assertions will be enabled")
+    target_compile_definitions(amon-lib PUBLIC AMON_ENABLE_ASSERTS=1)
+else()
+    message(STATUS "AMON assertions will be disabled")
+endif()
+
 if (ENABLE_TESTS)
     add_executable(amon-lib-tests)
 
@@ -75,6 +83,7 @@ if (ENABLE_TESTS)
 
     get_target_property(opts amon-lib COMPILE_OPTIONS)
     target_compile_options(amon-lib-tests PRIVATE ${opts})
+    target_compile_definitions(amon-lib-tests PUBLIC AMON_ENABLE_ASSERTS=1)
 
     get_target_property(srcs amon-lib SOURCES)
     target_sources(amon-lib-tests PRIVATE ${srcs} src/TestWithMain.cpp)

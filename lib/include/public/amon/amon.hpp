@@ -100,17 +100,56 @@ auto match(Variant&& variant, Callables&&... callables)
 namespace detail {
 
 template <typename... Args>
-[[noreturn]] void assertFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args)
+[[gnu::noinline]] [[noreturn]] void failImpl(
+    std::string_view title,
+    std::string_view cond,
+    std::format_string<Args...> fmt,
+    Args&&... args) noexcept
 {
-    std::stringstream ss;
-    ss << "--- ASSERTION FAILED -----------------------------------------------------------\n";
-    ss << "Condition: " << cond << "\n";
-    ss << "Message:   " << std::format(fmt, std::forward<Args>(args)...) << "\n";
-    ss << "\n";
-    ss << "Stacktrace:\n";
-    ss << StacktraceProvider::createStacktrace(1).str() << "\n";
-    std::cerr << ss.str();
+    std::cerr << "--- " << title
+              << " -----------------------------------------------------------\n";
+    std::cerr << "Condition: " << cond << "\n";
+    if (!fmt.get().empty()) {
+        try {
+            std::cerr << "Message:   " << std::format(fmt, std::forward<Args>(args)...) << "\n";
+        } catch (...) { // NOLINT(bugprone-empty-catch)
+            std::cerr << "Message:   <failed to generate message>\n";
+        }
+    }
+    std::cerr << "\n";
+    std::cerr << "Stacktrace:\n";
+    try {
+        std::cerr << StacktraceProvider::createStacktrace(2).str() << "\n";
+    } catch (...) { // NOLINT(bugprone-empty-catch)
+        std::cerr << "<failed to generate stacktrace>\n";
+    }
     std::abort();
+}
+
+template <typename... Args>
+[[gnu::noinline]] [[noreturn]] void
+assertFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args) noexcept
+{
+    failImpl("ASSERTION FAILED", cond, fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+[[gnu::noinline]] [[noreturn]] void assertFail(std::string_view cond) noexcept
+{
+    failImpl("ASSERTION FAILED", cond, "");
+}
+
+template <typename... Args>
+[[gnu::noinline]] [[noreturn]] void
+requireFail(std::string_view cond, std::format_string<Args...> fmt, Args&&... args) noexcept
+{
+    failImpl("REQUIREMENT FAILED", cond, fmt, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+[[gnu::noinline]] [[noreturn]] void requireFail(std::string_view cond) noexcept
+{
+    failImpl("REQUIREMENT FAILED", cond, "");
 }
 
 } // namespace detail
@@ -120,19 +159,33 @@ template <typename... Args>
  * @def AMON_ASSERT
  * @brief Asserts that a condition is true, otherwise prints diagnostic info and aborts.
  *
- * Unlike classical `assert`, AMON_ASSERT is intended to work in release mode as well.
- * The motivation is to replace the `if (!condition) throw std::logic_error(...);` pattern that
- * could not be replaced by a regular assert due to it being optimized away in release mode.
- *
  * AMON_ASSERT also prints a stack trace when triggered to aid in debugging.
  *
  * @param CONDITION The condition to assert.
- * @param MESSAGE_FMT The format string for the error message.
- * @param ... Arguments for the format string.
+ * @param ... Format string and arguments for the format string if you want to print a message.
  */
-#define AMON_ASSERT(CONDITION, MESSAGE_FMT, ...)                                                   \
+#ifdef AMON_ENABLE_ASSERTS
+#define AMON_ASSERT(CONDITION, ...)                                                                \
     if (!(CONDITION)) [[unlikely]] {                                                               \
-        amon::detail::assertFail(#CONDITION, MESSAGE_FMT, ##__VA_ARGS__);                          \
+        amon::detail::assertFail(#CONDITION, ##__VA_ARGS__);                                       \
+    }
+#else
+#define AMON_ASSERT(CONDITION, ...)
+#endif
+
+/**
+ * @def AMON_REQUIRE
+ * @brief Requires that a condition is true, otherwise prints diagnostic info and aborts. Unlike
+ * AMON_ASSERT, this is a hard check that cannot be turned off.
+ *
+ * AMON_REQUIRE also prints a stack trace when triggered to aid in debugging.
+ *
+ * @param CONDITION The condition to assert.
+ * @param ... Format string and arguments for the format string if you want to print a message.
+ */
+#define AMON_REQUIRE(CONDITION, ...)                                                               \
+    if (!(CONDITION)) [[unlikely]] {                                                               \
+        amon::detail::requireFail(#CONDITION, ##__VA_ARGS__);                                      \
     }
 
 } // namespace amon
