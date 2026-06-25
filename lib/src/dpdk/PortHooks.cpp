@@ -10,6 +10,7 @@
 #include <amon/dpdk/PortHooks.hpp>
 #include <amon/dpdk/porthooks/BNXT.hpp>
 #include <amon/dpdk/porthooks/I40E.hpp>
+#include <amon/dpdk/porthooks/MLX5.hpp>
 
 namespace amon::dpdk {
 
@@ -156,6 +157,7 @@ std::vector<std::unique_ptr<PortHooks>> makeDefaultPortHooks()
     std::vector<std::unique_ptr<PortHooks>> res;
     res.emplace_back(std::make_unique<porthooks::BNXT>());
     res.emplace_back(std::make_unique<porthooks::I40E>());
+    res.emplace_back(std::make_unique<porthooks::MLX5>());
     return res;
 }
 

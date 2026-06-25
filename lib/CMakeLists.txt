@@ -55,6 +55,7 @@ if (ENABLE_DPDK)
         src/dpdk/PortHooks.cpp
         src/dpdk/porthooks/BNXT.cpp
         src/dpdk/porthooks/I40E.cpp
+        src/dpdk/porthooks/MLX5.cpp
         src/dpdk/SocketID.cpp
     )
 endif()
