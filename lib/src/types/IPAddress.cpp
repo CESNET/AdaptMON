@@ -10,7 +10,9 @@
 #include <amon-internal/Test.hpp>
 #include <amon/types/IPAddress.hpp>
 
+#include <array>
 #include <cassert>
+#include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <type_traits>
@@ -20,6 +22,21 @@
 
 namespace amon::types {
 
+static constexpr std::array<std::byte, 12> ipv4MappedPrefix {
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0x00},
+    std::byte {0xFF},
+    std::byte {0xFF},
+};
+
 IPAddress::IPAddress() noexcept
 {
     clear();
@@ -27,16 +44,12 @@ IPAddress::IPAddress() noexcept
 
 IPAddress::IPAddress(const std::string& ip)
 {
-    uint32_t ipv4Be;
-
-    if (inet_pton(AF_INET, ip.c_str(), &ipv4Be) == 1) {
-        u64()[0] = 0;
-        u32()[2] = htobe32(0x0000FFFF);
-        u32()[3] = ipv4Be;
+    if (inet_pton(AF_INET, ip.c_str(), data() + ipv4MappedPrefix.size()) == 1) {
+        std::memcpy(data(), ipv4MappedPrefix.data(), ipv4MappedPrefix.size());
         return;
     }
 
-    if (inet_pton(AF_INET6, ip.c_str(), u64()) == 1) {
+    if (inet_pton(AF_INET6, ip.c_str(), data()) == 1) {
         return;
     }
 
@@ -45,9 +58,8 @@ IPAddress::IPAddress(const std::string& ip)
 
 IPAddress::IPAddress(const IPv4& ip) noexcept
 {
-    u64()[0] = 0;
-    u32()[2] = htobe32(0x0000FFFF);
-    u32()[3] = *reinterpret_cast<const uint32_t*>(ip.data());
+    std::memcpy(data(), ipv4MappedPrefix.data(), ipv4MappedPrefix.size());
+    std::memcpy(data() + ipv4MappedPrefix.size(), ip.data(), ip.size());
 }
 
 IPAddress::IPAddress(const IPv6& ip) noexcept
@@ -57,7 +69,7 @@ IPAddress::IPAddress(const IPv6& ip) noexcept
 
 bool IPAddress::isIPv4() const noexcept
 {
-    return u64()[0] == 0 && u32()[2] == htobe32(0x0000FFFF);
+    return std::memcmp(data(), ipv4MappedPrefix.data(), ipv4MappedPrefix.size()) == 0;
 }
 
 bool IPAddress::isIPv6() const noexcept
@@ -69,7 +81,8 @@ std::string IPAddress::toString() const
 {
     if (isIPv4()) {
         std::array<char, INET_ADDRSTRLEN> buffer;
-        const char* result = inet_ntop(AF_INET, &u32()[3], buffer.data(), buffer.size());
+        const char* result
+            = inet_ntop(AF_INET, data() + ipv4MappedPrefix.size(), buffer.data(), buffer.size());
         if (result == nullptr) {
             throw std::runtime_error("Failed to convert IPv4 to string");
         }
@@ -93,7 +106,7 @@ std::optional<IPv4> types::IPAddress::toIPv4() const noexcept
         return std::nullopt;
     }
     IPv4 ip;
-    *reinterpret_cast<uint32_t*>(ip.data()) = u32()[3];
+    std::memcpy(ip.data(), data() + ipv4MappedPrefix.size(), 4);
     return ip;
 }
 
