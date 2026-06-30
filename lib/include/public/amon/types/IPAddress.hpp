@@ -11,7 +11,6 @@
 
 #include <amon/types/ByteArray.hpp>
 
-#include <cstdint>
 #include <format>
 #include <optional>
 #include <string>
@@ -102,17 +101,6 @@ public:
      * @note If the IP address is IPv4, it is returned as IPv4-mapped IPv6 address.
      */
     IPv6 toIPv6() const noexcept;
-
-private:
-    /* Get pointer to the address as array of 32-bit unsigned integers. */
-    using U32x4 = uint32_t[4];
-    U32x4& u32() { return *reinterpret_cast<U32x4*>(data()); }
-    const U32x4& u32() const { return *reinterpret_cast<const U32x4*>(data()); }
-
-    /* Get pointer to the address as array of 64-bit unsigned integers. */
-    using U64x2 = uint64_t[2];
-    U64x2& u64() { return *reinterpret_cast<U64x2*>(data()); }
-    const U64x2& u64() const { return *reinterpret_cast<const U64x2*>(data()); }
 };
 
 } // namespace amon::types
