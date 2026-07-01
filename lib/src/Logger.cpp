@@ -9,12 +9,9 @@
 
 #include <amon/Logger.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <spdlog/cfg/env.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-#pragma GCC diagnostic pop
 
 namespace amon {
 
