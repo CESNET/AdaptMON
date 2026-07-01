@@ -76,6 +76,44 @@ TEST(AmonTypesByteArray, BytearrayComparisonOperators)
     EXPECT_TRUE((c > a));
 }
 
+TEST(AmonTypesByteArray, BytearrayCopyConstructor)
+{
+    ByteArray<4> orig;
+    orig[0] = std::byte {0xAA};
+    orig[1] = std::byte {0xBB};
+    orig[2] = std::byte {0xCC};
+    orig[3] = std::byte {0xDD};
+
+    ByteArray<4> copy = orig;
+    EXPECT_TRUE(orig == copy);
+
+    // Ensure copy is independent
+    orig[0] = std::byte {0x00};
+    EXPECT_FALSE(orig == copy);
+}
+
+TEST(AmonTypesByteArray, BytearrayCopyAssignment)
+{
+    ByteArray<4> orig;
+    orig[0] = std::byte {0x11};
+    orig[1] = std::byte {0x22};
+    orig[2] = std::byte {0x33};
+    orig[3] = std::byte {0x44};
+
+    ByteArray<4> assigned;
+    assigned = orig;
+    EXPECT_TRUE(orig == assigned);
+
+    // Independence after assignment
+    orig[2] = std::byte {0xFF};
+    EXPECT_FALSE(orig == assigned);
+
+    // Self-assignment should be harmless and preserve value
+    ByteArray<4> expected = assigned;
+    assigned = assigned;
+    EXPECT_TRUE(assigned == expected);
+}
+
 #endif
 
 } // namespace amon::types
