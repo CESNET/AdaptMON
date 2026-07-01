@@ -13,10 +13,7 @@
 #include <amon/conf/yaml.hpp>
 #include <amon/util/numeric.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include <yaml-cpp/yaml.h>
-#pragma GCC diagnostic pop
 
 namespace amon::conf::yaml {
 

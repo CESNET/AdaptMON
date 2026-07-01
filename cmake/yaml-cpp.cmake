@@ -10,4 +10,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
-target_compile_options(yaml-cpp PRIVATE -Wno-sign-conversion -Wno-conversion -Wno-extra)
+target_compile_options(yaml-cpp PRIVATE -Wno-sign-conversion -Wno-conversion)
+set_target_properties(yaml-cpp PROPERTIES SYSTEM TRUE)
