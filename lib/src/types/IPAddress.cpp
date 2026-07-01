@@ -58,13 +58,25 @@ IPAddress::IPAddress(const std::string& ip)
 
 IPAddress::IPAddress(const IPv4& ip) noexcept
 {
-    std::memcpy(data(), ipv4MappedPrefix.data(), ipv4MappedPrefix.size());
-    std::memcpy(data() + ipv4MappedPrefix.size(), ip.data(), ip.size());
+    *this = ip;
 }
 
 IPAddress::IPAddress(const IPv6& ip) noexcept
 {
+    *this = ip;
+}
+
+IPAddress& IPAddress::operator=(const IPv4& ip) noexcept
+{
+    std::memcpy(data(), ipv4MappedPrefix.data(), ipv4MappedPrefix.size());
+    std::memcpy(data() + ipv4MappedPrefix.size(), ip.data(), ip.size());
+    return *this;
+}
+
+IPAddress& IPAddress::operator=(const IPv6& ip) noexcept
+{
     std::memcpy(data(), ip.data(), 16);
+    return *this;
 }
 
 bool IPAddress::isIPv4() const noexcept
@@ -248,6 +260,44 @@ TEST(AmonTypesIPAddress, IpaddressToipv6ReturnsFullIPv6ForBothIPv6AndIPv4MappedA
     EXPECT_TRUE(std::memcmp(out6m.data() + 12, expect4, 4) == 0);
     EXPECT_TRUE(out6m.data()[10] == std::byte {0xff});
     EXPECT_TRUE(out6m.data()[11] == std::byte {0xff});
+}
+
+TEST(AmonTypesIPAddress, IpaddressIPv4OperatorAssignment)
+{
+    IPv4 ipv4;
+    // 192.168.1.1 in network byte order
+    uint8_t bytes[4] = {192, 168, 1, 1};
+    std::memcpy(ipv4.data(), bytes, 4);
+
+    IPAddress ip;
+    ip = ipv4;
+    EXPECT_TRUE(ip.isIPv4());
+    EXPECT_FALSE(ip.isIPv6());
+    EXPECT_TRUE(ip.toString() == "192.168.1.1");
+
+    // Independence: modifying the source should not affect the assigned address
+    ipv4[0] = std::byte {10};
+    EXPECT_TRUE(ip.toString() != "10.168.1.1");
+    EXPECT_TRUE(ip.toString() == "192.168.1.1");
+}
+
+TEST(AmonTypesIPAddress, IpaddressIPv6OperatorAssignment)
+{
+    IPv6 ipv6;
+    // 2001:db8::1 in network byte order
+    uint8_t bytes[16] = {0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+    std::memcpy(ipv6.data(), bytes, 16);
+
+    IPAddress ip;
+    ip = ipv6;
+    EXPECT_TRUE(ip.isIPv6());
+    EXPECT_FALSE(ip.isIPv4());
+    EXPECT_TRUE(ip.toString() == "2001:db8::1");
+
+    // Independence: modifying the source should not affect the assigned address
+    ipv6[0] = std::byte {0xff};
+    EXPECT_TRUE(ip.toString() != "ff01:db8::1");
+    EXPECT_TRUE(ip.toString() == "2001:db8::1");
 }
 
 #endif

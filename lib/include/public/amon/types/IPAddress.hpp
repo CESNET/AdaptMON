@@ -59,7 +59,7 @@ public:
      *
      * @note The IPv4 address must be stored in network byte order.
      */
-    explicit IPAddress(const IPv4& ip) noexcept;
+    IPAddress(const IPv4& ip) noexcept;
 
     /**
      * @brief Constructs an IP address from an IPv6 address.
@@ -67,7 +67,25 @@ public:
      *
      * @note The IPv6 address must be stored in network byte order.
      */
-    explicit IPAddress(const IPv6& ip) noexcept;
+    IPAddress(const IPv6& ip) noexcept;
+
+    /**
+     * @brief Constructs an IP address from an IPv4 address.
+     * @param ip IPv4 address.
+     * @return Reference to self.
+     *
+     * @note The IPv4 address must be stored in network byte order.
+     */
+    IPAddress& operator=(const IPv4& ip) noexcept;
+
+    /**
+     * @brief Constructs an IP address from an IPv6 address.
+     * @param ip IPv6 address.
+     * @return Reference to self.
+     *
+     * @note The IPv6 address must be stored in network byte order.
+     */
+    IPAddress& operator=(const IPv6& ip) noexcept;
 
     /**
      * @brief Checks if the IP address is IPv4.
