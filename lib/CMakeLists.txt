@@ -6,7 +6,6 @@ add_library(amon-lib
     src/conf/Scalar.cpp
     src/conf/Struct.cpp
     src/conf/yaml.cpp
-    src/dpdk/PktBurst.cpp
     src/Error.cpp
     src/hello.cpp
     src/layers/AuthenticationHeader.cpp
@@ -42,9 +41,20 @@ add_library(amon-lib
     src/util/Human.cpp
     src/util/io.cpp
     src/util/numeric.cpp
-    src/util/Pcap.cpp
     src/util/string.cpp
 )
+
+if (ENABLE_DPDK)
+    target_sources(amon-lib PRIVATE
+        src/dpdk/PktBurst.cpp
+    )
+endif()
+
+if (ENABLE_PCAP)
+    target_sources(amon-lib PRIVATE
+        src/util/Pcap.cpp
+    )
+endif()
 
 target_include_directories(amon-lib
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/public
@@ -55,10 +65,15 @@ target_link_libraries(amon-lib
         libbacktrace
         spdlog::spdlog
         yaml-cpp
-    PUBLIC
-        PkgConfig::libdpdk
-        PkgConfig::libpcap
 )
+
+if (ENABLE_DPDK)
+    target_link_libraries(amon-lib PUBLIC PkgConfig::libdpdk)
+endif()
+
+if (ENABLE_PCAP)
+    target_link_libraries(amon-lib PUBLIC PkgConfig::libpcap)
+endif()
 
 add_custom_command(TARGET amon-lib PRE_LINK
     COMMAND sh -c '${PROJECT_SOURCE_DIR}/tools/generate-export-map > ${CMAKE_BINARY_DIR}/export.map'
