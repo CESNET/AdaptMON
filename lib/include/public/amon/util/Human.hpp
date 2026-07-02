@@ -9,43 +9,82 @@
 
 #pragma once
 
+#include <cstddef>
 #include <format>
 #include <string_view>
 
 namespace amon::util {
 
 /**
- * @brief Styles for formatting human-readable byte amounts.
+ * @brief Styles for formatting human-readable amounts.
  *
- * DECIMAL: Use SI units (kB, MB, GB, TB).
- * BINARY: Use binary units (KiB, MiB, GiB, TiB).
+ * DECIMAL: Use SI units (k, M, G, T).
+ * BINARY: Use binary units (ki, Mi, Gi, Ti).
  */
-enum class HumanReadableByteAmountStyle {
+enum class HumanReadableAmountStyle {
     DECIMAL, ///< SI units (powers of 1000)
     BINARY, ///< Binary units (powers of 1024)
 };
 
 /**
- * @brief Represents a human-readable byte value.
+ * @brief Alias for HumanReadableAmountStyle.
+ */
+using HumanReadableByteAmountStyle = HumanReadableAmountStyle;
+
+/**
+ * @brief Compile-time string wrapper used for human-readable amount suffixes.
  *
- * This class stores a byte value and allows formatting it in a human-readable way
- * using SI units (kB, MB, GB, TB) or binary units (KiB, MiB, GiB, TiB) via std::formatter
+ * This helper allows string literals such as "B" or "b" to be used as non-type
+ * template parameters for HumanReadableAmount.
+ *
+ * @tparam N The size of the string literal including the null terminator.
+ */
+template <std::size_t N>
+struct HumanReadableAmountSuffix {
+    /**
+     * @brief Constructs the suffix from a string literal.
+     *
+     * @param suffix The string literal, including its null terminator.
+     */
+    constexpr HumanReadableAmountSuffix(const char (&suffix)[N])
+    {
+        for (std::size_t i = 0; i < N; ++i) {
+            value[i] = suffix[i];
+        }
+    }
+
+    /**
+     * @brief Returns the suffix as a string view without the null terminator.
+     * @return The string literal.
+     */
+    constexpr std::string_view view() const { return {value, N - 1}; }
+
+    char value[N]; ///< The copied string literal including the null terminator.
+};
+
+/**
+ * @brief Represents a human-readable value.
+ *
+ * This class stores a value and allows formatting it in a human-readable way
+ * using SI units (k, M, G, T) or binary units (ki, Mi, Gi, Ti) via std::formatter
  * specialization.
  *
- * @tparam Number The numeric type used to store the byte value.
+ * @tparam Number The numeric type used to store the value.
  * @tparam Style The style for formatting (DECIMAL for SI units, BINARY for binary units).
+ * @tparam Suffix The suffix appended to the unit prefix.
  */
 template <
     typename Number,
-    HumanReadableByteAmountStyle Style = HumanReadableByteAmountStyle::DECIMAL>
-class HumanReadableByteAmount {
+    HumanReadableAmountSuffix Suffix = "",
+    HumanReadableAmountStyle Style = HumanReadableAmountStyle::DECIMAL>
+class HumanReadableAmount {
 public:
     /**
-     * @brief Constructs a HumanReadableByteAmount object with the given value.
+     * @brief Constructs a HumanReadableAmount object with the given value.
      *
-     * @param value The numeric value representing the number of bytes.
+     * @param value The numeric value.
      */
-    explicit HumanReadableByteAmount(Number value)
+    explicit HumanReadableAmount(Number value)
         : m_value(value)
     {
     }
@@ -53,33 +92,56 @@ public:
 private:
     template <typename, typename>
     friend struct std::formatter; ///< Allows std::formatter access to private members.
-    Number m_value; ///< The stored byte value.
+    Number m_value; ///< The stored value.
+};
+
+/**
+ * @brief Represents a human-readable byte value.
+ */
+template <typename Number, HumanReadableAmountStyle Style = HumanReadableAmountStyle::DECIMAL>
+class HumanReadableByteAmount : public HumanReadableAmount<Number, "B", Style> {
+public:
+    /**
+     * @brief Constructs a HumanReadableByteAmount object with the given value.
+     *
+     * @param value The numeric value.
+     */
+    explicit HumanReadableByteAmount(Number value)
+        : HumanReadableAmount<Number, "B", Style>(value)
+    {
+    }
 };
 
 /// @brief Alias for HumanReadableByteAmount using base 2 (binary units, e.g., KiB, MiB, GiB, TiB).
 /// @tparam Number The numeric type used to store the byte value.
 template <typename Number>
 using HumanReadableByteAmount1024
-    = HumanReadableByteAmount<Number, HumanReadableByteAmountStyle::BINARY>;
+    = HumanReadableByteAmount<Number, HumanReadableAmountStyle::BINARY>;
 
 } // namespace amon::util
 
 /// @cond DO_NOT_DOCUMENT
-template <typename Number>
+template <typename Number, amon::util::HumanReadableAmountSuffix Suffix>
 struct std::formatter<
-    amon::util::HumanReadableByteAmount<Number, amon::util::HumanReadableByteAmountStyle::DECIMAL>>
+    amon::util::HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::DECIMAL>>
     : std::formatter<std::string_view> {
     auto format(
-        amon::util::HumanReadableByteAmount<
-            Number,
-            amon::util::HumanReadableByteAmountStyle::DECIMAL> humanBytes,
+        amon::util::
+            HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::DECIMAL>
+                humanAmount,
         std::format_context& ctx) const
     {
-        if (humanBytes.m_value < 1'000) {
-            return std::format_to(ctx.out(), "{} B", humanBytes.m_value);
+        constexpr auto suffix = Suffix.view();
+
+        if (humanAmount.m_value < 1'000) {
+            if constexpr (suffix.empty()) {
+                return std::format_to(ctx.out(), "{}", humanAmount.m_value);
+            } else {
+                return std::format_to(ctx.out(), "{} {}", humanAmount.m_value, suffix);
+            }
         }
 
-        auto value = static_cast<double>(humanBytes.m_value);
+        auto value = static_cast<double>(humanAmount.m_value);
         std::string_view unit;
         if (value > 1'000'000'000'000) {
             value /= 1'000'000'000'000;
@@ -94,25 +156,31 @@ struct std::formatter<
             value /= 1'000;
             unit = "k";
         }
-        return std::format_to(ctx.out(), "{:.2f} {}B", value, unit);
+        return std::format_to(ctx.out(), "{:.2f} {}{}", value, unit, suffix);
     }
 };
 
-template <typename Number>
+template <typename Number, amon::util::HumanReadableAmountSuffix Suffix>
 struct std::formatter<
-    amon::util::HumanReadableByteAmount<Number, amon::util::HumanReadableByteAmountStyle::BINARY>>
+    amon::util::HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::BINARY>>
     : std::formatter<std::string_view> {
     auto format(
-        amon::util::HumanReadableByteAmount<
-            Number,
-            amon::util::HumanReadableByteAmountStyle::BINARY> humanBytes,
+        amon::util::
+            HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::BINARY>
+                humanAmount,
         std::format_context& ctx) const
     {
-        if (humanBytes.m_value < 1024) {
-            return std::format_to(ctx.out(), "{} B", humanBytes.m_value);
+        constexpr auto suffix = Suffix.view();
+
+        if (humanAmount.m_value < 1024) {
+            if constexpr (suffix.empty()) {
+                return std::format_to(ctx.out(), "{}", humanAmount.m_value);
+            } else {
+                return std::format_to(ctx.out(), "{} {}", humanAmount.m_value, suffix);
+            }
         }
 
-        auto value = static_cast<double>(humanBytes.m_value);
+        auto value = static_cast<double>(humanAmount.m_value);
         std::string_view unit;
         if (value > 1024ULL * 1024ULL * 1024ULL * 1024ULL) {
             value /= 1024ULL * 1024ULL * 1024ULL * 1024ULL;
@@ -127,7 +195,20 @@ struct std::formatter<
             value /= 1024ULL;
             unit = "ki";
         }
-        return std::format_to(ctx.out(), "{:.2f} {}B", value, unit);
+        return std::format_to(ctx.out(), "{:.2f} {}{}", value, unit, suffix);
+    }
+};
+
+template <typename Number, amon::util::HumanReadableAmountStyle Style>
+struct std::formatter<amon::util::HumanReadableByteAmount<Number, Style>>
+    : std::formatter<amon::util::HumanReadableAmount<Number, "B", Style>> {
+    auto format(
+        amon::util::HumanReadableByteAmount<Number, Style> humanBytes,
+        std::format_context& ctx) const
+    {
+        return std::formatter<amon::util::HumanReadableAmount<Number, "B", Style>>::format(
+            humanBytes,
+            ctx);
     }
 };
 /// @endcond
