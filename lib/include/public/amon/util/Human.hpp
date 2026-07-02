@@ -112,11 +112,33 @@ public:
     }
 };
 
+/**
+ * @brief Represents a human-readable bit value.
+ */
+template <typename Number, HumanReadableAmountStyle Style = HumanReadableAmountStyle::DECIMAL>
+class HumanReadableBitAmount : public HumanReadableAmount<Number, "b", Style> {
+public:
+    /**
+     * @brief Constructs a HumanReadableBitAmount object with the given value.
+     *
+     * @param value The numeric value.
+     */
+    explicit HumanReadableBitAmount(Number value)
+        : HumanReadableAmount<Number, "b", Style>(value)
+    {
+    }
+};
+
 /// @brief Alias for HumanReadableByteAmount using base 2 (binary units, e.g., KiB, MiB, GiB, TiB).
 /// @tparam Number The numeric type used to store the byte value.
 template <typename Number>
 using HumanReadableByteAmount1024
     = HumanReadableByteAmount<Number, HumanReadableAmountStyle::BINARY>;
+
+/// @brief Alias for HumanReadableBitAmount using base 2 (binary units, e.g., Kib, Mib, Gib, Tib).
+/// @tparam Number The numeric type used to store the bit value.
+template <typename Number>
+using HumanReadableBitAmount1024 = HumanReadableBitAmount<Number, HumanReadableAmountStyle::BINARY>;
 
 } // namespace amon::util
 
@@ -208,6 +230,19 @@ struct std::formatter<amon::util::HumanReadableByteAmount<Number, Style>>
     {
         return std::formatter<amon::util::HumanReadableAmount<Number, "B", Style>>::format(
             humanBytes,
+            ctx);
+    }
+};
+
+template <typename Number, amon::util::HumanReadableAmountStyle Style>
+struct std::formatter<amon::util::HumanReadableBitAmount<Number, Style>>
+    : std::formatter<amon::util::HumanReadableAmount<Number, "b", Style>> {
+    auto format(
+        amon::util::HumanReadableBitAmount<Number, Style> humanBits,
+        std::format_context& ctx) const
+    {
+        return std::formatter<amon::util::HumanReadableAmount<Number, "b", Style>>::format(
+            humanBits,
             ctx);
     }
 };
