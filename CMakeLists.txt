@@ -84,8 +84,10 @@ endif()
 # Add external dependencies
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
-include(cmake/gtest.cmake)
 include(cmake/libpcap.cmake)
+if (ENABLE_TESTS)
+    include(cmake/gtest.cmake)
+endif()
 include(cmake/yaml-cpp.cmake)
 include(cmake/libdpdk.cmake)
 
