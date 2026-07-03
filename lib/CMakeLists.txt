@@ -40,13 +40,23 @@ add_library(amon-lib
     src/util/getopt.cpp
     src/util/Human.cpp
     src/util/io.cpp
+    src/util/NameGenerator.cpp
     src/util/numeric.cpp
     src/util/string.cpp
 )
 
 if (ENABLE_DPDK)
     target_sources(amon-lib PRIVATE
+        src/dpdk/dpdk.cpp
+        src/dpdk/Error.cpp
         src/dpdk/PktBurst.cpp
+        src/dpdk/PktMempool.cpp
+        src/dpdk/Port.cpp
+        src/dpdk/PortHooks.cpp
+        src/dpdk/porthooks/BNXT.cpp
+        src/dpdk/porthooks/I40E.cpp
+        src/dpdk/porthooks/MLX5.cpp
+        src/dpdk/SocketID.cpp
     )
 endif()
 
