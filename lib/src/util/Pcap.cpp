@@ -29,6 +29,18 @@ struct FClose {
 static constexpr const uint64_t MICROSECS_IN_SEC = 1'000'000;
 static constexpr const uint64_t NANOSECS_IN_SEC = 1'000'000'000;
 
+void format(PcapTimestampPrecision value, Formatter& fmt)
+{
+    switch (value) {
+    case amon::util::PcapTimestampPrecision::MICRO:
+        fmt.format("{}", "PcapTimestampPrecision::MICRO");
+        break;
+    case amon::util::PcapTimestampPrecision::NANO:
+        fmt.format("{}", "PcapTimestampPrecision::NANO");
+        break;
+    }
+}
+
 static types::Timestamp timestampFromTimevalWithNanos(const timeval& tv)
 {
     if (tv.tv_sec < 0 || tv.tv_usec < 0) {
