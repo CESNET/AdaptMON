@@ -115,6 +115,24 @@ PcapReader::PcapReader(const std::string& filename, PcapTimestampPrecision preci
     }
 }
 
+PcapReader PcapReader::fromFile(const std::string& filename, PcapTimestampPrecision precision)
+{
+    PcapReader reader {precision};
+    char errBuf[PCAP_ERRBUF_SIZE];
+    reader.m_pcap.reset(pcap_open_offline_with_tstamp_precision(
+        filename.c_str(),
+        static_cast<u_int>(precision),
+        errBuf));
+    if (reader.m_pcap == nullptr) {
+        throw Error(
+            "pcap_open_offline_with_tstamp_precision(\"{}\", {}) failed: {}",
+            filename,
+            precision,
+            errBuf);
+    }
+    return reader;
+}
+
 std::optional<PcapPacket> PcapReader::readPacket()
 {
     struct pcap_pkthdr* hdr;

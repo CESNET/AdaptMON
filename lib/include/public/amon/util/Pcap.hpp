@@ -115,6 +115,16 @@ public:
         PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
 
     /**
+     * @brief Creates and returns a PcapReader for the given file.
+     * @param filename Path to a pcap file.
+     * @param precision Timestamp precision (default: MICRO).
+     * @return PcapReader instance
+     */
+    static PcapReader fromFile(
+        const std::string& filename,
+        PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
+
+    /**
      * @brief Reads the next packet from the pcap file.
      * @return Optional packet, std::nullopt if end of file.
      * @warning The data in the returned packet are valid only until next packet is read or until
@@ -141,6 +151,11 @@ public:
     uint64_t tellEnd() const;
 
 private:
+    explicit PcapReader(PcapTimestampPrecision precision)
+        : m_precision(precision)
+    {
+    }
+
     std::unique_ptr<pcap_t, detail::PcapClose> m_pcap;
     PcapTimestampPrecision m_precision;
 };
