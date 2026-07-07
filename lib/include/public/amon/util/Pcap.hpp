@@ -101,6 +101,23 @@ private:
 };
 
 /**
+ * @brief Options for creating PcapReader from interface.
+ */
+struct PcapInterfaceOptions {
+    /// Accept all packets arriving on the interface (default: true).
+    bool promiscuousMode = true;
+    /// Do not buffer, deliver packets as soon as they arrive (default: true).
+    bool immediateMode = true;
+    /// Packet buffer timeout in milliseconds (default: 1000ms, 0 = throws (otherwise undefined
+    /// behaviour)).
+    unsigned int bufferTimeout = 1000;
+    /// Size of the buffer that holds the packets before they're delivered (default: 0 (unset))
+    unsigned int bufferSize = 0;
+    /// Maximum size of packet before it gets truncated (default: 256KiB).
+    unsigned int snapshotLength = 262144;
+};
+
+/**
  * @brief Reads packets from a pcap file.
  */
 class PcapReader {
@@ -115,6 +132,18 @@ public:
         PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
 
     /**
+     * @brief Creates and returns a PcapReader for the given interface.
+     * @param interface Network interface to start listening on.
+     * @param options Options for live capture
+     * @param precision Timestamp precision (default: MICRO).
+     * @return PcapReader instance
+     */
+    static PcapReader fromInterface(
+        const std::string& interface,
+        const PcapInterfaceOptions& options = {},
+        PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
+
+    /**
      * @brief Creates and returns a PcapReader for the given file.
      * @param filename Path to a pcap file.
      * @param precision Timestamp precision (default: MICRO).
@@ -125,8 +154,8 @@ public:
         PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
 
     /**
-     * @brief Reads the next packet from the pcap file.
-     * @return Optional packet, std::nullopt if end of file.
+     * @brief Reads the next packet from the pcap source (file or live interface).
+     * @return Optional packet, std::nullopt if end of file or timeout occurred.
      * @warning The data in the returned packet are valid only until next packet is read or until
      * this PcapReader instance is destructed.
      */

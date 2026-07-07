@@ -8,6 +8,7 @@
  */
 
 #include <amon/Error.hpp>
+#include <amon/Logger.hpp>
 #include <amon/util/Pcap.hpp>
 
 #include <cassert>
@@ -130,6 +131,85 @@ PcapReader PcapReader::fromFile(const std::string& filename, PcapTimestampPrecis
             precision,
             errBuf);
     }
+    return reader;
+}
+
+PcapReader PcapReader::fromInterface(
+    const std::string& interface,
+    const PcapInterfaceOptions& options,
+    PcapTimestampPrecision precision)
+{
+    PcapReader reader {precision};
+    char errBuf[PCAP_ERRBUF_SIZE];
+    reader.m_pcap.reset(pcap_create(interface.c_str(), errBuf));
+    if (reader.m_pcap == nullptr) {
+        throw Error("pcap_create(\"{}\") failed: {}", interface, errBuf);
+    }
+
+    int ret;
+
+    ret = pcap_set_immediate_mode(reader.m_pcap.get(), static_cast<int>(options.immediateMode));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_immediate_mode({}) failed: {}",
+            options.immediateMode,
+            pcap_statustostr(ret));
+    }
+
+    auto bufferTimeout = numeric::safeCast<int>(options.bufferTimeout);
+    if (bufferTimeout <= 0) {
+        throw Error("pcap_set_timeout() invalid value: {}", bufferTimeout);
+    }
+    ret = pcap_set_timeout(reader.m_pcap.get(), bufferTimeout);
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_timeout({}) failed: {}",
+            options.bufferTimeout,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_promisc(reader.m_pcap.get(), static_cast<int>(options.promiscuousMode));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_promisc({}) failed: {}",
+            options.promiscuousMode,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_snaplen(reader.m_pcap.get(), numeric::safeCast<int>(options.snapshotLength));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_snaplen({}) failed: {}",
+            options.snapshotLength,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_buffer_size(reader.m_pcap.get(), numeric::safeCast<int>(options.bufferSize));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_buffer_size({}) failed: {}",
+            options.bufferSize,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_tstamp_precision(reader.m_pcap.get(), static_cast<int>(precision));
+    if (ret < 0) {
+        throw Error("pcap_set_tstamp_precision({}) failed: {}", precision, pcap_statustostr(ret));
+    }
+
+    ret = pcap_activate(reader.m_pcap.get());
+    if (ret < 0) {
+        throw Error("pcap_activate() failed: {}", pcap_statustostr(ret));
+    }
+
+    // warning checking from activate
+    if (ret == PCAP_WARNING) {
+        amon::LoggerProvider::get("PcapReader")
+            .warn("pcap_activate(): {}", pcap_geterr(reader.m_pcap.get()));
+    } else if (ret > 0) {
+        amon::LoggerProvider::get("PcapReader").warn("pcap_activate(): {}", pcap_statustostr(ret));
+    }
+
     return reader;
 }
 
