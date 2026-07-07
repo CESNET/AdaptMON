@@ -84,7 +84,7 @@ static void run(const amon::util::ParsedArgs& args)
 
     // State
     std::vector<std::byte> buffer {};
-    amon::util::PcapReader reader {inputFile};
+    amon::util::PcapReader reader = amon::util::PcapReader::fromFile(inputFile);
     amon::util::PcapWriter writer {
         outputFile,
         amon::util::PcapTimestampPrecision::MICRO,
