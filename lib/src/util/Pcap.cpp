@@ -99,23 +99,6 @@ static uint64_t ftellCurrPos(FILE* fp)
     return numeric::safeCast<uint64_t>(pos);
 }
 
-PcapReader::PcapReader(const std::string& filename, PcapTimestampPrecision precision)
-    : m_precision(precision)
-{
-    char errBuf[PCAP_ERRBUF_SIZE];
-    m_pcap.reset(pcap_open_offline_with_tstamp_precision(
-        filename.c_str(),
-        static_cast<u_int>(precision),
-        errBuf));
-    if (m_pcap == nullptr) {
-        throw Error(
-            "pcap_open_offline_with_tstamp_precision(\"{}\", {}) failed: {}",
-            filename,
-            precision,
-            errBuf);
-    }
-}
-
 PcapReader PcapReader::fromFile(const std::string& filename, PcapTimestampPrecision precision)
 {
     PcapReader reader {precision};

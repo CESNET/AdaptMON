@@ -123,15 +123,6 @@ struct PcapInterfaceOptions {
 class PcapReader {
 public:
     /**
-     * @brief Constructs a PcapReader for the given file.
-     * @param filename Path to the pcap file to read.
-     * @param precision Timestamp precision (default: MICRO).
-     */
-    PcapReader(
-        const std::string& filename,
-        PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
-
-    /**
      * @brief Creates and returns a PcapReader for the given interface.
      * @param interface Network interface to start listening on.
      * @param options Options for live capture
