@@ -11,13 +11,13 @@
 
 #include <amon/types/ByteArray.hpp>
 #include <amon/types/UIntBE.hpp>
+#include <amon/util/Formatter.hpp>
 
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
-#include <format>
 #include <span>
 #include <stdexcept>
-#include <string_view>
 #include <utility>
 
 namespace amon::types {
@@ -78,35 +78,21 @@ public:
     }
 };
 
-} // namespace amon::types
-
-// (suppress inconsistency doxygen error)
-/// @cond
 /**
  * @brief Formatter for MACAddress to print as "xx:xx:xx:xx:xx:xx".
+ * @param addr MACAddress to format.
+ * @param fmt Formatter to write to.
  */
-template <>
-struct std::formatter<amon::types::MACAddress> : std::formatter<std::string_view> {
-    /**
-     * @brief Format MACAddress for output.
-     * @param addr MACAddress to format.
-     * @param ctx Format context.
-     * @return Iterator to the end of the formatted output.
-     */
-    auto format(const amon::types::MACAddress& addr, std::format_context& ctx) const
-    {
-        char buf[18]; // "xx:xx:xx:xx:xx:xx" + null
-        std::snprintf(
-            buf,
-            sizeof(buf),
-            "%02x:%02x:%02x:%02x:%02x:%02x",
-            static_cast<uint8_t>(addr[0]),
-            static_cast<uint8_t>(addr[1]),
-            static_cast<uint8_t>(addr[2]),
-            static_cast<uint8_t>(addr[3]),
-            static_cast<uint8_t>(addr[4]),
-            static_cast<uint8_t>(addr[5]));
-        return std::formatter<string_view>::format(buf, ctx);
-    }
-};
-/// @endcond
+inline void format(const MACAddress& addr, amon::util::Formatter& fmt)
+{
+    fmt.format(
+        "{:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
+        static_cast<unsigned>(addr[0]),
+        static_cast<unsigned>(addr[1]),
+        static_cast<unsigned>(addr[2]),
+        static_cast<unsigned>(addr[3]),
+        static_cast<unsigned>(addr[4]),
+        static_cast<unsigned>(addr[5]));
+}
+
+} // namespace amon::types
