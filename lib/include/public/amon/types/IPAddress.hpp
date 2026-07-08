@@ -10,8 +10,8 @@
 #pragma once
 
 #include <amon/types/ByteArray.hpp>
+#include <amon/util/Formatter.hpp>
 
-#include <format>
 #include <optional>
 #include <string>
 
@@ -121,24 +121,14 @@ public:
     IPv6 toIPv6() const noexcept;
 };
 
-} // namespace amon::types
-
-// (suppress inconsistency doxygen error)
-/// @cond
 /**
  * @brief Formatter for IPAddress to print as standard string representation.
+ * @param addr IPAddress to format.
+ * @param fmt Formatter to write to.
  */
-template <>
-struct std::formatter<amon::types::IPAddress> : std::formatter<std::string_view> {
-    /**
-     * @brief Format IPAddress for output.
-     * @param addr IPAddress to format.
-     * @param ctx Format context.
-     * @return Iterator to the end of the formatted output.
-     */
-    auto format(const amon::types::IPAddress& addr, std::format_context& ctx) const
-    {
-        return std::formatter<std::string_view>::format(addr.toString(), ctx);
-    }
-};
-/// @endcond
+inline void format(const IPAddress& addr, amon::util::Formatter& fmt)
+{
+    fmt.format("{}", addr.toString());
+}
+
+} // namespace amon::types
