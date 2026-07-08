@@ -12,6 +12,7 @@
 #include <amon/Logger.hpp>
 #include <amon/dpdk/PktBurst.hpp>
 #include <amon/dpdk/PktMempool.hpp>
+#include <amon/util/Formatter.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -282,14 +283,14 @@ private:
     PortHandle m_port;
 };
 
-} // namespace amon::dpdk
+/**
+ * @brief Format PortHandle for output.
+ * @param port PortHandle to format.
+ * @param fmt Formatter to write to.
+ */
+inline void format(const PortHandle& port, amon::util::Formatter& fmt)
+{
+    fmt.format("Port(id={}, dev={})", port.id(), port.devName());
+}
 
-/// @cond DO_NOT_DOCUMENT
-template <>
-struct std::formatter<amon::dpdk::PortHandle> : std::formatter<std::string_view> {
-    static auto format(const amon::dpdk::PortHandle& port, std::format_context& ctx)
-    {
-        return std::format_to(ctx.out(), "Port(id={}, dev={})", port.id(), port.devName());
-    }
-};
-/// @endcond
+} // namespace amon::dpdk

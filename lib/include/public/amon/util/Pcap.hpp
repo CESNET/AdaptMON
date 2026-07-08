@@ -10,6 +10,7 @@
 #pragma once
 
 #include <amon/types/Timestamp.hpp>
+#include <amon/util/Formatter.hpp>
 
 #include <cassert>
 #include <cstdio>
@@ -44,6 +45,13 @@ enum class PcapTimestampPrecision {
     MICRO = PCAP_TSTAMP_PRECISION_MICRO, ///< Microsecond precision
     NANO = PCAP_TSTAMP_PRECISION_NANO, ///< Nanosecond precision
 };
+
+/**
+ * @brief Formatter for PcapTimestampPrecision.
+ * @param value Value to format.
+ * @param fmt Formatter to write to.
+ */
+void format(PcapTimestampPrecision value, Formatter& fmt);
 
 /**
  * @brief Represents a single packet in a pcap file.
@@ -138,20 +146,3 @@ private:
 };
 
 } // namespace amon::util
-
-/// @cond
-template <>
-struct std::formatter<amon::util::PcapTimestampPrecision> : std::formatter<std::string_view> {
-    auto format(amon::util::PcapTimestampPrecision precision, format_context& ctx) const
-    {
-        switch (precision) {
-        case amon::util::PcapTimestampPrecision::MICRO:
-            return std::formatter<std::string_view>::format("PcapTimestampPrecision::MICRO", ctx);
-        case amon::util::PcapTimestampPrecision::NANO:
-            return std::formatter<std::string_view>::format("PcapTimestampPrecision::NANO", ctx);
-        }
-        assert(false);
-        return std::formatter<std::string_view>::format("<unknown>", ctx);
-    }
-};
-/// @endcond

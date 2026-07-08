@@ -9,8 +9,9 @@
 
 #pragma once
 
+#include <amon/util/Formatter.hpp>
+
 #include <cstddef>
-#include <format>
 #include <string_view>
 
 namespace amon::util {
@@ -66,8 +67,7 @@ struct HumanReadableAmountSuffix {
  * @brief Represents a human-readable value.
  *
  * This class stores a value and allows formatting it in a human-readable way
- * using SI units (k, M, G, T) or binary units (ki, Mi, Gi, Ti) via std::formatter
- * specialization.
+ * using SI units (k, M, G, T) or binary units (ki, Mi, Gi, Ti).
  *
  * @tparam Number The numeric type used to store the value.
  * @tparam Style The style for formatting (DECIMAL for SI units, BINARY for binary units).
@@ -89,9 +89,71 @@ public:
     {
     }
 
+    /**
+     * @brief Format the amount for output.
+     * @param fmt Formatter to write to.
+     */
+    void format(Formatter& fmt) const
+    {
+        constexpr auto suffix = Suffix.view();
+
+        if constexpr (Style == HumanReadableAmountStyle::DECIMAL) {
+            if (m_value < 1'000) {
+                if constexpr (suffix.empty()) {
+                    fmt.format("{}", m_value);
+                } else {
+                    fmt.format("{} {}", m_value, suffix);
+                }
+                return;
+            }
+
+            auto value = static_cast<double>(m_value);
+            std::string_view unit;
+            if (value > 1'000'000'000'000) {
+                value /= 1'000'000'000'000;
+                unit = "T";
+            } else if (value > 1'000'000'000) {
+                value /= 1'000'000'000;
+                unit = "G";
+            } else if (value > 1'000'000) {
+                value /= 1'000'000;
+                unit = "M";
+            } else if (value > 1'000) {
+                value /= 1'000;
+                unit = "k";
+            }
+            fmt.format("{:.2f} {}{}", value, unit, suffix);
+
+        } else {
+            if (m_value < 1024) {
+                if constexpr (suffix.empty()) {
+                    fmt.format("{}", m_value);
+                } else {
+                    fmt.format("{} {}", m_value, suffix);
+                }
+                return;
+            }
+
+            auto value = static_cast<double>(m_value);
+            std::string_view unit;
+            if (value > 1024ULL * 1024ULL * 1024ULL * 1024ULL) {
+                value /= 1024ULL * 1024ULL * 1024ULL * 1024ULL;
+                unit = "Ti";
+            } else if (value > 1024ULL * 1024ULL * 1024ULL) {
+                value /= 1024ULL * 1024ULL * 1024ULL;
+                unit = "Gi";
+            } else if (value > 1024ULL * 1024ULL) {
+                value /= 1024ULL * 1024ULL;
+                unit = "Mi";
+            } else if (value > 1024ULL) {
+                value /= 1024ULL;
+                unit = "ki";
+            }
+            fmt.format("{:.2f} {}{}", value, unit, suffix);
+        }
+    }
+
 private:
-    template <typename, typename>
-    friend struct std::formatter; ///< Allows std::formatter access to private members.
     Number m_value; ///< The stored value.
 };
 
@@ -141,109 +203,3 @@ template <typename Number>
 using HumanReadableBitAmount1024 = HumanReadableBitAmount<Number, HumanReadableAmountStyle::BINARY>;
 
 } // namespace amon::util
-
-/// @cond DO_NOT_DOCUMENT
-template <typename Number, amon::util::HumanReadableAmountSuffix Suffix>
-struct std::formatter<
-    amon::util::HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::DECIMAL>>
-    : std::formatter<std::string_view> {
-    auto format(
-        amon::util::
-            HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::DECIMAL>
-                humanAmount,
-        std::format_context& ctx) const
-    {
-        constexpr auto suffix = Suffix.view();
-
-        if (humanAmount.m_value < 1'000) {
-            if constexpr (suffix.empty()) {
-                return std::format_to(ctx.out(), "{}", humanAmount.m_value);
-            } else {
-                return std::format_to(ctx.out(), "{} {}", humanAmount.m_value, suffix);
-            }
-        }
-
-        auto value = static_cast<double>(humanAmount.m_value);
-        std::string_view unit;
-        if (value > 1'000'000'000'000) {
-            value /= 1'000'000'000'000;
-            unit = "T";
-        } else if (value > 1'000'000'000) {
-            value /= 1'000'000'000;
-            unit = "G";
-        } else if (value > 1'000'000) {
-            value /= 1'000'000;
-            unit = "M";
-        } else if (value > 1'000) {
-            value /= 1'000;
-            unit = "k";
-        }
-        return std::format_to(ctx.out(), "{:.2f} {}{}", value, unit, suffix);
-    }
-};
-
-template <typename Number, amon::util::HumanReadableAmountSuffix Suffix>
-struct std::formatter<
-    amon::util::HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::BINARY>>
-    : std::formatter<std::string_view> {
-    auto format(
-        amon::util::
-            HumanReadableAmount<Number, Suffix, amon::util::HumanReadableAmountStyle::BINARY>
-                humanAmount,
-        std::format_context& ctx) const
-    {
-        constexpr auto suffix = Suffix.view();
-
-        if (humanAmount.m_value < 1024) {
-            if constexpr (suffix.empty()) {
-                return std::format_to(ctx.out(), "{}", humanAmount.m_value);
-            } else {
-                return std::format_to(ctx.out(), "{} {}", humanAmount.m_value, suffix);
-            }
-        }
-
-        auto value = static_cast<double>(humanAmount.m_value);
-        std::string_view unit;
-        if (value > 1024ULL * 1024ULL * 1024ULL * 1024ULL) {
-            value /= 1024ULL * 1024ULL * 1024ULL * 1024ULL;
-            unit = "Ti";
-        } else if (value > 1024ULL * 1024ULL * 1024ULL) {
-            value /= 1024ULL * 1024ULL * 1024ULL;
-            unit = "Gi";
-        } else if (value > 1024ULL * 1024ULL) {
-            value /= 1024ULL * 1024ULL;
-            unit = "Mi";
-        } else if (value > 1024ULL) {
-            value /= 1024ULL;
-            unit = "ki";
-        }
-        return std::format_to(ctx.out(), "{:.2f} {}{}", value, unit, suffix);
-    }
-};
-
-template <typename Number, amon::util::HumanReadableAmountStyle Style>
-struct std::formatter<amon::util::HumanReadableByteAmount<Number, Style>>
-    : std::formatter<amon::util::HumanReadableAmount<Number, "B", Style>> {
-    auto format(
-        amon::util::HumanReadableByteAmount<Number, Style> humanBytes,
-        std::format_context& ctx) const
-    {
-        return std::formatter<amon::util::HumanReadableAmount<Number, "B", Style>>::format(
-            humanBytes,
-            ctx);
-    }
-};
-
-template <typename Number, amon::util::HumanReadableAmountStyle Style>
-struct std::formatter<amon::util::HumanReadableBitAmount<Number, Style>>
-    : std::formatter<amon::util::HumanReadableAmount<Number, "b", Style>> {
-    auto format(
-        amon::util::HumanReadableBitAmount<Number, Style> humanBits,
-        std::format_context& ctx) const
-    {
-        return std::formatter<amon::util::HumanReadableAmount<Number, "b", Style>>::format(
-            humanBits,
-            ctx);
-    }
-};
-/// @endcond

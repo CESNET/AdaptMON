@@ -9,8 +9,9 @@
 
 #pragma once
 
+#include <amon/util/Formatter.hpp>
+
 #include <cstdint>
-#include <format>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
@@ -198,45 +199,24 @@ constexpr std::string_view layerErrorToString(LayerError err)
     throw std::logic_error("Invalid LayerError to convert.");
 }
 
+/**
+ * @brief Format LayerType for output.
+ * @param type LayerType to format.
+ * @param fmt Formatter to write to.
+ */
+inline void format(LayerType type, amon::util::Formatter& fmt)
+{
+    fmt.format("{}", layerTypeToString(type));
+}
+
+/**
+ * @brief Format LayerError for output.
+ * @param err LayerError to format.
+ * @param fmt Formatter to write to.
+ */
+inline void format(LayerError err, amon::util::Formatter& fmt)
+{
+    fmt.format("{}", layerErrorToString(err));
+}
+
 } // namespace amon::layers
-
-// (suppress inconsistency doxygen error)
-/// @cond
-/**
- * @brief std::formatter specialization for amon::layers::LayerType.
- */
-template <>
-struct std::formatter<amon::layers::LayerType> : std::formatter<std::string_view> {
-    /**
-     * @brief Format LayerType for output.
-     * @tparam FormatContext Type of the format context.
-     * @param type LayerType to format.
-     * @param ctx Format context.
-     * @return Formatter object.
-     */
-    template <typename FormatContext>
-    auto format(amon::layers::LayerType type, FormatContext& ctx) const
-    {
-        return std::formatter<std::string_view>::format(layerTypeToString(type), ctx);
-    }
-};
-
-/**
- * @brief std::formatter specialization for amon::layers::LayerError.
- */
-template <>
-struct std::formatter<amon::layers::LayerError> : std::formatter<std::string_view> {
-    /**
-     * @brief Format LayerError for output.
-     * @tparam FormatContext Type of the format context.
-     * @param err LayerError to format.
-     * @param ctx Format context.
-     * @return Formatter object.
-     */
-    template <typename FormatContext>
-    auto format(amon::layers::LayerError err, FormatContext& ctx) const
-    {
-        return std::formatter<std::string_view>::format(layerErrorToString(err), ctx);
-    }
-};
-/// @endcond
