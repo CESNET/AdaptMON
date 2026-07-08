@@ -244,7 +244,11 @@ void Port::setupQueues(
         m_logger.info("Setting up RX queue #{} ({}/{})", i, i + 1, nRxQueues);
 
         rte_eth_rxconf conf = devInfo.default_rxconf;
+
+        // offloads already set for port in devConfigure, no need to repeat
+        // see https://doc.dpdk.org/api/rte__ethdev_8h.html#a796c2f20778984c6f41b271e36bae50e
         conf.offloads = 0;
+
         // These are copied because the hook can adjust them
         uint16_t nRxDescTmp = nRxDesc; // NOLINT(misc-const-correctness)
         unsigned sockIdTmp = socketId(); // NOLINT(misc-const-correctness)
@@ -283,7 +287,11 @@ void Port::setupQueues(
         m_logger.info("Setting up TX queue #{} ({}/{})", i, i + 1, nTxQueues);
 
         rte_eth_txconf conf = devInfo.default_txconf;
+
+        // offloads already set for port in devConfigure, no need to repeat
+        // see https://doc.dpdk.org/api/rte__ethdev_8h.html#a796c2f20778984c6f41b271e36bae50e
         conf.offloads = 0;
+
         // These are copied because the hook can adjust them
         uint16_t nTxDescTmp = nTxDesc; // NOLINT(misc-const-correctness)
         unsigned sockIdTmp = socketId(); // NOLINT(misc-const-correctness)
