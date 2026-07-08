@@ -7,21 +7,24 @@ export default {
         {
             rules: {
                 'fix-requires-reference': (parsed) => {
-                    const { type, body } = parsed;
+                    const { type, body, footer } = parsed;
 
                     if (type !== 'fix') {
                         return [true];
                     }
 
+                    // Combine body and footer so it matches no matter where it is placed
+                    const fullContent = [body, footer].filter(Boolean).join('\n');
+
                     const regex = /^Fixes:\s+[0-9a-f]{7,40}\s+\(".+"\)/m;
 
-                    if (regex.test(body)) {
+                    if (regex.test(fullContent)) {
                         return [true];
                     }
 
                     return [
                         false,
-                        'fix commits must reference a commit in the body using the format: Fixes: <hash> ("<description>")',
+                        'fix commits must reference a commit in the body/footer using the format: Fixes: <hash> ("<description>")',
                     ];
                 },
             }

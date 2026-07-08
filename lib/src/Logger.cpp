@@ -60,7 +60,7 @@ Logger::Logger(const std::string& name)
 {
     m_logger = spdlog::get(name);
     if (!m_logger) {
-        m_logger = spdlog::stdout_color_mt(name);
+        m_logger = spdlog::stderr_color_mt(name);
     }
 }
 
@@ -115,6 +115,7 @@ LoggerProvider::LoggerProvider()
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
 Logger LoggerProvider::getImpl(const std::string& name)
 {
+    const std::lock_guard<std::mutex> lock(m_registryMutex);
     return Logger(name);
 }
 

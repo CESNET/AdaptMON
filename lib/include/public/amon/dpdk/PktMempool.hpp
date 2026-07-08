@@ -118,6 +118,11 @@ public:
      * @return A shared handle to the packet mempool.
      */
     virtual PktMempoolHandle get(unsigned id) = 0;
+
+    /**
+     * @brief Virtual destructor.
+     */
+    virtual ~PktMempoolProvider() = default;
 };
 
 /**
