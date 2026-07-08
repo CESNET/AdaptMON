@@ -47,6 +47,8 @@
 | UDP | Checksum + application payload |
 | ICMP | Payload |
 | ICMPv6 | Payload |
+| AuthenticationHeader | Integrity check value |
+| Encapsulating Security Payload | Encrypted payload |
 
 ## Build Instructions
 

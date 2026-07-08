@@ -38,6 +38,8 @@ struct Stats {
     uint64_t nUDP = 0;
     /** Number of TCP packets. */
     uint64_t nTCP = 0;
+    /** Number of ESP packet. */
+    uint64_t nESP = 0;
 
     /** Total number of bytes processed. */
     uint64_t nBytes = 0;

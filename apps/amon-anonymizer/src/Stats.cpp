@@ -48,6 +48,7 @@ void Stats::print() const
     std::println("    Packets with ICMPv6:        {}", nICMPv6);
     std::println("    Packets with UDP:           {}", nUDP);
     std::println("    Packets with TCP:           {}", nTCP);
+    std::println("    Packets with ESP:           {}", nESP);
     std::println("    Total bytes:                {}", nBytes);
     std::println("");
     std::println("Packet sizes:");
