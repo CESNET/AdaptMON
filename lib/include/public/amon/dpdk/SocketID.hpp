@@ -9,9 +9,8 @@
 
 #pragma once
 
+#include <amon/util/Formatter.hpp>
 #include <amon/util/numeric.hpp>
-
-#include <format>
 
 namespace amon::dpdk {
 
@@ -69,17 +68,18 @@ private:
     }
 };
 
-} // namespace amon::dpdk
-
-/// @cond DO_NOT_DOCUMENT
-template <>
-struct std::formatter<amon::dpdk::SocketID> : std::formatter<std::string_view> {
-    static auto format(const amon::dpdk::SocketID& value, std::format_context& ctx)
-    {
-        if (value == amon::dpdk::SocketID::ANY) {
-            return std::format_to(ctx.out(), "SocketID::ANY");
-        }
-        return std::format_to(ctx.out(), "SocketID({})", static_cast<unsigned>(value));
+/**
+ * @brief Format SocketID for output.
+ * @param value SocketID to format.
+ * @param fmt Formatter to write to.
+ */
+inline void format(const SocketID& value, amon::util::Formatter& fmt)
+{
+    if (value == SocketID::ANY) {
+        fmt.format("SocketID::ANY");
+    } else {
+        fmt.format("SocketID({})", static_cast<unsigned>(value));
     }
-};
-/// @endcond
+}
+
+} // namespace amon::dpdk
