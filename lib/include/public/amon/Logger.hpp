@@ -15,6 +15,7 @@
 
 #include <format>
 #include <memory>
+#include <mutex>
 #include <source_location>
 #include <string>
 #include <string_view>
@@ -230,6 +231,8 @@ private:
     LoggerProvider();
     Logger getImpl(const std::string& name);
     void setGlobalLogLevelImpl(LoggerLevel level);
+
+    std::mutex m_registryMutex;
 };
 
 } // namespace amon

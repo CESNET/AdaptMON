@@ -115,6 +115,7 @@ LoggerProvider::LoggerProvider()
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
 Logger LoggerProvider::getImpl(const std::string& name)
 {
+    const std::lock_guard<std::mutex> lock(m_registryMutex);
     return Logger(name);
 }
 
