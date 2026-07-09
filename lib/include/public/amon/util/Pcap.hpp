@@ -101,22 +101,52 @@ private:
 };
 
 /**
+ * @brief Options for creating PcapReader from interface.
+ */
+struct PcapInterfaceOptions {
+    /// Accept all packets arriving on the interface (default: true).
+    bool promiscuousMode = true;
+    /// Do not buffer, deliver packets as soon as they arrive (default: true).
+    bool immediateMode = true;
+    /// Packet buffer timeout in milliseconds (default: 1000ms, 0 = throws (otherwise undefined
+    /// behaviour)).
+    unsigned int bufferTimeout = 1000;
+    /// Size of the buffer that holds the packets before they're delivered (default: 0 (unset))
+    unsigned int bufferSize = 0;
+    /// Maximum size of packet before it gets truncated (default: 256KiB).
+    unsigned int snapshotLength = 262144;
+};
+
+/**
  * @brief Reads packets from a pcap file.
  */
 class PcapReader {
 public:
     /**
-     * @brief Constructs a PcapReader for the given file.
-     * @param filename Path to the pcap file to read.
+     * @brief Creates and returns a PcapReader for the given interface.
+     * @param interface Network interface to start listening on.
+     * @param options Options for live capture
      * @param precision Timestamp precision (default: MICRO).
+     * @return PcapReader instance
      */
-    PcapReader(
+    static PcapReader fromInterface(
+        const std::string& interface,
+        const PcapInterfaceOptions& options = {},
+        PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
+
+    /**
+     * @brief Creates and returns a PcapReader for the given file.
+     * @param filename Path to a pcap file.
+     * @param precision Timestamp precision (default: MICRO).
+     * @return PcapReader instance
+     */
+    static PcapReader fromFile(
         const std::string& filename,
         PcapTimestampPrecision precision = PcapTimestampPrecision::MICRO);
 
     /**
-     * @brief Reads the next packet from the pcap file.
-     * @return Optional packet, std::nullopt if end of file.
+     * @brief Reads the next packet from the pcap source (file or live interface).
+     * @return Optional packet, std::nullopt if end of file or timeout occurred.
      * @warning The data in the returned packet are valid only until next packet is read or until
      * this PcapReader instance is destructed.
      */
@@ -130,19 +160,32 @@ public:
 
     /**
      * @brief Returns the current position in the underlying file stream.
-     * @return The current position as an unsigned 64-bit integer.
+     * @return Current position in the file stream, returns std::numeric_limits<uint64_t>::max() if
+     * it's an interface
      */
     uint64_t tell() const;
 
     /**
      * @brief Returns the position at the end of the underlying file stream.
-     * @return The end position as an unsigned 64-bit integer.
+     * @return End position of the file stream, returns 0 if it's an interface
      */
     uint64_t tellEnd() const;
 
+    /**
+     * @brief Returns if reader hit an EOF.
+     * @return Boolean value for EOF.
+     */
+    bool eof() const { return m_eof; }
+
 private:
+    explicit PcapReader(PcapTimestampPrecision precision)
+        : m_precision(precision)
+    {
+    }
+
     std::unique_ptr<pcap_t, detail::PcapClose> m_pcap;
     PcapTimestampPrecision m_precision;
+    bool m_eof = false; // Used for checking if reading hit an end
 };
 
 } // namespace amon::util

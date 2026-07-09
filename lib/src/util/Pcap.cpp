@@ -8,6 +8,7 @@
  */
 
 #include <amon/Error.hpp>
+#include <amon/Logger.hpp>
 #include <amon/util/Pcap.hpp>
 
 #include <cassert>
@@ -98,21 +99,101 @@ static uint64_t ftellCurrPos(FILE* fp)
     return numeric::safeCast<uint64_t>(pos);
 }
 
-PcapReader::PcapReader(const std::string& filename, PcapTimestampPrecision precision)
-    : m_precision(precision)
+PcapReader PcapReader::fromFile(const std::string& filename, PcapTimestampPrecision precision)
 {
+    PcapReader reader {precision};
     char errBuf[PCAP_ERRBUF_SIZE];
-    m_pcap.reset(pcap_open_offline_with_tstamp_precision(
+    reader.m_pcap.reset(pcap_open_offline_with_tstamp_precision(
         filename.c_str(),
         static_cast<u_int>(precision),
         errBuf));
-    if (m_pcap == nullptr) {
+    if (reader.m_pcap == nullptr) {
         throw Error(
             "pcap_open_offline_with_tstamp_precision(\"{}\", {}) failed: {}",
             filename,
             precision,
             errBuf);
     }
+    return reader;
+}
+
+PcapReader PcapReader::fromInterface(
+    const std::string& interface,
+    const PcapInterfaceOptions& options,
+    PcapTimestampPrecision precision)
+{
+    PcapReader reader {precision};
+    char errBuf[PCAP_ERRBUF_SIZE];
+    reader.m_pcap.reset(pcap_create(interface.c_str(), errBuf));
+    if (reader.m_pcap == nullptr) {
+        throw Error("pcap_create(\"{}\") failed: {}", interface, errBuf);
+    }
+
+    int ret;
+
+    ret = pcap_set_immediate_mode(reader.m_pcap.get(), static_cast<int>(options.immediateMode));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_immediate_mode({}) failed: {}",
+            options.immediateMode,
+            pcap_statustostr(ret));
+    }
+
+    auto bufferTimeout = numeric::safeCast<int>(options.bufferTimeout);
+    if (bufferTimeout <= 0) {
+        throw Error("pcap_set_timeout() invalid value: {}", bufferTimeout);
+    }
+    ret = pcap_set_timeout(reader.m_pcap.get(), bufferTimeout);
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_timeout({}) failed: {}",
+            options.bufferTimeout,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_promisc(reader.m_pcap.get(), static_cast<int>(options.promiscuousMode));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_promisc({}) failed: {}",
+            options.promiscuousMode,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_snaplen(reader.m_pcap.get(), numeric::safeCast<int>(options.snapshotLength));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_snaplen({}) failed: {}",
+            options.snapshotLength,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_buffer_size(reader.m_pcap.get(), numeric::safeCast<int>(options.bufferSize));
+    if (ret < 0) {
+        throw Error(
+            "pcap_set_buffer_size({}) failed: {}",
+            options.bufferSize,
+            pcap_statustostr(ret));
+    }
+
+    ret = pcap_set_tstamp_precision(reader.m_pcap.get(), static_cast<int>(precision));
+    if (ret < 0) {
+        throw Error("pcap_set_tstamp_precision({}) failed: {}", precision, pcap_statustostr(ret));
+    }
+
+    ret = pcap_activate(reader.m_pcap.get());
+    if (ret < 0) {
+        throw Error("pcap_activate() failed: {}", pcap_statustostr(ret));
+    }
+
+    // warning checking from activate
+    if (ret == PCAP_WARNING) {
+        amon::LoggerProvider::get("PcapReader")
+            .warn("pcap_activate(): {}", pcap_geterr(reader.m_pcap.get()));
+    } else if (ret > 0) {
+        amon::LoggerProvider::get("PcapReader").warn("pcap_activate(): {}", pcap_statustostr(ret));
+    }
+
+    return reader;
 }
 
 std::optional<PcapPacket> PcapReader::readPacket()
@@ -121,7 +202,11 @@ std::optional<PcapPacket> PcapReader::readPacket()
     const u_char* data;
 
     const int ret = pcap_next_ex(m_pcap.get(), &hdr, &data);
-    if (ret == PCAP_ERROR_BREAK) { // No more packets in file
+    if (ret == PCAP_ERROR_BREAK) { // No more packets in file or break loop called
+        m_eof = true;
+        return std::nullopt;
+    }
+    if (ret == 0) { // Packet buffer timeout expired
         return std::nullopt;
     }
     if (ret == PCAP_ERROR) {
@@ -129,7 +214,7 @@ std::optional<PcapPacket> PcapReader::readPacket()
         throw Error("pcap_next_ex() failed: {}", err);
     }
     if (ret != 1) {
-        // Other errors should never happen in case of a file
+        // Other errors should never happen in case of a file or interface
         throw amon::Error("pcap_next_ex() returned an unexpected value {}", ret);
     }
 
@@ -163,12 +248,22 @@ int PcapReader::linkLayerType() const
 
 uint64_t PcapReader::tell() const
 {
-    return ftellCurrPos(pcap_file(m_pcap.get()));
+    FILE* file = pcap_file(m_pcap.get());
+    if (file == nullptr) {
+        return 0;
+    }
+
+    return ftellCurrPos(file);
 }
 
 uint64_t PcapReader::tellEnd() const
 {
-    return ftellEndPos(pcap_file(m_pcap.get()));
+    FILE* file = pcap_file(m_pcap.get());
+    if (file == nullptr) {
+        return std::numeric_limits<uint64_t>::max();
+    }
+
+    return ftellEndPos(file);
 }
 
 PcapWriter::PcapWriter(
