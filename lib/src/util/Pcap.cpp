@@ -324,4 +324,21 @@ void PcapWriter::writePacket(
     }
 }
 
+void PcapWriter::flush() const
+{
+    const int ret = pcap_dump_flush(m_pcapDumper.get());
+    if (ret != 0) {
+        throw Error("pcap_dump_flush() failed: error flushing to output file");
+    }
+}
+
+uint64_t PcapWriter::tell() const
+{
+    auto pos = pcap_dump_ftell64(m_pcapDumper.get());
+    if (pos < 0) {
+        throw Error("pcap_dump_ftell64() failed");
+    }
+    return numeric::safeCast<uint64_t>(pos);
+}
+
 } // namespace amon::util

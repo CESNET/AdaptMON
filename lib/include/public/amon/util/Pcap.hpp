@@ -93,6 +93,20 @@ public:
         types::Timestamp timestamp,
         std::optional<uint32_t> lengthOnWire = std::nullopt);
 
+    /**
+     * @brief Flush any not yet written packets to the output file.
+     *
+     * @throws amon::Error on `pcap_dump_flush()` fail.
+     */
+    void flush() const;
+
+    /**
+     * @brief Returns the current position in the underlying file stream.
+     * @return Current position in the file stream.
+     * @throws amon::ErrnoError on ftello64 failure.
+     */
+    uint64_t tell() const;
+
 private:
     std::unique_ptr<pcap_t, detail::PcapClose> m_pcap;
     std::unique_ptr<pcap_dumper_t, detail::PcapDumpClose> m_pcapDumper;
