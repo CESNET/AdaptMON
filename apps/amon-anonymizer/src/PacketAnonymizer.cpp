@@ -61,8 +61,13 @@ void PacketAnonymizer::anonymizeIPv6SegmentRouting(std::span<std::byte> data)
     m_valueAnon.anonymize(rest);
 }
 
-void PacketAnonymizer::anonymizeLayer(std::span<std::byte> data, amon::layers::LayerType layerType)
+void PacketAnonymizer::anonymizeLayer(
+    std::span<std::byte> data,
+    amon::layers::LayerType layerType,
+    bool& outTruncateFlag)
 {
+    outTruncateFlag = false;
+
     switch (layerType) {
     case amon::layers::LayerType::ETHERNET: {
         auto [ethHdr, rest] = take<amon::layers::EthernetHeader>(data);
@@ -161,7 +166,11 @@ void PacketAnonymizer::anonymizeLayer(std::span<std::byte> data, amon::layers::L
     } break;
 
     default: {
-        m_valueAnon.anonymize(data);
+        if (m_options.truncate) {
+            outTruncateFlag = true;
+        } else {
+            m_valueAnon.anonymize(data);
+        }
     } break;
     }
 }
@@ -204,13 +213,34 @@ bool PacketAnonymizer::anonymizePacket(std::vector<std::byte>& packetData)
 
     for (size_t i = 0; i < packet.layers.size(); i++) {
         const auto layerData = getLayerData(packet, i);
+        bool truncateFlag = false;
+
         amon::match(
             packet.layers[i],
-            [&](const amon::PacketLayer& layer) { anonymizeLayer(layerData, layer.type); },
+            [&](const amon::PacketLayer& layer) {
+                anonymizeLayer(layerData, layer.type, truncateFlag);
+            },
             [&](const amon::ErrorLayer&) {
-                m_valueAnon.anonymize(layerData);
+                if (m_options.truncate) {
+                    truncateFlag = true;
+                } else {
+                    m_valueAnon.anonymize(layerData);
+                }
                 m_stats.nErrPackets++;
             });
+
+        if (truncateFlag) {
+            const std::byte* pktBegin = &*packetData.begin();
+            const std::byte* layerBegin = &*layerData.begin();
+            // NOLINTNEXTLINE(readability-simplify-boolean-expr)
+            AMON_REQUIRE(pktBegin <= layerBegin && layerBegin <= &*packetData.end());
+            const auto truncatedSize = static_cast<size_t>(std::distance(pktBegin, layerBegin));
+            if (truncatedSize == 0) {
+                return false;
+            }
+            packetData.resize(truncatedSize);
+            break;
+        }
     }
 
     return true;

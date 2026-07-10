@@ -78,6 +78,7 @@ static void run(const amon::util::ParsedArgs& args)
     const std::string outputFile
         = *args["OUTPUT_FILE"]; // NOLINT(bugprone-unchecked-optional-access)
     const bool skipErroneous = args["--skip-erroneous"].has_value();
+    const bool truncate = args["--truncate"].has_value();
 
     std::println("Using key: {}", key);
     std::println();
@@ -89,12 +90,14 @@ static void run(const amon::util::ParsedArgs& args)
         outputFile,
         amon::util::PcapTimestampPrecision::MICRO,
         reader.linkLayerType()};
+
     const amon::layers::LayerType firstLayer = dltToLayerType(reader.linkLayerType());
     PacketAnonymizer anon {
         key,
         firstLayer,
         PacketAnonymizer::Options {
             .skipErroneous = skipErroneous,
+            .truncate = truncate,
         }};
 
     // Progress
@@ -131,7 +134,7 @@ static void run(const amon::util::ParsedArgs& args)
         buffer.assign(pcapPacket->data.begin(), pcapPacket->data.end());
         const bool doWritePacket = anon.anonymizePacket(buffer);
         if (doWritePacket) {
-            writer.writePacket(buffer, pcapPacket->timestamp);
+            writer.writePacket(buffer, pcapPacket->timestamp, pcapPacket->lengthOnWire);
         }
     }
     printProgress();
@@ -158,6 +161,10 @@ int main(int argc, char* const* argv) // NOLINT(bugprone-exception-escape)
                 .metaVar("KEY")
                 .help("The anonymization key, 32 characters long (default: randomly generated)"),
             KwArg("skip-erroneous").help("Skip erroneous packets (default: false)"),
+            KwArg("truncate")
+                .help(
+                    "Truncate remaining packet data that contain no useful information, e.g. "
+                    "payload data (default: false)"),
         });
 
     const amon::util::ParsedArgs args = argParser.parse(argc, argv);

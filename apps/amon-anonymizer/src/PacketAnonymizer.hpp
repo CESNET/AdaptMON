@@ -28,6 +28,7 @@ public:
     /// @brief The anonymizer options.
     struct Options {
         bool skipErroneous = false; ///< Skip packets that could not be parsed
+        bool truncate = false; ///< Truncate extra payload (uninteresting data)
     };
 
     /**
@@ -69,7 +70,10 @@ private:
     amon::PacketParser m_parser;
     std::vector<std::byte> m_buffer;
 
-    void anonymizeLayer(std::span<std::byte> layerData, amon::layers::LayerType layerType);
+    void anonymizeLayer(
+        std::span<std::byte> layerData,
+        amon::layers::LayerType layerType,
+        bool& outTruncateFlag);
 
     void anonymizeIPv6SegmentRouting(std::span<std::byte> data);
 };
