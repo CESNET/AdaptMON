@@ -90,7 +90,12 @@ static void run(const amon::util::ParsedArgs& args)
         amon::util::PcapTimestampPrecision::MICRO,
         reader.linkLayerType()};
     const amon::layers::LayerType firstLayer = dltToLayerType(reader.linkLayerType());
-    PacketAnonymizer anon {key, firstLayer, skipErroneous};
+    PacketAnonymizer anon {
+        key,
+        firstLayer,
+        PacketAnonymizer::Options {
+            .skipErroneous = skipErroneous,
+        }};
 
     // Progress
     const uint64_t readerEndPos = reader.tellEnd();

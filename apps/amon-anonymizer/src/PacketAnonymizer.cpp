@@ -24,10 +24,10 @@ static constexpr uint8_t IPV6_ROUTING_TYPE_SEGMENT_ROUTING = 4;
 PacketAnonymizer::PacketAnonymizer(
     const std::string& anonymizationKey,
     amon::layers::LayerType firstLayerType,
-    bool skipErroneous)
+    Options options)
     : m_valueAnon(anonymizationKey)
     , m_firstLayerType(firstLayerType)
-    , m_skipErroneous(skipErroneous)
+    , m_options(options)
 {
 }
 
@@ -197,7 +197,7 @@ bool PacketAnonymizer::anonymizePacket(std::vector<std::byte>& packetData)
     const amon::layers::LayerError err = m_parser.parse(packet, m_firstLayerType);
     if (err != amon::layers::LayerError::NONE) {
         m_stats.nErrPackets++;
-        if (m_skipErroneous) {
+        if (m_options.skipErroneous) {
             return false;
         }
     }

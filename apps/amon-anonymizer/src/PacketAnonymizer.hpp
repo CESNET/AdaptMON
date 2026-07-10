@@ -25,17 +25,22 @@
  */
 class PacketAnonymizer {
 public:
+    /// @brief The anonymizer options.
+    struct Options {
+        bool skipErroneous = false; ///< Skip packets that could not be parsed
+    };
+
     /**
      * @brief Constructs a PacketAnonymizer with the specified parameters.
      *
      * @param anonymizationKey The key used for anonymizing packets (must be exactly 32 characters).
      * @param firstLayerType The type of the first layer (used in parsing).
-     * @param skipErroneous If true, skip packets with errors during anonymization.
+     * @param options The options.
      */
     PacketAnonymizer(
         const std::string& anonymizationKey,
         amon::layers::LayerType firstLayerType,
-        bool skipErroneous);
+        Options options);
 
     /**
      * @brief Anonymizes a network packet in-place.
@@ -58,7 +63,7 @@ public:
 private:
     ValueAnonymizer m_valueAnon;
     amon::layers::LayerType m_firstLayerType;
-    bool m_skipErroneous;
+    Options m_options;
 
     Stats m_stats;
     amon::PacketParser m_parser;
