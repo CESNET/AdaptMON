@@ -103,6 +103,8 @@ static void run(const amon::util::ParsedArgs& args)
     // Progress
     const uint64_t readerEndPos = reader.tellEnd();
     uint64_t nPackets = 0;
+    uint64_t nPacketsSkipped = 0;
+    uint64_t nBytesTruncated = 0;
 
     auto printProgress = [&]() {
         const uint64_t readerCurrPos = reader.tell();
@@ -132,9 +134,14 @@ static void run(const amon::util::ParsedArgs& args)
         nPackets++;
 
         buffer.assign(pcapPacket->data.begin(), pcapPacket->data.end());
+        const size_t origSize = buffer.size();
         const bool doWritePacket = anon.anonymizePacket(buffer);
+        const size_t newSize = buffer.size();
         if (doWritePacket) {
+            nBytesTruncated += origSize - newSize;
             writer.writePacket(buffer, pcapPacket->timestamp, pcapPacket->lengthOnWire);
+        } else {
+            nPacketsSkipped++;
         }
     }
     printProgress();
@@ -142,6 +149,30 @@ static void run(const amon::util::ParsedArgs& args)
     // Finish
     std::println();
     anon.stats().print();
+
+    writer.flush();
+    const auto nBytesWritten = writer.tell();
+
+    std::string extraStatus;
+    if (nPacketsSkipped > 0) {
+        extraStatus += std::format("{} packets skipped", nPacketsSkipped);
+    }
+    if (truncate) {
+        if (!extraStatus.empty()) {
+            extraStatus += "; ";
+        }
+        extraStatus
+            += std::format("{} truncated", amon::util::HumanReadableByteAmount {nBytesTruncated});
+    }
+    std::println();
+    std::println(
+        "Wrote {} packets; {} ({}) of data to '{}'{}",
+        nPackets,
+        nBytesWritten,
+        amon::util::HumanReadableByteAmount {nBytesWritten},
+        outputFile,
+        extraStatus.empty() ? "" : " (" + extraStatus + ")");
+    std::println();
 }
 
 int main(int argc, char* const* argv) // NOLINT(bugprone-exception-escape)
