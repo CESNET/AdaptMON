@@ -51,6 +51,7 @@ if (ENABLE_DPDK)
         src/dpdk/EAL.cpp
         src/dpdk/Error.cpp
         src/dpdk/LCore.cpp
+        src/dpdk/GlobalLCorePool.cpp
         src/dpdk/PktBurst.cpp
         src/dpdk/PktMempool.cpp
         src/dpdk/Port.cpp
