@@ -140,12 +140,11 @@ public:
     /**
      * @brief Release the managed resource, if any.
      */
-    void reset() noexcept // NOLINT(bugprone-exception-escape)
+    void reset() noexcept
     {
         if (m_resource.has_value()) {
-            Deleter {}(m_resource.value());
+            Deleter {}(unsafeRelease());
         }
-        m_resource.reset();
     }
 
     /**
@@ -203,7 +202,7 @@ private:
 
     ValueType unsafeRelease() noexcept(std::is_nothrow_move_constructible_v<ValueType>)
     {
-        ValueType value {std::move(*m_resource)};
+        ValueType value {std::move(*m_resource)}; // NOLINT(bugprone-unchecked-optional-access)
         m_resource.reset();
         return std::move(value);
     }
