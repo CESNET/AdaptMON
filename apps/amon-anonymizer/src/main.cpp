@@ -78,6 +78,7 @@ static void run(const amon::util::ParsedArgs& args)
     const std::string outputFile
         = *args["OUTPUT_FILE"]; // NOLINT(bugprone-unchecked-optional-access)
     const bool skipErroneous = args["--skip-erroneous"].has_value();
+    const bool truncate = args["--truncate"].has_value();
 
     std::println("Using key: {}", key);
     std::println();
@@ -89,12 +90,21 @@ static void run(const amon::util::ParsedArgs& args)
         outputFile,
         amon::util::PcapTimestampPrecision::MICRO,
         reader.linkLayerType()};
+
     const amon::layers::LayerType firstLayer = dltToLayerType(reader.linkLayerType());
-    PacketAnonymizer anon {key, firstLayer, skipErroneous};
+    PacketAnonymizer anon {
+        key,
+        firstLayer,
+        PacketAnonymizer::Options {
+            .skipErroneous = skipErroneous,
+            .truncate = truncate,
+        }};
 
     // Progress
     const uint64_t readerEndPos = reader.tellEnd();
     uint64_t nPackets = 0;
+    uint64_t nPacketsSkipped = 0;
+    uint64_t nBytesTruncated = 0;
 
     auto printProgress = [&]() {
         const uint64_t readerCurrPos = reader.tell();
@@ -124,9 +134,14 @@ static void run(const amon::util::ParsedArgs& args)
         nPackets++;
 
         buffer.assign(pcapPacket->data.begin(), pcapPacket->data.end());
+        const size_t origSize = buffer.size();
         const bool doWritePacket = anon.anonymizePacket(buffer);
+        const size_t newSize = buffer.size();
         if (doWritePacket) {
-            writer.writePacket(buffer, pcapPacket->timestamp);
+            nBytesTruncated += origSize - newSize;
+            writer.writePacket(buffer, pcapPacket->timestamp, pcapPacket->lengthOnWire);
+        } else {
+            nPacketsSkipped++;
         }
     }
     printProgress();
@@ -134,6 +149,30 @@ static void run(const amon::util::ParsedArgs& args)
     // Finish
     std::println();
     anon.stats().print();
+
+    writer.flush();
+    const auto nBytesWritten = writer.tell();
+
+    std::string extraStatus;
+    if (nPacketsSkipped > 0) {
+        extraStatus += std::format("{} packets skipped", nPacketsSkipped);
+    }
+    if (truncate) {
+        if (!extraStatus.empty()) {
+            extraStatus += "; ";
+        }
+        extraStatus
+            += std::format("{} truncated", amon::util::HumanReadableByteAmount {nBytesTruncated});
+    }
+    std::println();
+    std::println(
+        "Wrote {} packets; {} ({}) of data to '{}'{}",
+        nPackets,
+        nBytesWritten,
+        amon::util::HumanReadableByteAmount {nBytesWritten},
+        outputFile,
+        extraStatus.empty() ? "" : " (" + extraStatus + ")");
+    std::println();
 }
 
 int main(int argc, char* const* argv) // NOLINT(bugprone-exception-escape)
@@ -153,6 +192,10 @@ int main(int argc, char* const* argv) // NOLINT(bugprone-exception-escape)
                 .metaVar("KEY")
                 .help("The anonymization key, 32 characters long (default: randomly generated)"),
             KwArg("skip-erroneous").help("Skip erroneous packets (default: false)"),
+            KwArg("truncate")
+                .help(
+                    "Truncate remaining packet data that contain no useful information, e.g. "
+                    "payload data (default: false)"),
         });
 
     const amon::util::ParsedArgs args = argParser.parse(argc, argv);

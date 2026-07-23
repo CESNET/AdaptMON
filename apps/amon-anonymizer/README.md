@@ -50,6 +50,15 @@
 | AuthenticationHeader | Integrity check value |
 | Encapsulating Security Payload | Encrypted payload |
 
+## Truncation
+
+If truncation is turned on (`--truncate`), data of protocols that are not in
+the list above will be truncated. The PCAP will still contain information about
+the original size of the packet.
+
+If the truncated packet is empty (the first-layer analysis ended with an error),
+this packet is skipped in the output regardless of the `--skip-erroneous` argument.
+
 ## Build Instructions
 
 ```bash
@@ -74,6 +83,7 @@ Positional arguments:
 Keyword arguments (ARGS):
   -k, --key KEY                         The anonymization key, 32 characters long (default: randomly generated)
   --skip-erroneous                      Skip erroneous packets (default: false)
+  --truncate                            Truncate remaining packet data that contain no useful information, e.g. payload data (default: false)
   -h, --help                            Print this help message
 ```
 
