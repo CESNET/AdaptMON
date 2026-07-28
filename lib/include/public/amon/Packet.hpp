@@ -148,11 +148,12 @@ struct Packet {
     template <typename T>
     std::optional<T> getLayerView() const noexcept
     {
-        auto layerOrError = findLayer(T::LAYER_TYPE);
-        if (layerOrError) {
-            if (const auto layerInfo = std::get_if<PacketLayer>(&layerOrError.value())) {
-                return getLayerView<T>(*layerInfo);
+        for (const auto& layerOrError : layers) {
+            const PacketLayer* layerInfo = std::get_if<PacketLayer>(&layerOrError);
+            if (!layerInfo || layerInfo->type != T::LAYER_TYPE) {
+                continue;
             }
+            return getLayerView<T>(*layerInfo);
         }
         return {};
     }
