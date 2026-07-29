@@ -235,7 +235,7 @@ void parseInto(std::string_view str, T& output)
  *
  * @param str The string view to parse.
  * @return The parsed value of the given type.
- * @throw Exceptions such as std::invalid_argument or std::out_of_range if the
+ * @throw Exceptions such as std::invalid_argument or std::range_error if the
  * value cannot be converted.
  */
 template <typename T>
@@ -302,7 +302,7 @@ T parse(std::string_view str)
  * @param str The string to parse.
  * @return The parsed number.
  * @throw std::invalid_argument If the string cannot be parsed as a number.
- * @throw std::out_of_range If the parsed value cannot fit into the target type.
+ * @throw std::range_error If the parsed value cannot fit into the target type.
  */
 
 template <typename T>
@@ -362,7 +362,7 @@ T parse(std::string_view str)
  * @param str The string to parse.
  * @return The parsed number.
  * @throw std::invalid_argument If the string cannot be parsed as a number.
- * @throw std::out_of_range If the parsed value cannot fit into the target type.
+ * @throw std::range_error If the parsed value cannot fit into the target type.
  */
 template <typename T>
     requires std::floating_point<T>
