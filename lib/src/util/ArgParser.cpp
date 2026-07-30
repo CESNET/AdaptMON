@@ -127,7 +127,7 @@ std::string ArgParser::usage(const std::string& programName) const
             }
             std::format_to(ins, "{:<40}{}", tmp, posArg.m_help);
             if (!posArg.m_required) {
-                std::format_to(ins, "(default: {})", posArg.m_defaultValue.value_or(""));
+                std::format_to(ins, " (default: {})", posArg.m_defaultValue.value_or(""));
             }
             std::format_to(ins, "\n");
         }
