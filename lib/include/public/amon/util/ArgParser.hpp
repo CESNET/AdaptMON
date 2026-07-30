@@ -35,6 +35,8 @@
  * auto args = argParser.parse(argc, argv);
  * std::string output = *args["--output"];
  * std::string key = *args["--key"];
+ * uint16_t port = args.get<uint16_t>("--port");
+ * unsigned nIterations = args.get<unsigned>("-n");
  * // ...
  * @endcode
  */
@@ -43,6 +45,7 @@
 
 #include <amon/Error.hpp>
 #include <amon/util/getopt.hpp>
+#include <amon/util/string.hpp>
 
 #include <initializer_list>
 #include <optional>
@@ -294,6 +297,34 @@ public:
     std::optional<std::string> operator[](const std::string& option) const;
 
     /**
+     * @brief Get the value of an option as a specific type.
+     * @tparam ResultType The type to convert to.
+     * @param option The option to search for.
+     * @return Value containing the value option argument provided as the specified type.
+     * @throw std::out_of_range if the option was not present.
+     * @throw std::invalid_argument if the conversion failed due to parsing.
+     * @throw std::range_error if the parsed value exceeds the representable range.
+     *
+     * See @ref amon::util::ParsedArgs::operator[] for details.
+     */
+    template <typename ResultType>
+    ResultType get(const std::string& option) const;
+
+    /**
+     * @brief Get the value of an option as a specific type.
+     * @tparam ResultType The type to convert to.
+     * @param option The option to search for.
+     * @param[out] result Value containing the value option argument provided as the specified type.
+     * @throw std::out_of_range if the option was not present.
+     * @throw std::invalid_argument if the conversion failed due to parsing.
+     * @throw std::range_error if the parsed value exceeds the representable range.
+     *
+     * See @ref amon::util::ParsedArgs::operator[] for details.
+     */
+    template <typename ResultType>
+    void getInto(const std::string& option, ResultType& result) const;
+
+    /**
      * @brief Counts how many times the specified option was provided.
      * @param option The option to search for.
      * @return The count of occurrences of the option.
@@ -315,6 +346,38 @@ private:
     std::vector<std::pair<KwArg, std::optional<std::string>>> m_kwArgs;
     std::vector<std::pair<PosArg, std::string>> m_posArgs;
 };
+
+namespace detail {
+template <typename T>
+concept HasStringParseFn = requires(const std::string& value) {
+    { amon::util::string::parse<T>(value) } -> std::same_as<T>;
+};
+} // namespace detail
+
+template <typename ResultType>
+ResultType ParsedArgs::get(const std::string& option) const
+{
+    auto value = (*this)[option];
+    if (!value) {
+        throw std::out_of_range {std::format("option \"{}\" not found", option)};
+    }
+
+    if constexpr (std::is_same_v<ResultType, std::string>) {
+        return *value;
+
+    } else if constexpr (detail::HasStringParseFn<ResultType>) {
+        return string::parse<ResultType>(*value);
+
+    } else {
+        static_assert(false, "unsupported type");
+    }
+}
+
+template <typename ResultType>
+void ParsedArgs::getInto(const std::string& option, ResultType& result) const
+{
+    result = get<ResultType>(option);
+}
 
 /**
  * @brief Argument parser for command-line interfaces.

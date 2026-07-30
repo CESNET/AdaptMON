@@ -547,6 +547,73 @@ TEST(AmonUtilArgParser, ArgparserPositionalArgumentWithMultipleValuesNotLastThro
         amon::Error);
 }
 
+TEST(AmonUtilArgParser, ParsedArgsGetConvertsValuesToRequestedType)
+{
+    auto parser = ArgParser {
+        {PosArg("input")},
+        {KwArg('n', "number").hasArg(true)},
+    }.setAutoHelp(false);
+
+    const char* const argv[] = {"prog", "--number", "42", "123"};
+    const auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
+
+    EXPECT_EQ(args.get<int>("--number"), 42);
+    EXPECT_EQ(args.get<unsigned>("input"), 123U);
+}
+
+TEST(AmonUtilArgParser, ParsedArgsGetReturnsStringValue)
+{
+    auto parser = ArgParser {{}, {KwArg('s', "string").hasArg(true)}}.setAutoHelp(false);
+
+    const char* const argv[] = {"prog", "--string", "hello world"};
+    const auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
+
+    EXPECT_EQ(args.get<std::string>("--string"), "hello world");
+}
+
+TEST(AmonUtilArgParser, ParsedArgsGetIntoConvertsAndAssignsValue)
+{
+    auto parser
+        = ArgParser {{}, {KwArg('n', "number").hasArg(true).defaultValue("42")}}.setAutoHelp(false);
+
+    const char* const argv[] = {"prog"};
+    const auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
+    int value = 0;
+    args.getInto("-n", value);
+
+    EXPECT_EQ(value, 42);
+}
+
+TEST(AmonUtilArgParser, ParsedArgsGetParsesBooleanAndFloatingPointValues)
+{
+    auto parser = ArgParser {
+        {},
+        {
+            KwArg('b', "boolean").hasArg(true),
+            KwArg('f', "float").hasArg(true),
+            KwArg('d', "double").hasArg(true),
+        },
+    }.setAutoHelp(false);
+
+    const char* const argv[] = {"prog", "--boolean", "yes", "--float", "1.25", "--double", "-2.5"};
+    const auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
+
+    EXPECT_TRUE(args.get<bool>("--boolean"));
+    EXPECT_FLOAT_EQ(args.get<float>("--float"), 1.25F);
+    EXPECT_DOUBLE_EQ(args.get<double>("--double"), -2.5);
+}
+
+TEST(AmonUtilArgParser, ParsedArgsGetThrowsForMissingOrInvalidValue)
+{
+    auto parser = ArgParser {{}, {KwArg('n', "number").hasArg(true)}}.setAutoHelp(false);
+
+    const char* const argv[] = {"prog", "--number", "not-a-number"};
+    const auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
+
+    EXPECT_THROW(args.get<int>("--missing"), std::out_of_range);
+    EXPECT_THROW(args.get<int>("--number"), std::invalid_argument);
+}
+
 #endif
 
 } // namespace amon::util
