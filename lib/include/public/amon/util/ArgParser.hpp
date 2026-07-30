@@ -26,6 +26,16 @@
  *             .metaVar("KEY")
  *             .defaultValue("ABCDEFGHIJKLMNOPQRSTUVWXYZ012345")
  *             .help("The anonymization key, 32 characters long"),
+ *         KwArg('p', "port")
+ *             .metaVar("PORT")
+ *             .defaultValue("4242")
+ *             .help("The listen port"),
+ *             .constraint(ArgConstraint::number<uint16_t>())
+ *         KwArg('n', "number-of-iterations")
+ *             .metaVar("N")
+ *             .defaultValue("1000")
+ *             .help("The number of iterations"),
+ *             .constraint(ArgConstraint::numberInRange<unsigned>(1, 10000))
  *         KwArg('h', "help")
  *             .required(false)
  *             .help("Print this help")
@@ -48,6 +58,7 @@
 #include <amon/util/string.hpp>
 
 #include <initializer_list>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -61,6 +72,105 @@ namespace amon::util {
 class ArgParserError : public Error {
 public:
     using Error::Error;
+};
+
+/**
+ * @brief Represents a constraint that can be applied to argument values during parsing.
+ *
+ * Constraints are used to validate that values provided for an argument meet certain
+ * criteria, such as being within a specified numeric range.
+ */
+class ArgConstraint {
+public:
+    /**
+     * @brief Create a numeric constraint for a specific integral type.
+     *
+     * The constraint validates that the argument value, when parsed, can be
+     * successfully converted to the specified integral type T.
+     *
+     * @tparam T The integral type to validate against.
+     * @return An ArgConstraint that validates numeric values of type T.
+     */
+    template <typename T>
+        requires(std::integral<T> && !std::is_same_v<T, bool>)
+    static ArgConstraint number()
+    {
+        return {std::make_shared<ArgConstraint::Number<T>>()};
+    }
+
+    /**
+     * @brief Create an integer range constraint.
+     *
+     * The constraint validates that the argument value, when parsed as an integer,
+     * falls within the inclusive range [min, max].
+     *
+     * @tparam T The integral type used.
+     * @param min The minimum allowed value (inclusive).
+     * @param max The maximum allowed value (inclusive).
+     * @return An ArgConstraint that validates integer values within the range.
+     */
+    template <typename T = int64_t>
+        requires(std::integral<T> && !std::is_same_v<T, bool>)
+    static ArgConstraint numberInRange(T min, T max)
+    {
+        return {std::make_shared<ArgConstraint::NumberInRange<T>>(min, max)};
+    }
+
+private:
+    friend class ArgParser;
+
+    class ConstraintImpl {
+    public:
+        virtual void validate(const std::string& value) const = 0;
+        virtual std::string helpStr() const = 0;
+    };
+
+    template <typename T>
+    class Number : public ConstraintImpl {
+    public:
+        void validate(const std::string& value) const override { string::parse<T>(value); }
+        std::string helpStr() const override { return "number"; }
+    };
+
+    template <typename T>
+    struct NumberInRange : public ConstraintImpl {
+    public:
+        NumberInRange(T low, T high)
+            : m_low(low)
+            , m_high(high)
+        {
+            if (low > high) {
+                throw std::invalid_argument {
+                    "invalid ArgConstraint range: lower bound must be less or equal higher bound"};
+            }
+        }
+        void validate(const std::string& value) const override
+        {
+            T num;
+            try {
+                num = string::parse<T>(value);
+            } catch (const std::exception& e) {
+                throw std::runtime_error("not a valid number");
+            }
+
+            if (num < m_low || num > m_high) {
+                throw std::runtime_error(std::format("not a number in range {}-{}", m_low, m_high));
+            }
+        }
+        std::string helpStr() const override { return std::format("number {}-{}", m_low, m_high); }
+
+    private:
+        T m_low;
+        T m_high;
+    };
+
+    ArgConstraint(std::shared_ptr<ConstraintImpl> impl)
+        : m_impl(std::move(impl))
+    {
+    }
+    std::shared_ptr<ConstraintImpl> m_impl;
+    void validate(const std::string& value) const { m_impl->validate(value); }
+    std::string helpStr() const { return m_impl->helpStr(); }
 };
 
 /**
@@ -128,6 +238,21 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Add a constraint to validate the argument value.
+     *
+     * The constraint is applied to the value provided for this argument during parsing,
+     * ensuring it meets the specified criteria (e.g. within a numeric range).
+     *
+     * @param constaint The constraint to apply.
+     * @return Reference to this PosArg for chaining.
+     */
+    PosArg& constraint(const ArgConstraint& constaint)
+    {
+        m_constraints.push_back(constaint);
+        return *this;
+    }
+
 private:
     friend class ArgParser;
     friend class ParsedArgs;
@@ -137,6 +262,7 @@ private:
     bool m_required = true;
     bool m_allowMultiple = false;
     std::string m_help;
+    std::vector<ArgConstraint> m_constraints;
 };
 
 /**
@@ -263,6 +389,21 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Add a constraint to validate the argument value.
+     *
+     * The constraint is applied to the value provided for this argument during parsing,
+     * ensuring it meets the specified criteria (e.g. within a numeric range).
+     *
+     * @param constaint The constraint to apply.
+     * @return Reference to this KwArg for chaining.
+     */
+    KwArg& constraint(const ArgConstraint& constaint)
+    {
+        m_constraints.push_back(constaint);
+        return *this;
+    }
+
 private:
     friend class ArgParser;
     friend class ParsedArgs;
@@ -276,6 +417,7 @@ private:
     std::optional<std::string> m_metaVar = std::nullopt;
     std::optional<std::string> m_defaultValue = std::nullopt;
     std::string m_help;
+    std::vector<ArgConstraint> m_constraints;
 };
 
 /**
@@ -513,6 +655,9 @@ private:
         const std::vector<PosArg>& posArgs);
 
     static std::string optsStr(const KwArg& kwArg);
+    static std::string constraintsStr(const std::vector<ArgConstraint>& constraints);
+    static void checkConstraints(const PosArg& posArg, const std::string& value);
+    static void checkConstraints(const KwArg& kwArg, const std::string& value);
 };
 
 } // namespace amon::util

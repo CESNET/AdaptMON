@@ -8,7 +8,9 @@
  */
 
 #include <amon-internal/Test.hpp>
+#include <amon/amon.hpp>
 #include <amon/util/ArgParser.hpp>
+#include <amon/util/string.hpp>
 
 #include <cassert>
 #include <format>
@@ -90,6 +92,18 @@ ArgParser::ArgParser(std::initializer_list<KwArg> kwArgs)
 {
 }
 
+std::string ArgParser::constraintsStr(const std::vector<ArgConstraint>& constraints)
+{
+    std::string s;
+    for (size_t i = 0; i < constraints.size(); ++i) {
+        s += constraints[i].helpStr();
+        if (i != constraints.size() - 1) {
+            s += ", ";
+        }
+    }
+    return s;
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 std::string ArgParser::usage(const std::string& programName) const
 {
@@ -126,6 +140,9 @@ std::string ArgParser::usage(const std::string& programName) const
                 std::format_to(ins, "  {}", posArg.m_name);
             }
             std::format_to(ins, "{:<40}{}", tmp, posArg.m_help);
+            if (!posArg.m_constraints.empty()) {
+                std::format_to(ins, " [{}]", constraintsStr(posArg.m_constraints));
+            }
             if (!posArg.m_required) {
                 std::format_to(ins, " (default: {})", posArg.m_defaultValue.value_or(""));
             }
@@ -158,6 +175,9 @@ std::string ArgParser::usage(const std::string& programName) const
             }
 
             std::format_to(ins, "{:<40}{}", tmp, kwArg.m_help);
+            if (!kwArg.m_constraints.empty()) {
+                std::format_to(ins, " [{}]", constraintsStr(kwArg.m_constraints));
+            }
             if (kwArg.m_required) {
                 std::format_to(ins, " (required)");
             }
@@ -250,6 +270,31 @@ std::string ArgParser::optsStr(const KwArg& kwArg)
                           : "";
 }
 
+void ArgParser::checkConstraints(const KwArg& kwArg, const std::string& value)
+{
+    try {
+        for (const auto& constaint : kwArg.m_constraints) {
+            constaint.validate(value);
+        }
+    } catch (const std::exception& ex) {
+        throw ArgParserError("invalid value for option \"{}\": {}", optsStr(kwArg), ex.what());
+    }
+}
+
+void ArgParser::checkConstraints(const PosArg& posArg, const std::string& value)
+{
+    try {
+        for (const auto& constaint : posArg.m_constraints) {
+            constaint.validate(value);
+        }
+    } catch (const std::exception& ex) {
+        throw ArgParserError(
+            "invalid value for positional argument \"{}\": {}",
+            posArg.m_name,
+            ex.what());
+    }
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity)
 ParsedArgs ArgParser::doParse(
     int argc,
@@ -312,6 +357,22 @@ ParsedArgs ArgParser::doParse(
         }
         if (!posArg.m_required && posArg.m_defaultValue) {
             res.m_posArgs.emplace_back(posArg, *posArg.m_defaultValue);
+        }
+    }
+
+    // Check constraints of kw args
+    if (!skipErrors) {
+        for (const auto& [kwArg, value] : res.m_kwArgs) {
+            if (value) {
+                checkConstraints(kwArg, *value);
+            }
+        }
+    }
+
+    // Check constraints of pos args
+    if (!skipErrors) {
+        for (const auto& [posArg, value] : res.m_posArgs) {
+            checkConstraints(posArg, value);
         }
     }
 
@@ -612,6 +673,87 @@ TEST(AmonUtilArgParser, ParsedArgsGetThrowsForMissingOrInvalidValue)
 
     EXPECT_THROW(args.get<int>("--missing"), std::out_of_range);
     EXPECT_THROW(args.get<int>("--number"), std::invalid_argument);
+}
+
+TEST(AmonUtilArgParser, ArgparserNumberConstraintAcceptsValidValues)
+{
+    auto parser = ArgParser {
+        {PosArg("count").constraint(ArgConstraint::number<unsigned>())},
+        {KwArg('n', "number").hasArg(true).constraint(ArgConstraint::number<int>())},
+    }.setAutoHelp(false);
+
+    const char* const argv[] = {"prog", "--number", "-42", "123"};
+    const auto args = parser.parse(sizeof(argv) / sizeof(const char*), argv);
+
+    EXPECT_EQ(args.get<int>("--number"), -42);
+    EXPECT_EQ(args.get<unsigned>("count"), 123U);
+}
+
+TEST(AmonUtilArgParser, ArgparserNumberConstraintRejectsInvalidValues)
+{
+    auto kwParser
+        = ArgParser {{}, {KwArg('n', "number").hasArg(true).constraint(ArgConstraint::number<int>())}}
+              .setAutoHelp(false);
+    const char* const kwArgv[] = {"prog", "--number", "invalid"};
+    EXPECT_THROW(kwParser.parse(sizeof(kwArgv) / sizeof(const char*), kwArgv), ArgParserError);
+
+    auto posParser
+        = ArgParser {{PosArg("number").constraint(ArgConstraint::number<int>())}, {}}.setAutoHelp(
+            false);
+    const char* const posArgv[] = {"prog", "invalid"};
+    EXPECT_THROW(posParser.parse(sizeof(posArgv) / sizeof(const char*), posArgv), ArgParserError);
+}
+
+TEST(AmonUtilArgParser, ArgparserNumberInRangeConstraintIncludesBoundaries)
+{
+    auto parser = ArgParser {
+        {},
+        {KwArg('n', "number")
+             .hasArg(true)
+             .allowMultiple(true)
+             .constraint(ArgConstraint::numberInRange(-10, 10))},
+    }.setAutoHelp(false);
+
+    const char* const argv[] = {"prog", "--number", "-10", "--number", "10"};
+    EXPECT_NO_THROW(parser.parse(sizeof(argv) / sizeof(const char*), argv));
+}
+
+TEST(AmonUtilArgParser, ArgparserNumberInRangeConstraintRejectsInvalidAndOutOfRangeValues)
+{
+    auto parser = ArgParser {
+        {},
+        {KwArg('n', "number").hasArg(true).constraint(ArgConstraint::numberInRange(1, 10))},
+    }.setAutoHelp(false);
+
+    const char* const belowRange[] = {"prog", "--number", "0"};
+    const char* const aboveRange[] = {"prog", "--number", "11"};
+    const char* const invalid[] = {"prog", "--number", "invalid"};
+    EXPECT_THROW(
+        parser.parse(sizeof(belowRange) / sizeof(const char*), belowRange),
+        ArgParserError);
+    EXPECT_THROW(
+        parser.parse(sizeof(aboveRange) / sizeof(const char*), aboveRange),
+        ArgParserError);
+    EXPECT_THROW(parser.parse(sizeof(invalid) / sizeof(const char*), invalid), ArgParserError);
+}
+
+TEST(AmonUtilArgParser, ArgparserConstraintsApplyToDefaultValues)
+{
+    auto parser = ArgParser {
+        {PosArg("count").defaultValue("invalid").constraint(ArgConstraint::number<int>())},
+        {KwArg('n', "number")
+             .hasArg(true)
+             .defaultValue("11")
+             .constraint(ArgConstraint::numberInRange(1, 10))},
+    }.setAutoHelp(false);
+
+    const char* const argv[] = {"prog"};
+    EXPECT_THROW(parser.parse(sizeof(argv) / sizeof(const char*), argv), ArgParserError);
+}
+
+TEST(AmonUtilArgParser, ArgparserInvalidConstraintRangeThrows)
+{
+    EXPECT_THROW((void) ArgConstraint::numberInRange(10, 1), std::invalid_argument);
 }
 
 #endif
