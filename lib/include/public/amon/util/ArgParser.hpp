@@ -26,6 +26,16 @@
  *             .metaVar("KEY")
  *             .defaultValue("ABCDEFGHIJKLMNOPQRSTUVWXYZ012345")
  *             .help("The anonymization key, 32 characters long"),
+ *         KwArg('p', "port")
+ *             .metaVar("PORT")
+ *             .defaultValue("4242")
+ *             .help("The listen port"),
+ *             .constraint(ArgConstraint::number<uint16_t>())
+ *         KwArg('n', "number-of-iterations")
+ *             .metaVar("N")
+ *             .defaultValue("1000")
+ *             .help("The number of iterations"),
+ *             .constraint(ArgConstraint::numberInRange<unsigned>(1, 10000))
  *         KwArg('h', "help")
  *             .required(false)
  *             .help("Print this help")
@@ -35,6 +45,8 @@
  * auto args = argParser.parse(argc, argv);
  * std::string output = *args["--output"];
  * std::string key = *args["--key"];
+ * uint16_t port = args.get<uint16_t>("--port");
+ * unsigned nIterations = args.get<unsigned>("-n");
  * // ...
  * @endcode
  */
@@ -43,8 +55,10 @@
 
 #include <amon/Error.hpp>
 #include <amon/util/getopt.hpp>
+#include <amon/util/string.hpp>
 
 #include <initializer_list>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -58,6 +72,105 @@ namespace amon::util {
 class ArgParserError : public Error {
 public:
     using Error::Error;
+};
+
+/**
+ * @brief Represents a constraint that can be applied to argument values during parsing.
+ *
+ * Constraints are used to validate that values provided for an argument meet certain
+ * criteria, such as being within a specified numeric range.
+ */
+class ArgConstraint {
+public:
+    /**
+     * @brief Create a numeric constraint for a specific integral type.
+     *
+     * The constraint validates that the argument value, when parsed, can be
+     * successfully converted to the specified integral type T.
+     *
+     * @tparam T The integral type to validate against.
+     * @return An ArgConstraint that validates numeric values of type T.
+     */
+    template <typename T>
+        requires(std::integral<T> && !std::is_same_v<T, bool>)
+    static ArgConstraint number()
+    {
+        return {std::make_shared<ArgConstraint::Number<T>>()};
+    }
+
+    /**
+     * @brief Create an integer range constraint.
+     *
+     * The constraint validates that the argument value, when parsed as an integer,
+     * falls within the inclusive range [min, max].
+     *
+     * @tparam T The integral type used.
+     * @param min The minimum allowed value (inclusive).
+     * @param max The maximum allowed value (inclusive).
+     * @return An ArgConstraint that validates integer values within the range.
+     */
+    template <typename T = int64_t>
+        requires(std::integral<T> && !std::is_same_v<T, bool>)
+    static ArgConstraint numberInRange(T min, T max)
+    {
+        return {std::make_shared<ArgConstraint::NumberInRange<T>>(min, max)};
+    }
+
+private:
+    friend class ArgParser;
+
+    class ConstraintImpl {
+    public:
+        virtual void validate(const std::string& value) const = 0;
+        virtual std::string helpStr() const = 0;
+    };
+
+    template <typename T>
+    class Number : public ConstraintImpl {
+    public:
+        void validate(const std::string& value) const override { string::parse<T>(value); }
+        std::string helpStr() const override { return "number"; }
+    };
+
+    template <typename T>
+    struct NumberInRange : public ConstraintImpl {
+    public:
+        NumberInRange(T low, T high)
+            : m_low(low)
+            , m_high(high)
+        {
+            if (low > high) {
+                throw std::invalid_argument {
+                    "invalid ArgConstraint range: lower bound must be less or equal higher bound"};
+            }
+        }
+        void validate(const std::string& value) const override
+        {
+            T num;
+            try {
+                num = string::parse<T>(value);
+            } catch (const std::exception& e) {
+                throw std::runtime_error("not a valid number");
+            }
+
+            if (num < m_low || num > m_high) {
+                throw std::runtime_error(std::format("not a number in range {}-{}", m_low, m_high));
+            }
+        }
+        std::string helpStr() const override { return std::format("number {}-{}", m_low, m_high); }
+
+    private:
+        T m_low;
+        T m_high;
+    };
+
+    ArgConstraint(std::shared_ptr<ConstraintImpl> impl)
+        : m_impl(std::move(impl))
+    {
+    }
+    std::shared_ptr<ConstraintImpl> m_impl;
+    void validate(const std::string& value) const { m_impl->validate(value); }
+    std::string helpStr() const { return m_impl->helpStr(); }
 };
 
 /**
@@ -125,6 +238,21 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Add a constraint to validate the argument value.
+     *
+     * The constraint is applied to the value provided for this argument during parsing,
+     * ensuring it meets the specified criteria (e.g. within a numeric range).
+     *
+     * @param constaint The constraint to apply.
+     * @return Reference to this PosArg for chaining.
+     */
+    PosArg& constraint(const ArgConstraint& constaint)
+    {
+        m_constraints.push_back(constaint);
+        return *this;
+    }
+
 private:
     friend class ArgParser;
     friend class ParsedArgs;
@@ -134,6 +262,7 @@ private:
     bool m_required = true;
     bool m_allowMultiple = false;
     std::string m_help;
+    std::vector<ArgConstraint> m_constraints;
 };
 
 /**
@@ -260,6 +389,21 @@ public:
         return *this;
     }
 
+    /**
+     * @brief Add a constraint to validate the argument value.
+     *
+     * The constraint is applied to the value provided for this argument during parsing,
+     * ensuring it meets the specified criteria (e.g. within a numeric range).
+     *
+     * @param constaint The constraint to apply.
+     * @return Reference to this KwArg for chaining.
+     */
+    KwArg& constraint(const ArgConstraint& constaint)
+    {
+        m_constraints.push_back(constaint);
+        return *this;
+    }
+
 private:
     friend class ArgParser;
     friend class ParsedArgs;
@@ -273,6 +417,7 @@ private:
     std::optional<std::string> m_metaVar = std::nullopt;
     std::optional<std::string> m_defaultValue = std::nullopt;
     std::string m_help;
+    std::vector<ArgConstraint> m_constraints;
 };
 
 /**
@@ -292,6 +437,34 @@ public:
      * If the option was present multiple times, the last occurence is returned.
      */
     std::optional<std::string> operator[](const std::string& option) const;
+
+    /**
+     * @brief Get the value of an option as a specific type.
+     * @tparam ResultType The type to convert to.
+     * @param option The option to search for.
+     * @return Value containing the value option argument provided as the specified type.
+     * @throw std::out_of_range if the option was not present.
+     * @throw std::invalid_argument if the conversion failed due to parsing.
+     * @throw std::range_error if the parsed value exceeds the representable range.
+     *
+     * See @ref amon::util::ParsedArgs::operator[] for details.
+     */
+    template <typename ResultType>
+    ResultType get(const std::string& option) const;
+
+    /**
+     * @brief Get the value of an option as a specific type.
+     * @tparam ResultType The type to convert to.
+     * @param option The option to search for.
+     * @param[out] result Value containing the value option argument provided as the specified type.
+     * @throw std::out_of_range if the option was not present.
+     * @throw std::invalid_argument if the conversion failed due to parsing.
+     * @throw std::range_error if the parsed value exceeds the representable range.
+     *
+     * See @ref amon::util::ParsedArgs::operator[] for details.
+     */
+    template <typename ResultType>
+    void getInto(const std::string& option, ResultType& result) const;
 
     /**
      * @brief Counts how many times the specified option was provided.
@@ -315,6 +488,38 @@ private:
     std::vector<std::pair<KwArg, std::optional<std::string>>> m_kwArgs;
     std::vector<std::pair<PosArg, std::string>> m_posArgs;
 };
+
+namespace detail {
+template <typename T>
+concept HasStringParseFn = requires(const std::string& value) {
+    { amon::util::string::parse<T>(value) } -> std::same_as<T>;
+};
+} // namespace detail
+
+template <typename ResultType>
+ResultType ParsedArgs::get(const std::string& option) const
+{
+    auto value = (*this)[option];
+    if (!value) {
+        throw std::out_of_range {std::format("option \"{}\" not found", option)};
+    }
+
+    if constexpr (std::is_same_v<ResultType, std::string>) {
+        return *value;
+
+    } else if constexpr (detail::HasStringParseFn<ResultType>) {
+        return string::parse<ResultType>(*value);
+
+    } else {
+        static_assert(false, "unsupported type");
+    }
+}
+
+template <typename ResultType>
+void ParsedArgs::getInto(const std::string& option, ResultType& result) const
+{
+    result = get<ResultType>(option);
+}
 
 /**
  * @brief Argument parser for command-line interfaces.
@@ -450,6 +655,9 @@ private:
         const std::vector<PosArg>& posArgs);
 
     static std::string optsStr(const KwArg& kwArg);
+    static std::string constraintsStr(const std::vector<ArgConstraint>& constraints);
+    static void checkConstraints(const PosArg& posArg, const std::string& value);
+    static void checkConstraints(const KwArg& kwArg, const std::string& value);
 };
 
 } // namespace amon::util
