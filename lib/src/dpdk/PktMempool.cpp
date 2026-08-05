@@ -67,7 +67,7 @@ PktMempoolHandle::PktMempoolHandle(const PktMempoolConfig& config)
     });
 }
 
-bool PktMempoolHandle::tryAllocate(PktBurst& burst) const noexcept
+bool PktMempoolHandle::tryAllocate(PktBurst<rte_mbuf>& burst) const noexcept
 {
     int ret;
     burst.fill([&](std::span<rte_mbuf*> mbufs) -> size_t {
@@ -83,7 +83,7 @@ bool PktMempoolHandle::tryAllocate(std::span<rte_mbuf*> mbufs) const noexcept
         == 0;
 }
 
-void PktMempoolHandle::allocate(PktBurst& burst) const
+void PktMempoolHandle::allocate(PktBurst<rte_mbuf>& burst) const
 {
     if (!tryAllocate(burst)) {
         throw DpdkError {"not enough free entries in mempool"};

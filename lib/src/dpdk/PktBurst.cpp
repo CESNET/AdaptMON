@@ -25,29 +25,27 @@ struct MockMbuf {
     int refcnt = 1;
 };
 
-struct MockRte {
-    using mbuf = MockMbuf;
+struct MockPktBurstOps {
+    static void refcntUpdate(MockMbuf* m, int v) { m->refcnt += v; }
 
-    static void pktmbuf_refcnt_update(mbuf* m, int v) { m->refcnt += v; }
-
-    static void pktmbuf_free(mbuf* mbuf)
+    static void freeSingle(MockMbuf* mbuf)
     {
         if (mbuf != nullptr) {
             mbuf->refcnt -= 1;
         }
     }
 
-    static void pktmbuf_free_bulk(mbuf** mbufs, unsigned count)
+    static void freeBulk(MockMbuf** mbufs, unsigned count)
     {
         for (unsigned i = 0; i < count; ++i) {
-            pktmbuf_free(mbufs[i]);
+            freeSingle(mbufs[i]);
         }
     }
 };
 
 } // namespace
 
-using TestBurst = amon::dpdk::PktBurstImpl<MockRte>;
+using TestBurst = amon::dpdk::PktBurst<MockMbuf, MockPktBurstOps>;
 
 namespace {
 
@@ -158,7 +156,7 @@ TEST(AmonDpdkPktBurst, PktburstTestCopyToBurst)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(2);
+    TestBurst out(2);
     c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out);
 
     ASSERT_TRUE(out.size() == 2);
@@ -181,7 +179,7 @@ TEST(AmonDpdkPktBurst, PktburstTestCopyToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(1);
+    TestBurst out(1);
     EXPECT_DEATH(c.burst.copy(c.burst.begin(), c.burst.begin() + 2, out), "ASSERTION FAILED");
 }
 
@@ -213,7 +211,7 @@ TEST(AmonDpdkPktBurst, PktburstTestCopyifToBurst)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(3);
+    TestBurst out(3);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     c.burst.copyIf(pred, out);
 
@@ -237,7 +235,7 @@ TEST(AmonDpdkPktBurst, PktburstTestCopyifToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(2);
+    TestBurst out(2);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     EXPECT_DEATH(c.burst.copyIf(pred, out), "ASSERTION FAILED");
 }
@@ -266,7 +264,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveToBurst)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(2);
+    TestBurst out(2);
     c.burst.move(c.burst.begin(), c.burst.begin() + 2, out);
 
     ASSERT_TRUE(out.size() == 2);
@@ -287,7 +285,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(1);
+    TestBurst out(1);
     EXPECT_DEATH(c.burst.move(c.burst.begin(), c.burst.begin() + 2, out), "ASSERTION FAILED");
 }
 
@@ -315,7 +313,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveifToBurst)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(3);
+    TestBurst out(3);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     c.burst.moveIf(pred, out);
 
@@ -335,7 +333,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveifToBurstThatIsTooSmall)
 {
     TestCtx c(3);
 
-    PktBurstImpl<MockRte> out(2);
+    TestBurst out(2);
     auto pred = [](MockMbuf* m) { return m->id % 2 == 0; };
     EXPECT_DEATH(c.burst.moveIf(pred, out), "ASSERTION FAILED");
 }
@@ -559,7 +557,7 @@ TEST(AmonDpdkPktBurst, PktburstFill)
     ASSERT_TRUE(c.burst.size() == 0);
     ASSERT_TRUE(c.burst.begin() == c.burst.end());
 
-    c.burst.fill([&](std::span<MockRte::mbuf*> mbufs) -> size_t {
+    c.burst.fill([&](std::span<MockMbuf*> mbufs) -> size_t {
         for (unsigned i = 0; i < 2; ++i) {
             mbufs[i] = c.mbufs[i].get();
             ++c.mbufs[i]->refcnt;
@@ -576,7 +574,7 @@ TEST(AmonDpdkPktBurst, PktburstTestDestructor)
     TestCtx c(4);
 
     {
-        PktBurstImpl<MockRte> burst2(c.burst.size());
+        TestBurst burst2(c.burst.size());
         c.burst.move(c.burst.begin(), c.burst.end(), burst2);
 
         ASSERT_TRUE(c.burst.size() == 0);
@@ -598,7 +596,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveConstructor)
     TestCtx c(4);
 
     {
-        const PktBurstImpl<MockRte> burst2 {std::move(c.burst)};
+        const TestBurst burst2 {std::move(c.burst)};
 
         // c.burst.size() is undefined at this point (moved from object)
         EXPECT_TRUE(burst2.size() == 4);
@@ -622,7 +620,7 @@ TEST(AmonDpdkPktBurst, PktburstTestMoveAssignmentOperator)
         TestCtx c(4);
 
         {
-            PktBurstImpl<MockRte> burst2(4);
+            TestBurst burst2(4);
 
             burst2 = std::move(c.burst);
             // c.burst size() is undefined at this point (moved from object)

@@ -670,7 +670,7 @@ std::span<rte_mbuf*> PortTxQueue::transmit(std::span<rte_mbuf*> burst) noexcept
     return burst.subspan(nTransmitted);
 }
 
-void PortTxQueue::transmit(PktBurst& burst) noexcept
+void PortTxQueue::transmit(PktBurst<rte_mbuf>& burst) noexcept
 {
     const uint16_t nTransmitted = rte_eth_tx_burst(
         m_port.id(),
@@ -687,7 +687,7 @@ void PortTxQueue::transmitAllBlocking(std::span<rte_mbuf*> burst) noexcept
     }
 }
 
-void PortTxQueue::transmitAllBlocking(PktBurst& burst) noexcept
+void PortTxQueue::transmitAllBlocking(PktBurst<rte_mbuf>& burst) noexcept
 {
     transmitAllBlocking(std::span<rte_mbuf*> {burst.begin(), burst.end()});
     burst.release(burst.begin(), burst.end());
@@ -712,12 +712,12 @@ std::span<rte_mbuf*> PortRxQueue::receive(std::span<rte_mbuf*> burst) noexcept
     return burst.subspan(0, nReceived);
 }
 
-void PortRxQueue::receive(PktBurst& burst) noexcept
+void PortRxQueue::receive(PktBurst<rte_mbuf>& burst) noexcept
 {
     burst.fill([&](std::span<rte_mbuf*> mbufs) { return receive(mbufs).size(); });
 }
 
-void PortRxQueue::receive(PktBurst& burst, size_t maxPkts) noexcept
+void PortRxQueue::receive(PktBurst<rte_mbuf>& burst, size_t maxPkts) noexcept
 {
     burst.fill([&](std::span<rte_mbuf*> mbufs) {
         mbufs = mbufs.subspan(0, std::min<size_t>(maxPkts, mbufs.size()));

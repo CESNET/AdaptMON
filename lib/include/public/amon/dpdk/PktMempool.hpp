@@ -65,7 +65,7 @@ public:
      * @param burst Burst to fill with allocated packets.
      * @return true on success, false when the mempool does not have enough free entries.
      */
-    bool tryAllocate(PktBurst& burst) const noexcept;
+    bool tryAllocate(PktBurst<rte_mbuf>& burst) const noexcept;
 
     /**
      * @brief Allocate packets from the mempool into a span.
@@ -90,7 +90,7 @@ public:
      * @param burst Burst to fill with allocated packets.
      * @throws amon::DpdkError When the mempool does not have enough free entries.
      */
-    void allocate(PktBurst& burst) const;
+    void allocate(PktBurst<rte_mbuf>& burst) const;
 
     /**
      * @brief Allocate packets from the mempool into a span.

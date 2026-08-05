@@ -253,7 +253,7 @@ public:
      *
      * @param burst Reference to a PktBurst containing packets to transmit.
      */
-    void transmit(PktBurst& burst) noexcept;
+    void transmit(PktBurst<rte_mbuf>& burst) noexcept;
 
     /**
      * @brief Transmit all packets in the burst, blocking until all are sent.
@@ -270,7 +270,7 @@ public:
      *
      * @param burst Reference to a PktBurst containing packets to transmit.
      */
-    void transmitAllBlocking(PktBurst& burst) noexcept;
+    void transmitAllBlocking(PktBurst<rte_mbuf>& burst) noexcept;
 
 private:
     friend class Port;
@@ -310,7 +310,7 @@ public:
      *
      * @param burst Reference to a PktBurst to append received packets to.
      */
-    void receive(PktBurst& burst) noexcept;
+    void receive(PktBurst<rte_mbuf>& burst) noexcept;
 
     /**
      * @brief Receive at most `maxPkts` packets into the given PktBurst.
@@ -321,7 +321,7 @@ public:
      * @param burst Reference to a PktBurst to append received packets to.
      * @param maxPkts Maximum number of packets to receive.
      */
-    void receive(PktBurst& burst, size_t maxPkts) noexcept;
+    void receive(PktBurst<rte_mbuf>& burst, size_t maxPkts) noexcept;
 
 private:
     friend class Port;
