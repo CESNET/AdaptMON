@@ -47,6 +47,7 @@ add_library(amon-lib
 
 if (ENABLE_DPDK)
     target_sources(amon-lib PRIVATE
+        src/dpdk/Allocator.cpp
         src/dpdk/dpdk.cpp
         src/dpdk/EAL.cpp
         src/dpdk/Error.cpp
