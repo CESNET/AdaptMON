@@ -10,6 +10,7 @@
 #pragma once
 
 #include <amon/Logger.hpp>
+#include <amon/dpdk/DpdkPacket.hpp>
 #include <amon/dpdk/PktBurst.hpp>
 #include <amon/dpdk/PktMempool.hpp>
 #include <amon/util/Formatter.hpp>
@@ -255,6 +256,9 @@ public:
      */
     void transmit(PktBurst<rte_mbuf>& burst) noexcept;
 
+    /// @copydoc amon::dpdk::PortTxQueue::transmit(PktBurst<rte_mbuf>&)
+    void transmit(PktBurst<DpdkPacket>& burst) noexcept;
+
     /**
      * @brief Transmit all packets in the burst, blocking until all are sent.
      *
@@ -271,6 +275,9 @@ public:
      * @param burst Reference to a PktBurst containing packets to transmit.
      */
     void transmitAllBlocking(PktBurst<rte_mbuf>& burst) noexcept;
+
+    /// @copydoc amon::dpdk::PortTxQueue::transmitAllBlocking(PktBurst<rte_mbuf>&)
+    void transmitAllBlocking(PktBurst<DpdkPacket>& burst) noexcept;
 
 private:
     friend class Port;
@@ -312,6 +319,9 @@ public:
      */
     void receive(PktBurst<rte_mbuf>& burst) noexcept;
 
+    /// @copydoc amon::dpdk::PortRxQueue::receive(PktBurst<rte_mbuf>&)
+    void receive(PktBurst<DpdkPacket>& burst) noexcept;
+
     /**
      * @brief Receive at most `maxPkts` packets into the given PktBurst.
      *
@@ -322,6 +332,9 @@ public:
      * @param maxPkts Maximum number of packets to receive.
      */
     void receive(PktBurst<rte_mbuf>& burst, size_t maxPkts) noexcept;
+
+    /// @copydoc amon::dpdk::PortRxQueue::receive(PktBurst<rte_mbuf>&, size_t)
+    void receive(PktBurst<DpdkPacket>& burst, size_t maxPkts) noexcept;
 
 private:
     friend class Port;

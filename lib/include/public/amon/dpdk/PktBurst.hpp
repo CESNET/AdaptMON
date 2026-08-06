@@ -10,6 +10,7 @@
 #pragma once
 
 #include <amon/amon.hpp>
+#include <amon/dpdk/DpdkPacket.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -35,6 +36,22 @@ struct PktBurstOps<rte_mbuf> {
     }
     static void freeSingle(rte_mbuf* mbuf) { rte_pktmbuf_free(mbuf); }
     static void freeBulk(rte_mbuf** mbufs, unsigned count) { rte_pktmbuf_free_bulk(mbufs, count); }
+};
+
+template <>
+struct PktBurstOps<DpdkPacket> {
+    static void refcntUpdate(DpdkPacket* packet, int16_t value)
+    {
+        rte_pktmbuf_refcnt_update(reinterpret_cast<rte_mbuf*>(packet), value);
+    }
+    static void freeSingle(DpdkPacket* packet)
+    {
+        rte_pktmbuf_free(reinterpret_cast<rte_mbuf*>(packet));
+    }
+    static void freeBulk(DpdkPacket** packets, unsigned count)
+    {
+        rte_pktmbuf_free_bulk(reinterpret_cast<rte_mbuf**>(packets), count);
+    }
 };
 } // namespace detail
 // @endcond

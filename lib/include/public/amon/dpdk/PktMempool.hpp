@@ -68,6 +68,20 @@ public:
     bool tryAllocate(PktBurst<rte_mbuf>& burst) const noexcept;
 
     /**
+     * @brief Allocate packets from the mempool into a burst.
+     *
+     * Only remaining empty slots of the burst are filled. The mbufs already present in the burst
+     * are unaffected. In other words, the method will try to populate at most `burst.capacity() -
+     * burst.size()` mbuf pointers.
+     *
+     * In case allocation fails, the provided burst remains unmodified.
+     *
+     * @param burst Burst to fill with allocated packets.
+     * @return true on success, false when the mempool does not have enough free entries.
+     */
+    bool tryAllocate(PktBurst<DpdkPacket>& burst) const noexcept;
+
+    /**
      * @brief Allocate packets from the mempool into a span.
      *
      * The caller takes ownership of the mbufs and is responsible for freeing them (e.g. using the
@@ -91,6 +105,20 @@ public:
      * @throws amon::DpdkError When the mempool does not have enough free entries.
      */
     void allocate(PktBurst<rte_mbuf>& burst) const;
+
+    /**
+     * @brief Allocate packets from the mempool into a burst.
+     *
+     * Only remaining empty slots of the burst are filled. The mbufs already present in the burst
+     * are unaffected. In other words, the method will populate at most `burst.capacity() -
+     * burst.size()` mbuf pointers.
+     *
+     * In case allocation fails, the provided burst remains unmodified.
+     *
+     * @param burst Burst to fill with allocated packets.
+     * @throws amon::DpdkError When the mempool does not have enough free entries.
+     */
+    void allocate(PktBurst<DpdkPacket>& burst) const;
 
     /**
      * @brief Allocate packets from the mempool into a span.
