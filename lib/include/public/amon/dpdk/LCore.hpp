@@ -18,6 +18,7 @@
 #include <amon/util/UniqueResource.hpp>
 
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <memory>
 
@@ -63,6 +64,16 @@ public:
      * @throws amon::Error if no suitable core is available.
      */
     LCoreHandle acquire(SocketID socketId = SocketID::ANY);
+
+    /**
+     * @brief Get the number of cores available on a specified NUMA socket.
+     *
+     * Supports SocketID::ANY which returns all available cores across all sockets.
+     *
+     * @param socketId NUMA socket.
+     * @return Number of available cores.
+     */
+    virtual size_t size(SocketID socketId) = 0;
 
     /// @brief Virtual destructor.
     virtual ~LCorePool() = default;
