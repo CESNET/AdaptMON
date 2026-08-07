@@ -9,6 +9,8 @@
 
 #include <amon/dpdk/GlobalLCorePool.hpp>
 
+#include <cstdint>
+
 #include <rte_lcore.h>
 
 namespace amon::dpdk {
@@ -42,6 +44,18 @@ GlobalLCorePool::GlobalLCorePool()
         m_cores.push_back(core);
         m_logger.debug("Discovered {}", core);
     }
+}
+
+size_t GlobalLCorePool::size(SocketID socketId)
+{
+    const std::lock_guard<std::mutex> _ {m_lock};
+
+    if (socketId == SocketID::ANY) {
+        return m_cores.size();
+    }
+
+    return static_cast<size_t>(
+        std::ranges::count(m_cores, static_cast<unsigned int>(socketId), &LCore::socketId));
 }
 
 LCore GlobalLCorePool::acquireCore(SocketID socketId)

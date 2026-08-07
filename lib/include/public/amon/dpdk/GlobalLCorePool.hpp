@@ -11,6 +11,7 @@
 
 #include <amon/Logger.hpp>
 #include <amon/dpdk/LCore.hpp>
+#include <amon/dpdk/SocketID.hpp>
 
 #include <mutex>
 #include <vector>
@@ -27,6 +28,16 @@ public:
      * @return Shared pointer to the instance.
      */
     static std::shared_ptr<LCorePool> create();
+
+    /**
+     * @brief Get the number of cores available on a specified NUMA socket.
+     *
+     * Supports SocketID::ANY which returns all available cores across all sockets.
+     *
+     * @param socketId NUMA socket.
+     * @return Number of available cores.
+     */
+    size_t size(SocketID socketId) override;
 
 private:
     std::mutex m_lock;
