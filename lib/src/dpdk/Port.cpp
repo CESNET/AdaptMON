@@ -564,6 +564,25 @@ std::string PortHandle::driverName() const
     return std::string {info.driver_name};
 }
 
+PortDevInfo PortHandle::devInfo() const
+{
+    const rte_eth_dev_info info = ethDevInfoGet(m_portId);
+
+    const PortDevInfo::Rx rx {
+        .nQueuesMax = info.max_rx_queues,
+        .nDescriptorsMin = info.rx_desc_lim.nb_min,
+        .nDescriptorsMax = info.rx_desc_lim.nb_max,
+        .offloadsCapa = info.rx_offload_capa};
+    const PortDevInfo::Tx tx {
+        .nQueuesMax = info.max_tx_queues,
+        .nDescriptorsMin = info.tx_desc_lim.nb_min,
+        .nDescriptorsMax = info.tx_desc_lim.nb_max,
+        .offloadsCapa = info.tx_offload_capa};
+    const PortDevInfo portInfo {.rx = rx, .tx = tx, .mtuMin = info.min_mtu, .mtuMax = info.max_mtu};
+
+    return portInfo;
+}
+
 SocketID PortHandle::socketId() const
 {
     return m_port->socketId();

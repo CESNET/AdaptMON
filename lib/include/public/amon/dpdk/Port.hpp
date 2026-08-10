@@ -25,6 +25,48 @@
 namespace amon::dpdk {
 
 /**
+ * @brief Capabilities and limits of a DPDK port device.
+ *
+ * rte_eth_dev_info abstraction.
+ */
+struct PortDevInfo {
+    /**
+     * @brief RX info structure.
+     */
+    struct Rx {
+        /// Maximum number of Rx queues
+        uint16_t nQueuesMax;
+        /// Minimum number of Rx descriptors
+        uint16_t nDescriptorsMin;
+        /// Maximum number of Rx descriptors
+        uint16_t nDescriptorsMax;
+        /// RX offload capabilities (bitmask of DPDK constants for offloads)
+        uint64_t offloadsCapa;
+    };
+    PortDevInfo::Rx rx; ///< RX limits.
+
+    /**
+     * @brief TX info structure.
+     */
+    struct Tx {
+        /// Maximum number of Tx queues
+        uint16_t nQueuesMax;
+        /// Minimum number of Tx descriptors
+        uint16_t nDescriptorsMin;
+        /// Maximum number of Tx descriptors
+        uint16_t nDescriptorsMax;
+        /// TX offload capabilities (bitmask of DPDK constants for offloads)
+        uint64_t offloadsCapa;
+    };
+    PortDevInfo::Tx tx; ///< TX limits.
+
+    /// Minimum MTU allowed
+    uint16_t mtuMin;
+    /// Maximum MTU allowed
+    uint16_t mtuMax;
+};
+
+/**
  * @brief Configuration for a DPDK port.
  */
 struct PortConfig {
@@ -115,6 +157,12 @@ public:
      * @return Driver name as a string.
      */
     std::string driverName() const;
+
+    /**
+     * @brief Get the device information of the port.
+     * @return Port device information.
+     */
+    PortDevInfo devInfo() const;
 
     /**
      * @brief Get the NUMA socket ID of the port. If the socket ID cannot be determined (e.g. not
