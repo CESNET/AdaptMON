@@ -12,6 +12,7 @@ project(adaptmon
 option(ENABLE_DOXYGEN    "Enable build of code documentation"            OFF)
 option(ENABLE_TESTS      "Enable building of tests"                      OFF)
 option(ENABLE_SANITIZERS "Enable building with sanitizers (ASAN, UBSAN)" OFF)
+option(ENABLE_COVERAGE   "Enable building with coverage instrumentation" OFF)
 option(ENABLE_DPDK       "Enable DPDK support"                           ON)
 option(ENABLE_PCAP       "Enable PCAP support"                           ON)
 option(ENABLE_APPS       "Enable building of apps"                       ON)
@@ -82,6 +83,11 @@ if (ENABLE_SANITIZERS)
         -fsanitize=undefined
         -static-libubsan
         -fno-sanitize-recover=all)
+endif()
+
+if (ENABLE_COVERAGE)
+    add_compile_options(--coverage -fprofile-update=atomic)
+    add_link_options(--coverage)
 endif()
 
 # Add external dependencies

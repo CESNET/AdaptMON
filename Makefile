@@ -12,16 +12,33 @@ release-build:
 .PHONY: release-build
 
 debug-build:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 $(shell pwd) && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 -DENABLE_COVERAGE=0 $(shell pwd) && make -j $(shell nproc)
 .PHONY: debug-build
 
 debug-build-strict:
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 $(shell pwd) && make -j $(shell nproc)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && env CFLAGS=-Werror CXXFLAGS=-Werror cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 -DENABLE_COVERAGE=0 $(shell pwd) && make -j $(shell nproc)
 .PHONY: debug-build-strict
 
 test: $(if $(filter debug-build%,$(BUILD_TYPE)),$(BUILD_TYPE),debug-build)
 	cd build && make test
 .PHONY: test
+
+coverage-build:
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && echo $@ > BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTS=1 -DENABLE_SANITIZERS=1 -DENABLE_COVERAGE=1 $(shell pwd) && make -j $(shell nproc)
+.PHONY: coverage-build
+
+coverage: coverage-build
+	find $(BUILD_DIR) -name '*.gcda' -delete
+	cd $(BUILD_DIR) && make test
+	mkdir -p $(BUILD_DIR)/coverage-html
+	uv tool run gcovr --root . $(BUILD_DIR) \
+		--filter 'lib/' \
+		--exclude 'lib/src/TestWithMain.cpp' \
+		--exclude-function '/.*_Test.*/' \
+		--cobertura $(BUILD_DIR)/coverage.xml \
+		--html-details $(BUILD_DIR)/coverage-html/index.html \
+		--txt
+.PHONY: coverage
 
 clean:
 	rm -rf $(BUILD_DIR)
