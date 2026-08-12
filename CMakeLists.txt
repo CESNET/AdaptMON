@@ -60,6 +60,7 @@ add_compile_options(
 )
 
 if (ENABLE_TESTS)
+    set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
     include(CTest)
     enable_testing()
 endif()
