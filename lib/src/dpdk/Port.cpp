@@ -9,6 +9,7 @@
 
 #include <amon-internal/dpdk/dpdk.hpp>
 #include <amon/Logger.hpp>
+#include <amon/Packet.hpp>
 #include <amon/amon.hpp>
 #include <amon/dpdk/Error.hpp>
 #include <amon/dpdk/Port.hpp>
@@ -670,12 +671,22 @@ std::span<rte_mbuf*> PortTxQueue::transmit(std::span<rte_mbuf*> burst) noexcept
     return burst.subspan(nTransmitted);
 }
 
-void PortTxQueue::transmit(PktBurst& burst) noexcept
+void PortTxQueue::transmit(PktBurst<rte_mbuf>& burst) noexcept
 {
     const uint16_t nTransmitted = rte_eth_tx_burst(
         m_port.id(),
         m_queueId,
         burst.data(),
+        static_cast<uint16_t>(burst.size()));
+    burst.release(burst.begin(), burst.begin() + nTransmitted);
+}
+
+void PortTxQueue::transmit(PktBurst<DpdkPacket>& burst) noexcept
+{
+    const uint16_t nTransmitted = rte_eth_tx_burst(
+        m_port.id(),
+        m_queueId,
+        reinterpret_cast<rte_mbuf**>(burst.data()),
         static_cast<uint16_t>(burst.size()));
     burst.release(burst.begin(), burst.begin() + nTransmitted);
 }
@@ -687,14 +698,33 @@ void PortTxQueue::transmitAllBlocking(std::span<rte_mbuf*> burst) noexcept
     }
 }
 
-void PortTxQueue::transmitAllBlocking(PktBurst& burst) noexcept
+void PortTxQueue::transmitAllBlocking(PktBurst<rte_mbuf>& burst) noexcept
 {
     transmitAllBlocking(std::span<rte_mbuf*> {burst.begin(), burst.end()});
+    burst.release(burst.begin(), burst.end());
+}
+
+void PortTxQueue::transmitAllBlocking(PktBurst<DpdkPacket>& burst) noexcept
+{
+    transmitAllBlocking(
+        std::span<rte_mbuf*> {
+            reinterpret_cast<rte_mbuf**>(burst.begin()),
+            reinterpret_cast<rte_mbuf**>(burst.end())});
     burst.release(burst.begin(), burst.end());
 }
 ////////////////////
 
 ///// PortRxQueue ////
+static void initDpdkPackets(std::span<DpdkPacket*> packets)
+{
+    for (auto* packet : packets) {
+        std::construct_at<Packet>(&packet->packet());
+        std::byte* data = rte_pktmbuf_mtod(packet->mbuf(), std::byte*);
+        const auto dataLen = rte_pktmbuf_data_len(packet->mbuf());
+        packet->packet().data = {data, data + dataLen};
+    }
+}
+
 PortRxQueue::PortRxQueue(PortHandle port, uint16_t queueId)
     : m_queueId(queueId)
     , m_port(std::move(port))
@@ -712,16 +742,46 @@ std::span<rte_mbuf*> PortRxQueue::receive(std::span<rte_mbuf*> burst) noexcept
     return burst.subspan(0, nReceived);
 }
 
-void PortRxQueue::receive(PktBurst& burst) noexcept
+void PortRxQueue::receive(PktBurst<rte_mbuf>& burst) noexcept
 {
     burst.fill([&](std::span<rte_mbuf*> mbufs) { return receive(mbufs).size(); });
 }
 
-void PortRxQueue::receive(PktBurst& burst, size_t maxPkts) noexcept
+void PortRxQueue::receive(PktBurst<DpdkPacket>& burst) noexcept
+{
+    burst.fill([&](std::span<DpdkPacket*> packets) {
+        const uint16_t nReceived = rte_eth_rx_burst(
+            m_port.id(),
+            m_queueId,
+            reinterpret_cast<rte_mbuf**>(packets.data()),
+            static_cast<uint16_t>(packets.size()));
+        initDpdkPackets(packets.subspan(0, nReceived));
+
+        return nReceived;
+    });
+}
+
+void PortRxQueue::receive(PktBurst<rte_mbuf>& burst, size_t maxPkts) noexcept
 {
     burst.fill([&](std::span<rte_mbuf*> mbufs) {
         mbufs = mbufs.subspan(0, std::min<size_t>(maxPkts, mbufs.size()));
         return receive(mbufs).size();
+    });
+}
+
+void PortRxQueue::receive(PktBurst<DpdkPacket>& burst, size_t maxPkts) noexcept
+{
+    burst.fill([&](std::span<DpdkPacket*> packets) {
+        packets = packets.subspan(0, std::min<size_t>(maxPkts, packets.size()));
+
+        const uint16_t nReceived = rte_eth_rx_burst(
+            m_port.id(),
+            m_queueId,
+            reinterpret_cast<rte_mbuf**>(packets.data()),
+            static_cast<uint16_t>(packets.size()));
+        initDpdkPackets(packets.subspan(0, nReceived));
+
+        return nReceived;
     });
 }
 ////////////////////

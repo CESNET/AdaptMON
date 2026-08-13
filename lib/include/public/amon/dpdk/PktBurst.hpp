@@ -10,6 +10,7 @@
 #pragma once
 
 #include <amon/amon.hpp>
+#include <amon/dpdk/DpdkPacket.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -19,24 +20,39 @@
 
 namespace amon::dpdk {
 
-/**
- * @brief DPDK RTE mbuf wrapper for PktBurst.
- */
-struct PktBurstDpdkRte {
-    // NOLINTBEGIN
-    // @cond DO_NOT_DOCUMENT
-    using mbuf = ::rte_mbuf;
-    static constexpr auto pktmbuf_refcnt_update = ::rte_pktmbuf_refcnt_update;
-    static constexpr auto pktmbuf_free = ::rte_pktmbuf_free;
-    static constexpr auto pktmbuf_free_bulk = ::rte_pktmbuf_free_bulk;
-    // @endcond
-    // NOLINTEND
-};
-
 // @cond DO_NOT_DOCUMENT
 namespace detail {
 template <typename Fn, typename... Args>
 constexpr bool IsNoexceptCallable = noexcept(std::declval<Fn&>()(std::declval<Args>()...));
+
+template <typename>
+struct PktBurstOps;
+
+template <>
+struct PktBurstOps<rte_mbuf> {
+    static void refcntUpdate(rte_mbuf* mbuf, int16_t value)
+    {
+        rte_pktmbuf_refcnt_update(mbuf, value);
+    }
+    static void freeSingle(rte_mbuf* mbuf) { rte_pktmbuf_free(mbuf); }
+    static void freeBulk(rte_mbuf** mbufs, unsigned count) { rte_pktmbuf_free_bulk(mbufs, count); }
+};
+
+template <>
+struct PktBurstOps<DpdkPacket> {
+    static void refcntUpdate(DpdkPacket* packet, int16_t value)
+    {
+        rte_pktmbuf_refcnt_update(reinterpret_cast<rte_mbuf*>(packet), value);
+    }
+    static void freeSingle(DpdkPacket* packet)
+    {
+        rte_pktmbuf_free(reinterpret_cast<rte_mbuf*>(packet));
+    }
+    static void freeBulk(DpdkPacket** packets, unsigned count)
+    {
+        rte_pktmbuf_free_bulk(reinterpret_cast<rte_mbuf**>(packets), count);
+    }
+};
 } // namespace detail
 // @endcond
 
@@ -48,24 +64,24 @@ constexpr bool IsNoexceptCallable = noexcept(std::declval<Fn&>()(std::declval<Ar
  *
  * @tparam rte Traits class providing DPDK mbuf operations (default: PktBurstDpdkRte)
  */
-template <typename Rte = PktBurstDpdkRte>
-class PktBurstImpl {
+template <typename ValueType, typename Ops = detail::PktBurstOps<ValueType>>
+class PktBurst {
 public:
     /**
      * @brief Const iterator type for traversing the burst.
      */
-    using ConstIterator = Rte::mbuf* const*;
+    using ConstIterator = ValueType* const*;
 
     /**
      * @brief Iterator type for traversing the burst.
      */
-    using Iterator = Rte::mbuf**;
+    using Iterator = ValueType**;
 
     /**
      * @brief Construct a burst with given capacity.
      * @param capacity Maximum number of packets in the burst.
      */
-    PktBurstImpl(std::size_t capacity)
+    PktBurst(std::size_t capacity)
         : m_data(capacity, nullptr)
     {
     }
@@ -73,18 +89,18 @@ public:
     /**
      * @brief Disable copy constructor.
      */
-    PktBurstImpl(const PktBurstImpl&) = delete;
+    PktBurst(const PktBurst&) = delete;
 
     /**
      * @brief Disable copy assignment.
      */
-    PktBurstImpl& operator=(const PktBurstImpl&) = delete;
+    PktBurst& operator=(const PktBurst&) = delete;
 
     /**
      * @brief Move constructor.
      * @param other The moved from instance.
      */
-    PktBurstImpl(PktBurstImpl&& other) noexcept
+    PktBurst(PktBurst&& other) noexcept
         : m_data(std::exchange(other.m_data, {}))
         , m_size(std::exchange(other.m_size, 0))
     {
@@ -95,7 +111,7 @@ public:
      * @param other The moved from instance.
      * @return The return value.
      */
-    PktBurstImpl& operator=(PktBurstImpl&& other) noexcept
+    PktBurst& operator=(PktBurst&& other) noexcept
     {
         if (&other != this) {
             clear();
@@ -108,7 +124,7 @@ public:
     /**
      * @brief Destructor.
      */
-    ~PktBurstImpl() { clear(); }
+    ~PktBurst() { clear(); }
 
     /**
      * @brief Get iterator to the beginning of the burst.
@@ -150,7 +166,7 @@ public:
      * @brief Get pointer to the underlying mbuf pointer array.
      * @return The data.
      */
-    Rte::mbuf** data() noexcept { return m_data.data(); }
+    ValueType** data() noexcept { return m_data.data(); }
 
     /**
      * @brief Get the number of packets in the burst.
@@ -175,14 +191,14 @@ public:
      * @param index Index of the packet.
      * @return Pointer to mbuf.
      */
-    const Rte::mbuf*& operator[](size_t index) const noexcept { return m_data[index]; }
+    const ValueType*& operator[](size_t index) const noexcept { return m_data[index]; }
 
     /**
      * @brief Access packet at given index.
      * @param index Index of the packet.
      * @return Reference to pointer to mbuf.
      */
-    Rte::mbuf*& operator[](size_t index) noexcept { return m_data[index]; }
+    ValueType*& operator[](size_t index) noexcept { return m_data[index]; }
 
     /**
      * @brief Remove all packets from the burst and free them.
@@ -190,7 +206,7 @@ public:
     void clear() noexcept
     {
         if (m_size > 0) {
-            Rte::pktmbuf_free_bulk(m_data.data(), static_cast<unsigned>(m_size));
+            Ops::freeBulk(m_data.data(), static_cast<unsigned>(m_size));
             m_size = 0;
         }
     }
@@ -204,7 +220,7 @@ public:
     {
         AMON_ASSERT(pos >= begin() && pos < end(), "invalid erase pos");
 
-        Rte::pktmbuf_free(*pos);
+        Ops::freeSingle(*pos);
         std::copy(pos + 1, end(), pos);
         m_size -= 1;
     }
@@ -224,7 +240,7 @@ public:
         }
 
         auto count = static_cast<unsigned int>(std::distance(first, last));
-        Rte::pktmbuf_free_bulk(&*first, count);
+        Ops::freeBulk(&*first, count);
         std::copy(last, end(), first); // NOLINT(readability-suspicious-call-argument)
         m_size -= count;
     }
@@ -241,12 +257,11 @@ public:
      * @note This method is noexcept if the predicate is noexcept.
      */
     template <typename Predicate>
-    void
-    eraseIf(Predicate pred) noexcept(detail::IsNoexceptCallable<Predicate, typename Rte::mbuf*>)
+    void eraseIf(Predicate pred) noexcept(detail::IsNoexceptCallable<Predicate, ValueType*>)
     {
         // Temporary storage for bulk freeing of elements. We assume that this is a size that should
         // be big enough for most cases to free everything in 1 bulk free call.
-        std::array<typename Rte::mbuf*, 64> freeBuf;
+        std::array<ValueType*, 64> freeBuf;
 
         Iterator readHead = begin();
         Iterator localWriteHead = begin();
@@ -256,7 +271,7 @@ public:
         while (readHead != oldEnd) {
             if (pred(*readHead)) {
                 if (moveWriteHead == freeBuf.end()) [[unlikely]] {
-                    Rte::pktmbuf_free_bulk(freeBuf.data(), freeBuf.size());
+                    Ops::freeBulk(freeBuf.data(), freeBuf.size());
                     moveWriteHead = freeBuf.begin();
                 }
                 *(moveWriteHead++) = *(readHead++);
@@ -266,7 +281,7 @@ public:
             }
         }
 
-        Rte::pktmbuf_free_bulk(
+        Ops::freeBulk(
             freeBuf.data(),
             static_cast<unsigned>(std::distance(freeBuf.begin(), moveWriteHead)));
     }
@@ -306,7 +321,7 @@ public:
 
         std::copy(first, last, outputFirst);
         for (Iterator it = first; it != last; ++it) {
-            Rte::pktmbuf_refcnt_update(*it, 1);
+            Ops::refcntUpdate(*it, 1);
         }
     }
 
@@ -318,7 +333,7 @@ public:
      * @warning Behavior is undefined if range is invalid or the destination does not have enough
      * capacity.
      */
-    void copy(Iterator first, Iterator last, PktBurstImpl& output) noexcept
+    void copy(Iterator first, Iterator last, PktBurst& output) noexcept
     {
         AMON_ASSERT(
             output.available() >= static_cast<size_t>(std::distance(first, last)),
@@ -339,13 +354,13 @@ public:
      */
     template <typename Predicate, typename OutputIt>
     OutputIt copyIf(Predicate pred, OutputIt outputFirst) noexcept(
-        detail::IsNoexceptCallable<Predicate, typename Rte::mbuf*>)
+        detail::IsNoexceptCallable<Predicate, ValueType*>)
     {
         auto outIt = outputFirst;
         for (Iterator it = begin(); it != end(); ++it) {
             if (pred(*it)) {
                 (*outIt++) = *it;
-                Rte::pktmbuf_refcnt_update(*it, 1);
+                Ops::refcntUpdate(*it, 1);
             }
         }
         return outIt;
@@ -360,7 +375,7 @@ public:
      * capacity.
      */
     template <typename Predicate>
-    void copyIf(Predicate pred, PktBurstImpl& output) noexcept
+    void copyIf(Predicate pred, PktBurst& output) noexcept
     {
         AMON_ASSERT(output.available() >= size(), "output burst does not have enough capacity");
 
@@ -393,7 +408,7 @@ public:
      * @warning Undefined behavior if range is invalid or the destination does not have enough
      * capacity.
      */
-    void move(Iterator first, Iterator last, PktBurstImpl& output) noexcept
+    void move(Iterator first, Iterator last, PktBurst& output) noexcept
     {
         AMON_ASSERT(
             output.available() >= static_cast<size_t>(std::distance(first, last)),
@@ -414,7 +429,7 @@ public:
      */
     template <typename Predicate, typename OutputIt>
     OutputIt moveIf(Predicate pred, OutputIt outputFirst) noexcept(
-        detail::IsNoexceptCallable<Predicate, typename Rte::mbuf*>)
+        detail::IsNoexceptCallable<Predicate, ValueType*>)
     {
         Iterator readHead = begin();
         Iterator localWriteHead = begin();
@@ -441,8 +456,8 @@ public:
      * @warning Behavior is undefined if the output burst does not have the necessary capacity.
      */
     template <typename Predicate>
-    void moveIf(Predicate pred, PktBurstImpl& output) noexcept(
-        detail::IsNoexceptCallable<Predicate, typename Rte::mbuf*>)
+    void moveIf(Predicate pred, PktBurst& output) noexcept(
+        detail::IsNoexceptCallable<Predicate, ValueType*>)
     {
         AMON_ASSERT(output.available() >= size(), "output burst does not have enough capacity");
 
@@ -485,24 +500,16 @@ public:
      * filled.
      */
     template <typename FillFn>
-    void
-    fill(FillFn fillFn) noexcept(detail::IsNoexceptCallable<FillFn, std::span<typename Rte::mbuf*>>)
+    void fill(FillFn fillFn) noexcept(detail::IsNoexceptCallable<FillFn, std::span<ValueType*>>)
     {
-        const std::span<typename Rte::mbuf*> available {
-            m_data.data() + size(),
-            m_data.data() + capacity()};
+        const std::span<ValueType*> available {m_data.data() + size(), m_data.data() + capacity()};
         const size_t nFilled = fillFn(available);
         m_size += nFilled;
     }
 
 private:
-    std::vector<typename Rte::mbuf*> m_data; ///< Storage for mbuf pointers.
+    std::vector<ValueType*> m_data; ///< Storage for mbuf pointers.
     size_t m_size = 0; ///< Number of packets in the burst.
 };
-
-/**
- * @brief Default packet burst type using DPDK mbuf traits.
- */
-using PktBurst = PktBurstImpl<PktBurstDpdkRte>;
 
 } // namespace amon::dpdk

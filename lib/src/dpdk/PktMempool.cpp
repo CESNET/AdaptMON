@@ -67,12 +67,29 @@ PktMempoolHandle::PktMempoolHandle(const PktMempoolConfig& config)
     });
 }
 
-bool PktMempoolHandle::tryAllocate(PktBurst& burst) const noexcept
+bool PktMempoolHandle::tryAllocate(PktBurst<rte_mbuf>& burst) const noexcept
 {
     int ret;
     burst.fill([&](std::span<rte_mbuf*> mbufs) -> size_t {
         ret = rte_pktmbuf_alloc_bulk(get(), mbufs.data(), static_cast<unsigned int>(mbufs.size()));
         return ret == 0 ? mbufs.size() : 0;
+    });
+    return ret == 0;
+}
+
+bool PktMempoolHandle::tryAllocate(PktBurst<DpdkPacket>& burst) const noexcept
+{
+    int ret;
+    burst.fill([&](std::span<DpdkPacket*> packets) -> size_t {
+        auto** mbufs = reinterpret_cast<rte_mbuf**>(packets.data());
+        ret = rte_pktmbuf_alloc_bulk(get(), mbufs, static_cast<unsigned int>(packets.size()));
+        if (ret != 0) {
+            return 0;
+        }
+        for (auto& pkt : packets) {
+            std::construct_at(&pkt->packet());
+        }
+        return packets.size();
     });
     return ret == 0;
 }
@@ -83,7 +100,14 @@ bool PktMempoolHandle::tryAllocate(std::span<rte_mbuf*> mbufs) const noexcept
         == 0;
 }
 
-void PktMempoolHandle::allocate(PktBurst& burst) const
+void PktMempoolHandle::allocate(PktBurst<rte_mbuf>& burst) const
+{
+    if (!tryAllocate(burst)) {
+        throw DpdkError {"not enough free entries in mempool"};
+    }
+}
+
+void PktMempoolHandle::allocate(PktBurst<DpdkPacket>& burst) const
 {
     if (!tryAllocate(burst)) {
         throw DpdkError {"not enough free entries in mempool"};

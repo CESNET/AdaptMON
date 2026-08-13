@@ -60,9 +60,20 @@ public:
     InplaceVector() = default;
 
     /**
+     * @brief Trivial destructor.
+     */
+    ~InplaceVector()
+        requires std::is_trivially_destructible_v<T>
+    = default;
+
+    /**
      * @brief Destructor. Destroys all contained elements.
      */
-    ~InplaceVector() { clear(); }
+    ~InplaceVector()
+        requires(!std::is_trivially_destructible_v<T>)
+    {
+        clear();
+    }
 
     /**
      * @brief Copy constructor.
