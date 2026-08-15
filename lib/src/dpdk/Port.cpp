@@ -376,10 +376,11 @@ void Port::configure(const PortConfig& config, std::vector<std::unique_ptr<PortH
     m_logger.info("Starting to configure port");
 
     const rte_eth_dev_info devInfo = ethDevInfoGet(m_portId);
+    const auto valueOrMissing = [](const char* val) { return val != nullptr ? val : "N/A"; };
     m_logger.info("Port info:");
-    m_logger.info("  Driver   : {}", devInfo.driver_name);
-    m_logger.info("  Dev name : {}", rte_dev_name(devInfo.device));
-    m_logger.info("  Bus info : {}", rte_dev_bus_info(devInfo.device));
+    m_logger.info("  Driver   : {}", valueOrMissing(devInfo.driver_name));
+    m_logger.info("  Dev name : {}", valueOrMissing(rte_dev_name(devInfo.device)));
+    m_logger.info("  Bus info : {}", valueOrMissing(rte_dev_bus_info(devInfo.device)));
     m_logger.info(
         "  Socket ID: {}",
         socketId() == SocketID::ANY ? "N/A" : std::to_string(static_cast<unsigned>(socketId())));
