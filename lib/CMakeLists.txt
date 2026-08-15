@@ -70,6 +70,7 @@ if (AMON_ENABLE_DPDK)
         src/dpdk/LCore.cpp
         src/dpdk/pipeline/Blueprint.cpp
         src/dpdk/pipeline/Pipeline.cpp
+        src/dpdk/pipeline/PortWriter.cpp
         src/dpdk/pipeline/Stage.cpp
         src/dpdk/pipeline/Stream.cpp
         src/dpdk/PktBurst.cpp
