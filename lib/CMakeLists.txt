@@ -69,6 +69,7 @@ if (AMON_ENABLE_DPDK)
         src/dpdk/GlobalLCorePool.cpp
         src/dpdk/LCore.cpp
         src/dpdk/pipeline/Blueprint.cpp
+        src/dpdk/pipeline/PcapWriter.cpp
         src/dpdk/pipeline/Pipeline.cpp
         src/dpdk/pipeline/PortReader.cpp
         src/dpdk/pipeline/PortWriter.cpp
