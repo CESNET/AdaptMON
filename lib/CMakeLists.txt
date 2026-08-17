@@ -68,6 +68,7 @@ if (AMON_ENABLE_DPDK)
         src/dpdk/Error.cpp
         src/dpdk/GlobalLCorePool.cpp
         src/dpdk/LCore.cpp
+        src/dpdk/pipeline/Blueprint.cpp
         src/dpdk/pipeline/Stage.cpp
         src/dpdk/pipeline/Stream.cpp
         src/dpdk/PktBurst.cpp
