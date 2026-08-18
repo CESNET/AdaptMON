@@ -237,6 +237,11 @@ std::optional<PcapPacket> PcapReader::readPacket()
     return packet;
 }
 
+void PcapReader::breakLoop()
+{
+    pcap_breakloop(m_pcap.get());
+}
+
 int PcapReader::linkLayerType() const
 {
     const int ret = pcap_datalink(m_pcap.get());

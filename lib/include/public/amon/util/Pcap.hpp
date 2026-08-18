@@ -167,6 +167,19 @@ public:
     std::optional<PcapPacket> readPacket();
 
     /**
+     * @brief Forces a blocked readPacket() call to return without a packet.
+     *
+     * Useful for terminating a live capture on an idle interface, where readPacket() would
+     * otherwise block indefinitely. After the pending read returns, eof() reports true.
+     *
+     * @note Safe to call from a signal handler or from a thread other than the reading one.
+     * @note A blocked thread is only woken up for live captures, and only on Linux and Windows.
+     * @note The break flag is not reset automatically: if no read is currently blocked, the next
+     * readPacket() call returns immediately without a packet (and eof() becomes true).
+     */
+    void breakLoop();
+
+    /**
      * @brief Get the link layer type of the pcap, aka DLT.
      * @return The link layer type (see https://www.tcpdump.org/linktypes.html).
      */
@@ -174,14 +187,15 @@ public:
 
     /**
      * @brief Returns the current position in the underlying file stream.
-     * @return Current position in the file stream, returns std::numeric_limits<uint64_t>::max() if
+     * @return Current position in the file stream, returns 0 if
      * it's an interface
      */
     uint64_t tell() const;
 
     /**
      * @brief Returns the position at the end of the underlying file stream.
-     * @return End position of the file stream, returns 0 if it's an interface
+     * @return End position of the file stream, returns std::numeric_limits<uint64_t>::max() if it's
+     * an interface
      */
     uint64_t tellEnd() const;
 
