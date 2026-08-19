@@ -571,11 +571,13 @@ PortDevInfo PortHandle::devInfo() const
 
     const PortDevInfo::Rx rx {
         .nQueuesMax = info.max_rx_queues,
+        .nQueuesCurrent = info.nb_rx_queues,
         .nDescriptorsMin = info.rx_desc_lim.nb_min,
         .nDescriptorsMax = info.rx_desc_lim.nb_max,
         .offloadsCapa = info.rx_offload_capa};
     const PortDevInfo::Tx tx {
         .nQueuesMax = info.max_tx_queues,
+        .nQueuesCurrent = info.nb_tx_queues,
         .nDescriptorsMin = info.tx_desc_lim.nb_min,
         .nDescriptorsMax = info.tx_desc_lim.nb_max,
         .offloadsCapa = info.tx_offload_capa};

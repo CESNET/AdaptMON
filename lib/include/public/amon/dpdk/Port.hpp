@@ -37,6 +37,8 @@ struct PortDevInfo {
     struct Rx {
         /// Maximum number of Rx queues
         uint16_t nQueuesMax;
+        /// Current number of Rx queues
+        uint16_t nQueuesCurrent;
         /// Minimum number of Rx descriptors
         uint16_t nDescriptorsMin;
         /// Maximum number of Rx descriptors
@@ -52,6 +54,8 @@ struct PortDevInfo {
     struct Tx {
         /// Maximum number of Tx queues
         uint16_t nQueuesMax;
+        /// Current number of Tx queues
+        uint16_t nQueuesCurrent;
         /// Minimum number of Tx descriptors
         uint16_t nDescriptorsMin;
         /// Maximum number of Tx descriptors
