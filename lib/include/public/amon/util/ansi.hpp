@@ -9,12 +9,18 @@
 
 #pragma once
 
+#include <cstdint>
+#include <format>
+#include <string>
+
 /// Switch to alternate buffer
 #define AMON_ANSI_ALTBUF_SWITCH "\033[?1049h"
 /// Return to normal buffer
 #define AMON_ANSI_ALTBUF_RETURN "\033[?1049l"
 /// Clear screen
 #define AMON_ANSI_CLEAR_SCREEN "\033[2J"
+/// Clear line
+#define AMON_ANSI_CLEAR_LINE "\033[2K"
 /// Color provided FG, BG numbers
 #define AMON_ANSI_COLOR(FG, BG) "\033[" #FG ";" #BG "m"
 /// Black foreground color
@@ -35,3 +41,15 @@
 #define AMON_ANSI_COLOR_WHITE "\033[0;37m"
 /// Reset color and other text formatting
 #define AMON_ANSI_RESET "\033[0m"
+/**
+ * Moves the cursor up by the number of lines.
+ * @param linesCount Number of lines to move.
+ * @return ANSI string to move.
+ */
+static inline std::string amonAnsiMoveBackLines(uint32_t linesCount)
+{
+    if (linesCount == 0) {
+        return {};
+    }
+    return std::format("\033[{}A", linesCount);
+}
