@@ -14,6 +14,7 @@
 #include <amon/dpdk/Error.hpp>
 #include <amon/dpdk/Port.hpp>
 #include <amon/dpdk/PortHooks.hpp>
+#include <amon/dpdk/XStats.hpp>
 #include <amon/types/Singleton.hpp>
 
 #include <algorithm>
@@ -40,6 +41,7 @@ public:
     void down();
     PortTxQueue txQueue(uint16_t id);
     PortRxQueue rxQueue(uint16_t id);
+    XStats xstats();
 
 private:
     struct Configured {
@@ -510,6 +512,15 @@ PortRxQueue Port::rxQueue(uint16_t id) // NOLINT(readability-make-member-functio
     return PortRxQueue {PortHandle(m_portId), id};
 }
 
+XStats Port::xstats()
+{
+    const std::lock_guard<std::mutex> _ {m_mutex};
+    if (!m_configured) {
+        throw DpdkError {"cannot get statistics, port {} is not configured", m_portId};
+    }
+    return {m_portId};
+}
+
 ///// PortRegistry ////
 namespace {
 class PortRegistry : public types::Singleton<PortRegistry> {
@@ -654,6 +665,12 @@ PortRxQueue PortHandle::rxQueue(uint16_t id)
 {
     return m_port->rxQueue(id);
 }
+
+XStats PortHandle::xstats()
+{
+    return m_port->xstats();
+}
+
 ////////////////////
 
 ///// PortTxQueue ////
