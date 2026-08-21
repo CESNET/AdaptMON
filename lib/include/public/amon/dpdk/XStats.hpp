@@ -25,6 +25,25 @@ namespace amon::dpdk {
  */
 class XStats {
 public:
+    /**
+     * @brief Get all the statistics names as strings.
+     *
+     * @return A vector of statistics names.
+     */
+    const std::vector<std::string>& names() const;
+
+    /**
+     * @brief Get stat value from the name of the statistic.
+     *
+     * @note Getting the value from a string is not ideal, but it is more convenient.
+     *
+     * @param name The name of the statistic.
+     * @return Value of the statistic.
+     * @throws RteErrnoError If rte_eth_xstats_get_id_by_name fails (e.g. unknown stat name).
+     * @throws DpdkError If rte_eth_xstats_get_by_id fails
+     */
+    uint64_t get(const std::string& name) const;
+
 private:
     friend class Port;
 

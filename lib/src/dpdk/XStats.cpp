@@ -38,4 +38,31 @@ XStats::XStats(PortHandle portHandle)
     }
 }
 
+const std::vector<std::string>& XStats::names() const
+{
+    return m_names;
+}
+
+uint64_t XStats::get(const std::string& name) const
+{
+    int ret;
+    uint64_t id = 0;
+    uint64_t value = 0;
+
+    // get Id from name
+    ret = rte_eth_xstats_get_id_by_name(m_portHandle.id(), name.c_str(), &id);
+    if (ret < 0) {
+        throw RteErrnoError(-ret, "rte_eth_xstats_get_id_by_name", m_portHandle.id(), name);
+    }
+
+    // get Value from ID
+    ret = rte_eth_xstats_get_by_id(m_portHandle.id(), &id, &value, 1);
+    if (ret < 0) {
+        throw DpdkError("Couldn't fetch value of name: {}", name);
+    }
+    AMON_REQUIRE(ret == 1);
+
+    return value;
+}
+
 } // namespace amon::dpdk
