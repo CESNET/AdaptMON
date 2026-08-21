@@ -12,6 +12,8 @@
 #include <amon/dpdk/XStats.hpp>
 #include <amon/util/numeric.hpp>
 
+#include <cstddef>
+
 #include <rte_ethdev.h>
 
 namespace amon::dpdk {
@@ -63,6 +65,25 @@ uint64_t XStats::get(const std::string& name) const
     AMON_REQUIRE(ret == 1);
 
     return value;
+}
+
+std::vector<XStatsItem> XStats::all()
+{
+    std::vector<rte_eth_xstat> stats;
+    stats.resize(m_names.size());
+    const int ret = rte_eth_xstats_get(
+        m_portHandle.id(),
+        stats.data(),
+        static_cast<unsigned>(m_names.size()));
+    AMON_REQUIRE(ret > 0);
+    AMON_REQUIRE(static_cast<size_t>(ret) == m_names.size());
+
+    std::vector<XStatsItem> out;
+    out.reserve(m_names.size());
+    for (size_t i = 0; i < m_names.size(); ++i) {
+        out.push_back({.idx = stats[i].id, .name = m_names[i], .value = stats[i].value});
+    }
+    return out;
 }
 
 } // namespace amon::dpdk
