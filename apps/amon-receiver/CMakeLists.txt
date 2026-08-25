@@ -6,4 +6,4 @@ add_executable(amon-receiver
     src/stats/StatsQueue.cpp
 )
 
-target_link_libraries(amon-receiver PRIVATE amon-lib)
+target_link_libraries(amon-receiver PRIVATE amon-lib amon-dpdk)
