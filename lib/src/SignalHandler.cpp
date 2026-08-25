@@ -178,6 +178,13 @@ static constexpr std::string_view sigCodeToStr(int sigNum, int sigCode) noexcept
     return "<unknown>";
 }
 
+static void writeStderr(const auto& str) noexcept
+{
+    if (write(STDERR_FILENO, str.data(), str.size()) < 0) {
+        // Best-effort only.
+    }
+}
+
 static void rethrowSignal(int sigNum) noexcept
 {
     struct sigaction action {};
@@ -186,7 +193,7 @@ static void rethrowSignal(int sigNum) noexcept
     if (sigaction(sigNum, &action, nullptr) != 0) {
         util::CharBuffer printBuf;
         printBuf.append("FATAL: Failed to rethrow signal\n");
-        write(STDERR_FILENO, printBuf.data(), printBuf.size());
+        writeStderr(printBuf);
         std::_Exit(EXIT_FAILURE);
     }
 
@@ -231,7 +238,7 @@ void deadlySignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noe
     printBuf.append("Stacktrace:\n");
     StacktraceProvider::dump(printBuf, /*skipFrames=*/1);
     printBuf.append("\n");
-    write(STDERR_FILENO, printBuf.data(), printBuf.size());
+    writeStderr(printBuf);
     rethrowSignal(sigNum);
 }
 
@@ -246,7 +253,7 @@ void debugSignalCallback(int sigNum, siginfo_t* sigInfo, void* /*context*/) noex
     printBuf.append("Stacktrace:\n");
     StacktraceProvider::dump(printBuf, /*skipFrames=*/1);
     printBuf.append("\n");
-    write(STDERR_FILENO, printBuf.data(), printBuf.size());
+    writeStderr(printBuf);
 }
 
 // NOLINTNEXTLINE(misc-const-correctness,bugprone-exception-escape)
@@ -268,7 +275,7 @@ void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/)
             }
             util::CharBuffer printBuf;
             printBuf.append("SIGNAL HANDLER ERROR: write() failed: ", errno, "\n");
-            write(STDERR_FILENO, printBuf.data(), printBuf.size());
+            writeStderr(printBuf);
         }
         break;
     }
@@ -295,7 +302,7 @@ void returnSignalCallback(int sigNum, siginfo_t* /*sigInfo*/, void* /*context*/)
     printBuf.append("Stacktrace:\n");
     StacktraceProvider::dump(printBuf, /*skipFrames=*/1);
     printBuf.append("\n");
-    write(STDERR_FILENO, printBuf.data(), printBuf.size());
+    writeStderr(printBuf);
     std::abort();
 }
 
