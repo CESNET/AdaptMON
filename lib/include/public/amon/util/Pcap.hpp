@@ -28,11 +28,11 @@ namespace amon::util {
 namespace detail {
 
 struct PcapClose {
-    void operator()(pcap_t* pcap) const noexcept { pcap_close(pcap); }
+    void operator()(pcap_t* pcap) const noexcept;
 };
 
 struct PcapDumpClose {
-    void operator()(pcap_dumper_t* dumper) const noexcept { pcap_dump_close(dumper); }
+    void operator()(pcap_dumper_t* dumper) const noexcept;
 };
 
 } // namespace detail

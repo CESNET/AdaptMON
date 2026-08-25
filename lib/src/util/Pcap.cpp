@@ -19,6 +19,16 @@
 
 namespace amon::util {
 
+void detail::PcapClose::operator()(pcap_t* pcap) const noexcept
+{
+    pcap_close(pcap);
+}
+
+void detail::PcapDumpClose::operator()(pcap_dumper_t* dumper) const noexcept
+{
+    pcap_dump_close(dumper);
+}
+
 namespace {
 
 struct FClose {
