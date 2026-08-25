@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 add_library(amon-lib
     src/amon.cpp
     src/conf/ConfigError.cpp
@@ -79,7 +81,9 @@ if (ENABLE_PCAP)
 endif()
 
 target_include_directories(amon-lib
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/public
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/private)
 
 target_link_libraries(amon-lib
@@ -112,6 +116,15 @@ if (ENABLE_ASSERTS STREQUAL "ON" OR
 else()
     message(STATUS "AMON assertions will be disabled")
 endif()
+
+install(TARGETS amon-lib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(DIRECTORY include/public/amon
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 if (ENABLE_TESTS)
     add_executable(amon-lib-tests)
