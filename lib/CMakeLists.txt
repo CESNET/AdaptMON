@@ -45,6 +45,12 @@ add_library(amon-lib
     src/util/string.cpp
 )
 
+set_target_properties(amon-lib PROPERTIES
+    OUTPUT_NAME amon
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
 if (ENABLE_DPDK)
     target_sources(amon-lib PRIVATE
         src/dpdk/Allocator.cpp
