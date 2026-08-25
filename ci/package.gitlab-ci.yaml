@@ -1,0 +1,60 @@
+---
+.rpm-build:
+  stage: package
+  image: $DOCKER_IMAGE:$DOCKER_TAG
+  script:
+    - "make rpm"
+  artifacts:
+    name: "adaptmon-rpm-$DOCKER_TAG-$CI_COMMIT_REF_SLUG"
+    paths:
+      - build/rpm/RPMS/
+      - build/rpm/SRPMS/
+    expire_in: 1w
+
+.rpm-check:
+  stage: package
+  image: $DOCKER_IMAGE:$DOCKER_TAG
+  script:
+    - "ls -laR build"
+    - "dnf install -y build/rpm/RPMS/*/*.rpm"
+    - "amon-receiver -h"
+    - "dnf remove -y build/rpm/RPMS/*/*.rpm"
+
+rpm build [Oracle Linux 8]:
+  extends: .rpm-build
+  variables: { DOCKER_TAG: ol8 }
+  needs:
+    - docker [Oracle Linux 8]
+
+rpm build [Oracle Linux 9]:
+  extends: .rpm-build
+  variables: { DOCKER_TAG: ol9 }
+  needs:
+    - docker [Oracle Linux 9]
+
+rpm build [Oracle Linux 10]:
+  extends: .rpm-build
+  variables: { DOCKER_TAG: ol10 }
+  needs:
+    - docker [Oracle Linux 10]
+
+rpm check [Oracle Linux 8]:
+  extends: .rpm-check
+  variables: { DOCKER_TAG: ol8 }
+  needs:
+    - job: rpm build [Oracle Linux 8]
+      artifacts: true
+
+rpm check [Oracle Linux 9]:
+  extends: .rpm-check
+  variables: { DOCKER_TAG: ol9 }
+  needs:
+    - job: rpm build [Oracle Linux 9]
+      artifacts: true
+
+rpm check [Oracle Linux 10]:
+  extends: .rpm-check
+  variables: { DOCKER_TAG: ol10 }
+  needs:
+    - job: rpm build [Oracle Linux 10]
+      artifacts: true
