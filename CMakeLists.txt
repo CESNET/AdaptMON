@@ -9,6 +9,11 @@ project(adaptmon
     VERSION ${VERSION}
     LANGUAGES CXX C)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU"
+        AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "14.0")
+    message(FATAL_ERROR "GCC 14 or newer is required")
+endif()
+
 option(ENABLE_DOXYGEN    "Enable build of code documentation"            OFF)
 option(ENABLE_TESTS      "Enable building of tests"                      OFF)
 option(ENABLE_SANITIZERS "Enable building with sanitizers (ASAN, UBSAN)" OFF)

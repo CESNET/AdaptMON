@@ -214,28 +214,11 @@ splitWhitespace(std::string_view str, std::optional<size_t> maxSplits = std::nul
 bool isEqualCaseInsensitive(std::string_view lhs, std::string_view rhs);
 
 /**
- * @brief Converts a string view to a specified type and stores the result.
- *
- * This helper function provides a consistent interface for type conversion by
- * leveraging the primary `parse<T>` template.
- *
- * @tparam T Target type for conversion. Must be supported by `parse<T>`.
- * @param str Input string view to parse. Content must be convertible to `T`.
- * @param[out] output Reference to store the parsed result. Overwritten on success.
- * @throws Propagates any exceptions thrown by `parse<T>`.
- */
-template <typename T>
-void parseInto(std::string_view str, T& output)
-{
-    output = parse<T>(str);
-}
-
-/**
  * @brief Parse a string view to the given data type.
  *
  * @param str The string view to parse.
  * @return The parsed value of the given type.
- * @throw Exceptions such as std::invalid_argument or std::out_of_range if the
+ * @throw Exceptions such as std::invalid_argument or std::range_error if the
  * value cannot be converted.
  */
 template <typename T>
@@ -302,7 +285,7 @@ T parse(std::string_view str)
  * @param str The string to parse.
  * @return The parsed number.
  * @throw std::invalid_argument If the string cannot be parsed as a number.
- * @throw std::out_of_range If the parsed value cannot fit into the target type.
+ * @throw std::range_error If the parsed value cannot fit into the target type.
  */
 
 template <typename T>
@@ -362,7 +345,7 @@ T parse(std::string_view str)
  * @param str The string to parse.
  * @return The parsed number.
  * @throw std::invalid_argument If the string cannot be parsed as a number.
- * @throw std::out_of_range If the parsed value cannot fit into the target type.
+ * @throw std::range_error If the parsed value cannot fit into the target type.
  */
 template <typename T>
     requires std::floating_point<T>
@@ -389,6 +372,23 @@ T parse(std::string_view str)
 
     throw std::invalid_argument(
         "'" + value + "' is not a valid number due to unexpected characters");
+}
+
+/**
+ * @brief Converts a string view to a specified type and stores the result.
+ *
+ * This helper function provides a consistent interface for type conversion by
+ * leveraging the primary `parse<T>` template.
+ *
+ * @tparam T Target type for conversion. Must be supported by `parse<T>`.
+ * @param str Input string view to parse. Content must be convertible to `T`.
+ * @param[out] output Reference to store the parsed result. Overwritten on success.
+ * @throws Propagates any exceptions thrown by `parse<T>`.
+ */
+template <typename T>
+void parseInto(std::string_view str, T& output)
+{
+    output = parse<T>(str);
 }
 
 } // namespace amon::util::string
