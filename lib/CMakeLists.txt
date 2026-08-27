@@ -104,6 +104,7 @@ target_link_libraries(amon-lib
     PRIVATE
         libbacktrace
         spdlog::spdlog
+        Threads::Threads
         yaml-cpp
 )
 

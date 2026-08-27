@@ -103,6 +103,7 @@ if (ENABLE_COVERAGE)
 endif()
 
 # Add external dependencies
+find_package(Threads REQUIRED)
 include(cmake/spdlog.cmake)
 include(cmake/libbacktrace.cmake)
 include(cmake/libpcap.cmake)
