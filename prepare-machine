@@ -181,3 +181,10 @@ if [ "$INSTALL_NIX" = true ]; then
         )
     fi
 fi
+
+
+if [ -f ./adaptmon.spec ]; then
+    echo
+    echo "*** Installing RPM build dependencies ***"
+    $SUDO dnf builddep -y --define 'builddep_only 1' "./adaptmon.spec"
+fi
