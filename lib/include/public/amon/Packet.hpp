@@ -80,9 +80,6 @@ struct Packet {
     /// Network port ID from which is packet received.
     std::optional<uint8_t> ingressInterface;
 
-    /// Parsed protocol layers in the packet.
-    types::InplaceVector<LayerVariant, MAX_LAYERS> layers;
-
     /**
      * @brief Layouts of protocol layers in the packet.
      *
@@ -138,6 +135,9 @@ struct Packet {
      * @endcode
      */
     types::InplaceVector<PacketLayout, ENCAPSULATION_SIZE> layout;
+
+    /// Parsed protocol layers in the packet.
+    types::InplaceVector<LayerVariant, MAX_LAYERS> layers;
 
     /**
      * @brief Find the first layer of the specified type.
