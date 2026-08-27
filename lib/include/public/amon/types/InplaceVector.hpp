@@ -350,10 +350,10 @@ public:
     }
 
 private:
-    /// Raw storage for elements.
-    alignas(alignof(T)) std::array<std::byte, Capacity * sizeof(T)> m_storage;
     /// Number of elements currently stored.
     SizeType m_size = 0;
+    /// Raw storage for elements.
+    alignas(alignof(T)) std::array<std::byte, Capacity * sizeof(T)> m_storage;
 
     /**
      * @brief Get pointer to element at index.
