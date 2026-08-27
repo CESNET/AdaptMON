@@ -30,6 +30,7 @@ COPY prepare-machine /prepare-machine
 RUN if [ "$TARGETARCH" = arm ] || [ "$TARGETARCH" = arm64 ]; then \
         mkdir -p /etc/nix && echo 'filter-syscalls = false' >> /etc/nix/nix.conf; \
     fi
+COPY adaptmon.spec /adaptmon.spec
 COPY shell.nix /shell.nix
 
 RUN /prepare-machine dev-docker && \
