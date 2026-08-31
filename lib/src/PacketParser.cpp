@@ -215,7 +215,7 @@ LayerError PacketParser::processPayload(
             return LayerError::LAYER_VECTOR_FULL;
         }
         PacketLayer layer {.type = payloadType, .offset = offset};
-        packet.layers.pushBack(layer);
+        packet.layers.emplaceBackUnsafe(layer);
         if (payloadType == LayerType::PAYLOAD_APP) {
             addToLayout<LayerType::PAYLOAD_APP>(ctx, packet);
         }
@@ -488,7 +488,7 @@ LayerError PacketParser::processUnknown(Packet& packet, uint16_t offset)
     }
 
     PacketLayer layer {.type = LayerType::UNKNOWN, .offset = offset};
-    packet.layers.pushBack(layer);
+    packet.layers.emplaceBackUnsafe(layer);
     return LayerError::NONE;
 }
 

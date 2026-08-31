@@ -191,14 +191,14 @@ protected:
             auto res = LayerViewT::create(packet.data.subspan(currentOffset));
             if (res) {
                 PacketLayer layer {.type = LayerViewT::LAYER_TYPE, .offset = currentOffset};
-                packet.layers.pushBack(layer);
+                packet.layers.emplaceBackUnsafe(layer);
                 addToLayout<LayerViewT::LAYER_TYPE>(ctx, packet);
             } else {
                 ErrorLayer error {
                     .type = LayerViewT::LAYER_TYPE,
                     .error = res.error(),
                     .offset = currentOffset};
-                packet.layers.pushBack(error);
+                packet.layers.emplaceBackUnsafe(error);
             }
             return res;
         }();
@@ -345,7 +345,8 @@ private:
                 ctx.layoutLastLayerIndex = std::numeric_limits<unsigned>::max();
                 return;
             }
-            packet.layout.emplaceBack();
+
+            packet.layout.emplaceBackUnsafe();
         }
 
         auto& layout = packet.layout.back();
