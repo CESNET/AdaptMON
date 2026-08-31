@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <amon/amon.hpp>
+
 #include <array>
 #include <cstddef>
 #include <iterator>
@@ -349,6 +351,23 @@ public:
         }
     }
 
+    /**
+     * @brief Construct element in-place at the end without bounds checking.
+     * @tparam Args Argument types for element construction.
+     * @param args Arguments to forward to element constructor.
+     * @return Reference to the new element.
+     */
+    template <typename... Args>
+    Reference emplaceBackUnsafe(Args&&... args) noexcept(std::is_nothrow_move_constructible_v<T>)
+    {
+        AMON_ASSERT(m_size < Capacity, "InplaceVector is full");
+
+        T* ptr = ptrAt(m_size);
+        std::construct_at(ptr, std::forward<Args>(args)...);
+        ++m_size;
+        return *ptr;
+    }
+
 private:
     /// Number of elements currently stored.
     SizeType m_size = 0;
@@ -373,21 +392,6 @@ private:
     const T* ptrAt(SizeType index) const noexcept
     {
         return std::launder(reinterpret_cast<const T*>(m_storage.data() + (index * sizeof(T))));
-    }
-
-    /**
-     * @brief Construct element in-place at the end without bounds checking.
-     * @tparam Args Argument types for element construction.
-     * @param args Arguments to forward to element constructor.
-     * @return Reference to the new element.
-     */
-    template <typename... Args>
-    Reference emplaceBackUnsafe(Args&&... args) noexcept(std::is_nothrow_move_constructible_v<T>)
-    {
-        T* ptr = ptrAt(m_size);
-        std::construct_at(ptr, std::forward<Args>(args)...);
-        ++m_size;
-        return *ptr;
     }
 };
 
