@@ -49,13 +49,24 @@ def main() -> int:
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-c", "--check", action="store_true")
     argparser.add_argument("-i", "--input", default="./**/CMakeLists.txt")
+    argparser.add_argument(
+        "-e",
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="exclude a path from formatting (may be specified multiple times)",
+    )
     args = argparser.parse_args()
+    excludes = [Path(path).resolve() for path in args.exclude]
 
     exit_code = 0
     counter = 0
     for file in glob.glob(args.input, recursive=True):
-        counter += 1
         file = Path(file)
+        if any(file.resolve().is_relative_to(path) for path in excludes):
+            continue
+        counter += 1
         content = file.read_text()
         new_content = content
         new_content = re.sub(r"(add_library\(\S+\s*(?:STATIC|SHARED|MODULE|)\s*\n)([^)]+)(\n\))", sort_arglist_3, new_content)
