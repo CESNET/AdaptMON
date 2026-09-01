@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # expected to be run in repository root
-exec tools/format-cmake --check
+exec tools/format-cmake --check --input "./**/CMakeLists.txt" --exclude "./build/"
