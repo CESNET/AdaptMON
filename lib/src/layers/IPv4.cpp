@@ -14,33 +14,6 @@
 
 namespace amon::layers {
 
-std::expected<IPv4View, LayerError> IPv4View::create(std::span<const std::byte> data) noexcept
-{
-    if (data.size() < sizeof(IPv4Header)) {
-        return std::unexpected(LayerError::HEADER_SHORT);
-    }
-    auto view = IPv4View(data);
-
-    if ((view.header().versionIhl >> 4) != 4) {
-        return std::unexpected(LayerError::BAD_MAGIC);
-    }
-    if (view.headerLength() < sizeof(IPv4Header)) {
-        return std::unexpected(LayerError::BAD_LEN_FIELD);
-    }
-    if (data.size() < view.headerLength()) {
-        return std::unexpected(LayerError::HEADER_SHORT);
-    }
-    // Check disabled due to use-cases with trimmed packets.
-    // if (data.size() < view.header().totalLength) {
-    //     return std::unexpected(LayerError::BAD_PAYLOAD_LEN);
-    // }
-    // Check disabled because of tolerance of packets with set reserved bit.
-    // if ((view.header().flagsFragmentOffset >> 15) != 0) {
-    //     return std::unexpected(LayerError::BAD_MAGIC);
-    // }
-    return view;
-}
-
 static_assert(std::is_standard_layout<IPv4Header>(), "Unexpected data type layout for IPv4Header");
 static_assert(
     std::is_trivially_default_constructible<IPv4Header>(),

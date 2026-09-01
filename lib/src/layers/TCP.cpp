@@ -14,22 +14,6 @@
 
 namespace amon::layers {
 
-std::expected<TCPView, LayerError> TCPView::create(std::span<const std::byte> data) noexcept
-{
-    if (data.size() < sizeof(TCPHeader)) {
-        return std::unexpected(LayerError::HEADER_SHORT);
-    }
-    auto view = TCPView(data);
-
-    if (view.headerLength() < sizeof(TCPHeader)) {
-        return std::unexpected(LayerError::BAD_LEN_FIELD);
-    }
-    if (data.size() < view.headerLength()) {
-        return std::unexpected(LayerError::HEADER_SHORT);
-    }
-    return view;
-}
-
 static_assert(std::is_standard_layout<TCPHeader>(), "Unexpected data type layout for TCPHeader");
 static_assert(
     std::is_trivially_default_constructible<TCPHeader>(),

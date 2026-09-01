@@ -50,6 +50,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(is_debug "$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>")
 set(is_release "$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>,$<CONFIG:MinSizeRel>>")
+
+# Link time optimization, enabled only for the optimized build types.
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ON)
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
+
 add_compile_options(
     -Wpedantic
     -Wall

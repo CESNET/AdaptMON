@@ -33,6 +33,9 @@
 #include <span>
 
 #include <generic/rte_cycles.h>
+#include <generic/rte_prefetch.h>
+
+static constexpr size_t PREFETCH_DISTANCE = 8;
 
 static uint64_t extractL3Bytes(const amon::PacketParser& parser, rte_mbuf* mbuf)
 {
@@ -48,15 +51,21 @@ static uint64_t extractL3Bytes(const amon::PacketParser& parser, rte_mbuf* mbuf)
     if (!outerLayout.l3) {
         return 0;
     }
-    const auto layerVariant = packet.getLayer(*outerLayout.l3);
-    if (!layerVariant) {
+    if (*outerLayout.l3 >= packet.layers.size()) {
         return 0;
     }
-    const auto* layerInfo = std::get_if<amon::PacketLayer>(&*layerVariant);
+    const auto* layerInfo = std::get_if<amon::PacketLayer>(&packet.layers[*outerLayout.l3]);
     if (layerInfo == nullptr) {
         return 0;
     }
     return packet.data.size() - static_cast<uint32_t>(layerInfo->offset);
+}
+
+static void prefetchPacket(rte_mbuf* mbuf)
+{
+    auto* prefetchData = rte_pktmbuf_mtod(mbuf, std::byte*);
+    rte_prefetch0(prefetchData);
+    rte_prefetch0(prefetchData + RTE_CACHE_LINE_SIZE);
 }
 
 static void workerThread(
@@ -80,7 +89,17 @@ static void workerThread(
 
         uint64_t l2Bytes = 0;
         uint64_t l3Bytes = 0;
-        for (auto& dpdkPacket : burst) {
+
+        for (size_t idx = 0; idx < std::min(PREFETCH_DISTANCE, burst.size()); idx++) {
+            prefetchPacket(burst[idx]);
+        }
+
+        for (size_t idx = 0; idx < burst.size(); idx++) {
+            if (idx + PREFETCH_DISTANCE < burst.size()) {
+                prefetchPacket(burst[idx + PREFETCH_DISTANCE]);
+            }
+
+            rte_mbuf* dpdkPacket = burst[idx];
             l2Bytes += rte_pktmbuf_pkt_len(dpdkPacket);
 
             if (config.enableParser) {

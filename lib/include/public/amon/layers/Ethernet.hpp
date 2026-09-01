@@ -43,7 +43,13 @@ public:
      * @param data Span of bytes containing the Ethernet frame.
      * @return std::expected containing EthernetView or LayerError.
      */
-    static std::expected<EthernetView, LayerError> create(std::span<const std::byte> data) noexcept;
+    static std::expected<EthernetView, LayerError> create(std::span<const std::byte> data) noexcept
+    {
+        if (data.size() < sizeof(EthernetHeader)) {
+            return std::unexpected(LayerError::HEADER_SHORT);
+        }
+        return EthernetView(data);
+    }
 
     /**
      * @brief Get the length of the Ethernet header.

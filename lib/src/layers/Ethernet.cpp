@@ -14,15 +14,6 @@ namespace amon::layers {
 
 using namespace types;
 
-std::expected<EthernetView, LayerError>
-EthernetView::create(std::span<const std::byte> data) noexcept
-{
-    if (data.size() < sizeof(EthernetHeader)) {
-        return std::unexpected(LayerError::HEADER_SHORT);
-    }
-    return EthernetView(data);
-}
-
 static_assert(
     std::is_standard_layout<EthernetHeader>(),
     "Unexpected data type layout for EthernetHeader");

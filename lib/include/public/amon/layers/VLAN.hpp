@@ -41,7 +41,13 @@ public:
      * @param data Span of bytes containing the VLAN header.
      * @return std::expected containing VLANView or LayerError.
      */
-    static std::expected<VLANView, LayerError> create(std::span<const std::byte> data) noexcept;
+    static std::expected<VLANView, LayerError> create(std::span<const std::byte> data) noexcept
+    {
+        if (data.size() < sizeof(VLANHeader)) {
+            return std::unexpected(LayerError::HEADER_SHORT);
+        }
+        return VLANView(data);
+    }
 
     /**
      * @brief Get the length of the VLAN header.
