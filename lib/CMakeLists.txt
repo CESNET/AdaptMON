@@ -29,12 +29,12 @@ add_library(amon-lib
     src/SignalHandler.cpp
     src/Stacktrace.cpp
     src/Strerror.cpp
+    src/types/BigEndian.cpp
     src/types/ByteArray.cpp
     src/types/IPAddress.cpp
     src/types/MACAddress.cpp
     src/types/Singleton.cpp
     src/types/Timestamp.cpp
-    src/types/UIntBE.cpp
     src/util/ArgParser.cpp
     src/util/ArgvList.cpp
     src/util/getopt.cpp

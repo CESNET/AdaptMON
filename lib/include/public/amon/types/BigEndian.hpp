@@ -49,13 +49,13 @@ constexpr T byteswap(T value) noexcept
 }
 
 /**
- * @brief Template class representing an unsigned integer stored in big-endian format.
+ * @brief Template class representing an integral type stored in big-endian format.
  *
- * This class wraps an unsigned integer type and stores its value in big-endian (network byte
+ * This class wraps an integral type and stores its value in big-endian (network byte
  * order). It provides implicit conversion operators to and from the host-endian representation,
  * handling byte swapping automatically if the host is little-endian.
  *
- * @tparam UIntT The underlying unsigned integer type (e.g., uint16_t, uint32_t, uint64_t).
+ * @tparam ValueT The underlying integral type (e.g., uint32_t, uint64_t, int16_t, int64_t, etc.).
  *
  * Example usage:
  * @code
@@ -64,15 +64,16 @@ constexpr T byteswap(T value) noexcept
  * uint16_t hostValue = value; // Converted to host-endian
  * @endcode
  */
-template <typename UIntT>
-class [[gnu::packed]] UIntBE {
+template <typename ValueT>
+class [[gnu::packed]] BigEndian {
 public:
+    static_assert(std::is_integral_v<ValueT>, "BigEndian class supports only integral types");
     /**
      * @brief Assigns a value in host-endian format to the big-endian storage.
      * @param valueHostEndian Value in host-endian format.
      * @return Reference to this object.
      */
-    UIntBE& operator=(UIntT valueHostEndian) noexcept
+    BigEndian& operator=(ValueT valueHostEndian) noexcept
     {
         if constexpr (std::endian::native == std::endian::little) {
             // Convert from host to big-endian
@@ -88,7 +89,7 @@ public:
      * @brief Implicit conversion to the underlying type in host-endian format.
      * @return Value converted to host-endian format.
      */
-    operator UIntT() const noexcept
+    operator ValueT() const noexcept
     {
         if constexpr (std::endian::native == std::endian::little) {
             return byteswap(m_value); // Convert from big-endian to host
@@ -98,12 +99,12 @@ public:
     }
 
 private:
-    UIntT m_value; ///< The underlying value stored in big-endian format.
+    ValueT m_value; ///< The underlying value stored in big-endian format.
 };
 
 using UInt8 = uint8_t; ///< Alias for 8-bit unsigned integer (no endianness conversion needed).
-using UInt16BE = UIntBE<uint16_t>; ///< Alias for 16-bit unsigned integer in big-endian format.
-using UInt32BE = UIntBE<uint32_t>; ///< Alias for 32-bit unsigned integer in big-endian format.
-using UInt64BE = UIntBE<uint64_t>; ///< Alias for 64-bit unsigned integer in big-endian format.
+using UInt16BE = BigEndian<uint16_t>; ///< Alias for 16-bit unsigned integer in big-endian format.
+using UInt32BE = BigEndian<uint32_t>; ///< Alias for 32-bit unsigned integer in big-endian format.
+using UInt64BE = BigEndian<uint64_t>; ///< Alias for 64-bit unsigned integer in big-endian format.
 
 } // namespace amon::types

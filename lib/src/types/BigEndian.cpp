@@ -8,7 +8,7 @@
  */
 
 #include <amon-internal/Test.hpp>
-#include <amon/types/UIntBE.hpp>
+#include <amon/types/BigEndian.hpp>
 
 #include <cstring>
 

@@ -65,7 +65,7 @@ public:
      * @param value The big-endian unsigned integer to anonymize.
      */
     template <typename T>
-    void anonymize(amon::types::UIntBE<T>& value);
+    void anonymize(amon::types::BigEndian<T>& value);
 
 private:
     cryptopan::Rijndael m_rijndael; ///< Rijndael cipher instance.
@@ -73,7 +73,7 @@ private:
 };
 
 template <typename T>
-void ValueAnonymizer::anonymize(amon::types::UIntBE<T>& value)
+void ValueAnonymizer::anonymize(amon::types::BigEndian<T>& value)
 {
     T tmp = value;
     anonymize(tmp);
