@@ -107,4 +107,9 @@ using UInt16BE = BigEndian<uint16_t>; ///< Alias for 16-bit unsigned integer in 
 using UInt32BE = BigEndian<uint32_t>; ///< Alias for 32-bit unsigned integer in big-endian format.
 using UInt64BE = BigEndian<uint64_t>; ///< Alias for 64-bit unsigned integer in big-endian format.
 
+using Int8 = int8_t; ///< Alias for 8-bit signed integer (no endianness conversion needed).
+using Int16BE = BigEndian<int16_t>; ///< Alias for 16-bit signed integer in big-endian format.
+using Int32BE = BigEndian<int32_t>; ///< Alias for 32-bit signed integer in big-endian format.
+using Int64BE = BigEndian<int64_t>; ///< Alias for 64-bit signed integer in big-endian format.
+
 } // namespace amon::types
