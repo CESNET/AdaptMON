@@ -86,7 +86,7 @@ doxygen-strict:
 .PHONY: doxygen-strict
 
 editorconfig:
-	docker run --rm -v $(shell pwd):/check mstruebing/editorconfig-checker
+	editorconfig-checker
 .PHONY: editorconfig
 
 dev-container:
