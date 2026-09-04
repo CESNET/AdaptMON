@@ -8,7 +8,7 @@
 #include "ValueAnonymizer.hpp"
 
 #include <amon/Error.hpp>
-#include <amon/types/UIntBE.hpp>
+#include <amon/types/BigEndian.hpp>
 
 ValueAnonymizer::ValueAnonymizer(const std::string& key)
 {

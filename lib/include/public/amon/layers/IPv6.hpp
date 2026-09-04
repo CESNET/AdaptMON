@@ -11,8 +11,8 @@
 
 #include <amon/layers/Layer.hpp>
 #include <amon/layers/LayerView.hpp>
+#include <amon/types/BigEndian.hpp>
 #include <amon/types/IPAddress.hpp>
-#include <amon/types/UIntBE.hpp>
 
 #include <cstdint>
 #include <expected>

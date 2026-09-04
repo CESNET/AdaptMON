@@ -9,8 +9,8 @@
 
 #pragma once
 
+#include <amon/types/BigEndian.hpp>
 #include <amon/types/ByteArray.hpp>
-#include <amon/types/UIntBE.hpp>
 #include <amon/util/Formatter.hpp>
 
 #include <cstdint>
