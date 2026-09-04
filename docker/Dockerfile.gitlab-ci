@@ -1,7 +1,7 @@
 ARG OS_DISTRO=oraclelinux
 ARG OS_RELEASE=10
 
-FROM $OS_DISTRO:$OS_RELEASE as default
+FROM $OS_DISTRO:$OS_RELEASE AS default
 
 ARG USER=root
 ARG GROUP=root
