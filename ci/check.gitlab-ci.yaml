@@ -14,13 +14,6 @@ commitlint:
   rules:
     - if: $CI_MERGE_REQUEST_DIFF_BASE_SHA
 
-editorconfig:
-  stage: check
-  needs: []
-  image: mstruebing/editorconfig-checker
-  script:
-    - "ec"
-
 .check:
   stage: check
   needs:
@@ -34,6 +27,11 @@ editorconfig:
     OS_DISTRO: "oraclelinux"
     OS_RELEASE: "10"
     DOCKER_TAG: "ol10"
+
+editorconfig:
+  extends: .check
+  script:
+    - "nix-shell --run 'make editorconfig'"
 
 clang-tidy:
   extends: .check
