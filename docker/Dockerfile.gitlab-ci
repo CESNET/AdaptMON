@@ -3,6 +3,8 @@ ARG OS_RELEASE=10
 
 FROM $OS_DISTRO:$OS_RELEASE AS default
 
+ARG TARGETARCH
+
 ARG USER=root
 ARG GROUP=root
 ARG USERID=0
@@ -23,6 +25,11 @@ RUN dnf install sudo; \
 USER $USERID:$GROUPID
 
 COPY prepare-machine /prepare-machine
+
+# Disabling syscall filtering tells Nix to skip applying a seccomp profile, which fails under ARM
+RUN if [ "$TARGETARCH" = arm ] || [ "$TARGETARCH" = arm64 ]; then \
+        mkdir -p /etc/nix && echo 'filter-syscalls = false' >> /etc/nix/nix.conf; \
+    fi
 COPY shell.nix /shell.nix
 
 RUN /prepare-machine dev-docker && \
