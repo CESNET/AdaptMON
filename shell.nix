@@ -3,5 +3,6 @@
 pkgs.mkShell {
   packages = with pkgs; [
     llvmPackages_22.clang-tools
+    editorconfig-checker
   ];
 }
