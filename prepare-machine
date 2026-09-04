@@ -155,7 +155,7 @@ if [ "$INSTALL_NIX" = true ]; then
         echo "WARNING: Nix is already installed, skipping installation"
 
     else
-        NIX_VERSION=2.34.7
+        NIX_VERSION=2.35.2
 
         tmp="$(mktemp --tmpdir -d prepare-machine-XXXXXXXX)"
         trap "rm -rf '$tmp'" EXIT
