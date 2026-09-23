@@ -116,6 +116,7 @@ class Port;
 class PortHooks;
 class PortRxQueue;
 class PortTxQueue;
+class XStats;
 
 /**
  * @brief Handle for a DPDK port.
@@ -222,6 +223,13 @@ public:
      * @return PortRxQueue handle for the given queue.
      */
     PortRxQueue rxQueue(uint16_t id);
+
+    /**
+     * @brief Get an instance of the portHandle's port's extended statistics.
+     * @throws DpdkError if the port is unconfigured.
+     * @return XStats instance of the desired port.
+     */
+    XStats xstats();
 
 private:
     uint16_t m_portId;
