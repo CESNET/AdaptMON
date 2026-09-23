@@ -8,3 +8,5 @@ add_executable(amon-anonymizer
 )
 
 target_link_libraries(amon-anonymizer PRIVATE amon-lib)
+
+install(TARGETS amon-anonymizer RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

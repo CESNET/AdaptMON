@@ -1,3 +1,5 @@
+include(GNUInstallDirs)
+
 add_library(amon-lib
     src/amon.cpp
     src/conf/ConfigError.cpp
@@ -45,8 +47,20 @@ add_library(amon-lib
     src/util/string.cpp
 )
 
-if (ENABLE_DPDK)
+if (ENABLE_PCAP)
     target_sources(amon-lib PRIVATE
+        src/util/Pcap.cpp
+    )
+endif()
+
+set_target_properties(amon-lib PROPERTIES
+    OUTPUT_NAME amon
+    VERSION ${PROJECT_VERSION}
+    SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
+if (ENABLE_DPDK)
+    add_library(amon-dpdk
         src/dpdk/Allocator.cpp
         src/dpdk/dpdk.cpp
         src/dpdk/DpdkPacket.cpp
@@ -64,33 +78,39 @@ if (ENABLE_DPDK)
         src/dpdk/SocketID.cpp
         src/dpdk/XStats.cpp
     )
-endif()
 
-if (ENABLE_PCAP)
-    target_sources(amon-lib PRIVATE
-        src/util/Pcap.cpp
+    set_target_properties(amon-dpdk PROPERTIES
+        OUTPUT_NAME amon-dpdk
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
     )
+
+    target_include_directories(amon-dpdk
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/private
+    )
+    target_link_libraries(amon-dpdk PUBLIC amon-lib PkgConfig::libdpdk)
 endif()
 
 target_include_directories(amon-lib
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/public
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/private)
 
 target_link_libraries(amon-lib
     PRIVATE
         libbacktrace
         spdlog::spdlog
+        Threads::Threads
         yaml-cpp
 )
-
-if (ENABLE_DPDK)
-    target_link_libraries(amon-lib PUBLIC PkgConfig::libdpdk)
-endif()
 
 if (ENABLE_PCAP)
     target_link_libraries(amon-lib PUBLIC PkgConfig::libpcap)
 endif()
-
 add_custom_command(TARGET amon-lib PRE_LINK
     COMMAND sh -c '${PROJECT_SOURCE_DIR}/tools/generate-export-map > ${CMAKE_BINARY_DIR}/export.map'
     COMMENT "Generating export map for namespace amon"
@@ -99,12 +119,45 @@ target_link_options(amon-lib PRIVATE
     -Wl,--version-script=${CMAKE_BINARY_DIR}/export.map
 )
 
+if (ENABLE_DPDK)
+    add_custom_command(TARGET amon-dpdk PRE_LINK
+        COMMAND sh -c '${PROJECT_SOURCE_DIR}/tools/generate-export-map > ${CMAKE_BINARY_DIR}/export-dpdk.map'
+        COMMENT "Generating export map for the amon DPDK library"
+    )
+    target_link_options(amon-dpdk PRIVATE
+        -Wl,--version-script=${CMAKE_BINARY_DIR}/export-dpdk.map
+    )
+endif()
+
 if (ENABLE_ASSERTS STREQUAL "ON" OR
         (ENABLE_ASSERTS STREQUAL "AUTO" AND CMAKE_BUILD_TYPE STREQUAL "Debug"))
     message(STATUS "AMON assertions will be enabled")
     target_compile_definitions(amon-lib PUBLIC AMON_ENABLE_ASSERTS=1)
 else()
     message(STATUS "AMON assertions will be disabled")
+endif()
+
+install(TARGETS amon-lib
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+if (ENABLE_DPDK)
+    install(TARGETS amon-dpdk
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    )
+endif()
+
+install(DIRECTORY include/public/amon
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    PATTERN dpdk EXCLUDE
+)
+
+if (ENABLE_DPDK)
+    install(DIRECTORY include/public/amon/dpdk
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/amon
+    )
 endif()
 
 if (ENABLE_TESTS)

@@ -47,6 +47,28 @@ clean:
 clean-build: clean build
 .PHONY: clean-build
 
+rpm:
+	@set -eu; \
+	topdir="$(abspath $(BUILD_DIR)/rpm)"; \
+	mkdir -p "$$topdir/BUILD" "$$topdir/BUILDROOT" "$$topdir/RPMS" \
+		"$$topdir/SOURCES" "$$topdir/SPECS" "$$topdir/SRPMS"; \
+	git_ref="$$(git describe --tags --always | tr -c '[:alnum:].\n' '.')"; \
+	if test -z "$$(git status --porcelain)"; then git_state=clean; else git_state=dirty; fi; \
+	printf '%s.%s\n' "$$git_ref" "$$git_state" \
+		> "$$topdir/SOURCES/adaptmon.git-version"; \
+	tar -C "$(CURDIR)" \
+		--exclude='./.git' \
+		--exclude='./$(BUILD_DIR)' \
+		--transform='s,^\.,adaptmon,' \
+		-czf "$$topdir/SOURCES/adaptmon.tar.gz" .; \
+	cp adaptmon.spec "$$topdir/SPECS/"; \
+	rpmbuild -ba \
+		--define "_topdir $$topdir" \
+		"$$topdir/SPECS/adaptmon.spec"; \
+	echo "RPMs written to $$topdir/RPMS"; \
+	echo "Source RPM written to $$topdir/SRPMS"
+.PHONY: rpm
+
 format:
 	find lib/ apps/ -type f -regex '.*\.\(cpp\|hpp\|c\|h\)' -print0 | xargs -0 clang-format --dry-run --Werror
 .PHONY: format
