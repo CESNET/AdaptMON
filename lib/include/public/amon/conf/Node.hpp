@@ -64,7 +64,7 @@ public:
      * @return An instance of StructT populated from this Node.
      */
     template <typename StructT>
-    StructT parseInto();
+    StructT parseInto() const;
 
     /**
      * @brief Checks if the node holds a dictionary (map) value.
@@ -155,10 +155,10 @@ private:
  * @return An instance of StructT populated from this Node.
  */
 template <typename StructT>
-StructT Node::parseInto()
+StructT Node::parseInto() const
 {
     StructT result;
-    StructT::SCHEMA.parseFields(*this, reinterpret_cast<void*>(&result));
+    StructT::SCHEMA.parseFields(*this, static_cast<void*>(&result));
     return result;
 }
 

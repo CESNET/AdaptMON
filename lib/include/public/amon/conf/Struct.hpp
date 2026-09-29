@@ -189,6 +189,11 @@ public:
      * @return The struct schema as a constant reference to Struct.
      */
     virtual const Struct& structSchema() const = 0;
+
+    /**
+     * @brief Virtual destructor.
+     */
+    virtual ~FieldDef() = default;
 };
 
 /**
