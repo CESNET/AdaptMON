@@ -1,12 +1,12 @@
 add_subdirectory(hello)
 
-if (ENABLE_DPDK)
+if (AMON_ENABLE_DPDK)
     add_subdirectory(amon-receiver)
 else()
     message(STATUS "Skipping amon-receiver because DPDK support is disabled")
 endif()
 
-if (ENABLE_PCAP)
+if (AMON_ENABLE_PCAP)
     add_subdirectory(amon-anonymizer)
     add_subdirectory(amon-stats)
 else ()

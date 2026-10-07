@@ -73,11 +73,11 @@ eval "$(gcc-toolset-%{gcc_toolset}-env printenv | grep gcc-toolset)"
 %endif
 %cmake \
     -DBUILD_SHARED_LIBS=ON \
-    -DENABLE_DPDK=ON \
-    -DENABLE_APPS=ON \
-    -DENABLE_PCAP=ON \
+    -DAMON_ENABLE_DPDK=ON \
+    -DAMON_ENABLE_APPS=ON \
+    -DAMON_ENABLE_PCAP=ON \
     -DENABLE_EXAMPLES=OFF \
-    -DENABLE_TESTS=OFF
+    -DAMON_ENABLE_TESTS=OFF
 %cmake_build
 
 %install

@@ -47,7 +47,7 @@ add_library(amon-lib
     src/util/string.cpp
 )
 
-if (ENABLE_PCAP)
+if (AMON_ENABLE_PCAP)
     target_sources(amon-lib PRIVATE
         src/util/Pcap.cpp
     )
@@ -59,7 +59,7 @@ set_target_properties(amon-lib PROPERTIES
     SOVERSION ${PROJECT_VERSION_MAJOR}
 )
 
-if (ENABLE_DPDK)
+if (AMON_ENABLE_DPDK)
     add_library(amon-dpdk
         src/dpdk/Allocator.cpp
         src/dpdk/dpdk.cpp
@@ -108,7 +108,7 @@ target_link_libraries(amon-lib
         yaml-cpp
 )
 
-if (ENABLE_PCAP)
+if (AMON_ENABLE_PCAP)
     target_link_libraries(amon-lib PUBLIC PkgConfig::libpcap)
 endif()
 add_custom_command(TARGET amon-lib PRE_LINK
@@ -119,7 +119,7 @@ target_link_options(amon-lib PRIVATE
     -Wl,--version-script=${CMAKE_BINARY_DIR}/export.map
 )
 
-if (ENABLE_DPDK)
+if (AMON_ENABLE_DPDK)
     add_custom_command(TARGET amon-dpdk PRE_LINK
         COMMAND sh -c '${PROJECT_SOURCE_DIR}/tools/generate-export-map > ${CMAKE_BINARY_DIR}/export-dpdk.map'
         COMMENT "Generating export map for the amon DPDK library"
@@ -129,8 +129,8 @@ if (ENABLE_DPDK)
     )
 endif()
 
-if (ENABLE_ASSERTS STREQUAL "ON" OR
-        (ENABLE_ASSERTS STREQUAL "AUTO" AND CMAKE_BUILD_TYPE STREQUAL "Debug"))
+if (AMON_ENABLE_ASSERTS STREQUAL "ON" OR
+        (AMON_ENABLE_ASSERTS STREQUAL "AUTO" AND CMAKE_BUILD_TYPE STREQUAL "Debug"))
     message(STATUS "AMON assertions will be enabled")
     target_compile_definitions(amon-lib PUBLIC AMON_ENABLE_ASSERTS=1)
 else()
@@ -142,7 +142,7 @@ install(TARGETS amon-lib
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-if (ENABLE_DPDK)
+if (AMON_ENABLE_DPDK)
     install(TARGETS amon-dpdk
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -154,13 +154,13 @@ install(DIRECTORY include/public/amon
     PATTERN dpdk EXCLUDE
 )
 
-if (ENABLE_DPDK)
+if (AMON_ENABLE_DPDK)
     install(DIRECTORY include/public/amon/dpdk
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/amon
     )
 endif()
 
-if (ENABLE_TESTS)
+if (AMON_ENABLE_TESTS)
     add_executable(amon-lib-tests)
 
     target_compile_definitions(amon-lib-tests PRIVATE AMON_ENABLE_TESTS)
