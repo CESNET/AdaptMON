@@ -137,27 +137,29 @@ else()
     message(STATUS "AMON assertions will be disabled")
 endif()
 
-install(TARGETS amon-lib
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-)
-
-if (AMON_ENABLE_DPDK)
-    install(TARGETS amon-dpdk
+if (AMON_ENABLE_INSTALL)
+    install(TARGETS amon-lib
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
-endif()
 
-install(DIRECTORY include/public/amon
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    PATTERN dpdk EXCLUDE
-)
+    if (AMON_ENABLE_DPDK)
+        install(TARGETS amon-dpdk
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+    endif()
 
-if (AMON_ENABLE_DPDK)
-    install(DIRECTORY include/public/amon/dpdk
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/amon
+    install(DIRECTORY include/public/amon
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        PATTERN dpdk EXCLUDE
     )
+
+    if (AMON_ENABLE_DPDK)
+        install(DIRECTORY include/public/amon/dpdk
+            DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/amon
+        )
+    endif()
 endif()
 
 if (AMON_ENABLE_TESTS)

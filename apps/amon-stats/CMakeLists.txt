@@ -6,4 +6,6 @@ add_executable(amon-stats
 
 target_link_libraries(amon-stats PRIVATE amon-lib Threads::Threads)
 
-install(TARGETS amon-stats RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+if (AMON_ENABLE_INSTALL)
+    install(TARGETS amon-stats RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
