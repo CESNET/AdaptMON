@@ -94,7 +94,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void trace(LoggerFmtString fmt, Args... args) const
+    void trace(LoggerFmtString fmt, Args&&... args) const
     {
         log(LoggerLevel::TRACE, fmt, std::make_format_args(args...));
     }
@@ -111,7 +111,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void info(LoggerFmtString fmt, Args... args) const
+    void info(LoggerFmtString fmt, Args&&... args) const
     {
         log(LoggerLevel::INFO, fmt, std::make_format_args(args...));
     }
@@ -128,7 +128,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void error(LoggerFmtString fmt, Args... args) const
+    void error(LoggerFmtString fmt, Args&&... args) const
     {
         log(LoggerLevel::ERR, fmt, std::make_format_args(args...));
     }
@@ -145,7 +145,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void debug(LoggerFmtString fmt, Args... args) const
+    void debug(LoggerFmtString fmt, Args&&... args) const
     {
         log(LoggerLevel::DEBUG, fmt, std::make_format_args(args...));
     }
@@ -162,7 +162,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void warn(LoggerFmtString fmt, Args... args) const
+    void warn(LoggerFmtString fmt, Args&&... args) const
     {
         log(LoggerLevel::WARN, fmt, std::make_format_args(args...));
     }
@@ -179,7 +179,7 @@ public:
      * @endcode
      */
     template <typename... Args>
-    void critical(LoggerFmtString fmt, Args... args) const
+    void critical(LoggerFmtString fmt, Args&&... args) const
     {
         log(LoggerLevel::CRITICAL, fmt, std::make_format_args(args...));
     }
