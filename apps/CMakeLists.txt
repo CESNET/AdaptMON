@@ -6,6 +6,12 @@ else()
     message(STATUS "Skipping amon-receiver because DPDK support is disabled")
 endif()
 
+if (AMON_ENABLE_DPDK)
+    add_subdirectory(hello-pipeline)
+else()
+    message(STATUS "Skipping hello-pipeline because DPDK support is disabled")
+endif()
+
 if (AMON_ENABLE_PCAP)
     add_subdirectory(amon-anonymizer)
     add_subdirectory(amon-stats)
