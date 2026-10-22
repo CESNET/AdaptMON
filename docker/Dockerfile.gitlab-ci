@@ -9,6 +9,7 @@ ARG USER=root
 ARG GROUP=root
 ARG USERID=0
 ARG GROUPID=0
+ARG USE_LBR_REPOS=false
 
 RUN cp /etc/skel/.bash_profile /root && \
     cp /etc/skel/.bashrc /root
@@ -33,7 +34,7 @@ RUN if [ "$TARGETARCH" = arm ] || [ "$TARGETARCH" = arm64 ]; then \
 COPY adaptmon.spec /adaptmon.spec
 COPY shell.nix /shell.nix
 
-RUN /prepare-machine dev-docker && \
+RUN USE_LBR_REPOS=$USE_LBR_REPOS /prepare-machine dev-docker && \
     sudo dnf clean all && \
     sudo rm -rf /var/cache/dnf/
 
