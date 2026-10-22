@@ -23,6 +23,7 @@ option(AMON_ENABLE_PCAP       "Enable PCAP support"                           ON
 option(AMON_ENABLE_APPS       "Enable building of apps"                       ON)
 option(BUILD_SHARED_LIBS      "Enable building as shared library"             OFF)
 option(AMON_ENABLE_INSTALL    "Enable generation of install targets"          ${PROJECT_IS_TOP_LEVEL})
+option(AMON_USE_SYSTEM_DPDK   "Use system DPDK instead of building our own"   ON)
 
 set(AMON_ENABLE_ASSERTS "AUTO" CACHE STRING "Enable assertions (AUTO, ON, OFF)")
 set_property(CACHE AMON_ENABLE_ASSERTS PROPERTY STRINGS AUTO ON OFF)
