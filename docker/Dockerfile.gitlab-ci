@@ -13,8 +13,8 @@ ARG GROUPID=0
 RUN cp /etc/skel/.bash_profile /root && \
     cp /etc/skel/.bashrc /root
 
-
-RUN dnf install sudo; \
+RUN dnf upgrade --refresh; \
+    dnf install sudo; \
     if [ $USERID != 0 ]; then \
         groupadd -g $GROUPID $GROUP; \
         useradd -u $USERID -g $GROUP $USER; \
