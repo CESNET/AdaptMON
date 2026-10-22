@@ -1,7 +1,14 @@
 #!/bin/bash
-set -euo pipefail
 
-usage() {
+# AdaptMON machine preparation script.
+#
+# Author: Michal Sedlak <sedlakm@cesnet.cz>
+# Copyright (c) 2026 CESNET, z.s.p.o.
+
+set -euo pipefail # bash "strict" mode
+
+usage()
+{
     echo "Usage: ./prepare-machine [ ARGS ] <ROLE>"
     echo
     echo "ARGS:"
@@ -11,203 +18,283 @@ usage() {
     echo "ROLE: dev-container | dev-machine"
 }
 
-ROLE=dev-machine
-while [ $# != 0 ]; do
-    case "$1" in
-    dev-container)
-        ROLE=dev-container
-        shift
-        ;;
-    dev-machine)
-        ROLE=dev-machine
-        shift
-        ;;
-    -h|--help)
-        usage
-        exit 0
-        ;;
-    -v|--verbose)
-        set -x
-        shift
-        ;;
-    *)
-        echo "Unknown parameter '$1'"
-        usage
-        exit 1
-    esac
-done
+detect_os()
+{
+    local os_id
+    local os_id_like
+    local os_version
+    local os_version_major
+    os_id="$(grep ^ID= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+    os_id_like="$(grep ^ID_LIKE= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+    os_version="$(grep ^VERSION= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
+    os_version_major="${os_version%%.*}"
 
-
-case "$ROLE" in
-dev-machine)
-    ;;
-dev-container)
-    GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-true}
-    INSTALL_NIX=${INSTALL_NIX-true}
-    ;;
-esac
-
-if [ "$EUID" = 0 ]; then
-    SUDO=${SUDO-}
-else
-    SUDO=${SUDO-sudo}
-fi
-
-OS_ID="$(grep ^ID= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
-OS_ID_LIKE="$(grep ^ID_LIKE= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
-OS_VERSION="$(grep ^VERSION= /etc/os-release | cut -d'=' -f2 | tr -d '"')"
-OS_VERSION_MAJOR="${OS_VERSION%%.*}"
-
-echo "=== Setting up development environment ==="
-echo "Selected role: $ROLE"
-
-echo
-echo "*** Installing common tools ***"
-$SUDO dnf install -y sudo git
-
-echo
-echo "*** Enabling extra repositories (epel/crb) ***"
-$SUDO dnf install -y 'dnf-command(config-manager)'
-
-if [[ "$OS_ID" =~ fedora|rhel || "$OS_ID_LIKE" =~ fedora|rhel ]] && [ "$OS_VERSION_MAJOR" = 8 ] && [ "$OS_ID" != ol ]; then
-    # PowerTools repository is enabled (CentOS/Rocky/etc. 8)
-    echo "Detected OS: RHEL-like 8"
-    $SUDO dnf install -y epel-release
-    $SUDO dnf config-manager --set-enabled powertools
-elif [[ "$OS_ID" =~ fedora|rhel || "$OS_ID_LIKE" =~ fedora|rhel ]] && [ "$OS_VERSION_MAJOR" = 9 ] && [ "$OS_ID" != ol ]; then
-    # CodeReady Builder repository is enabled (CentOS/Rocky/etc. 9+)
-    echo "Detected OS: RHEL-like 9"
-    $SUDO dnf install -y epel-release
-    $SUDO dnf config-manager --set-enabled crb
-elif [ "$OS_ID" = ol ] && [[ "$OS_VERSION_MAJOR" =~ 8|9 ]]; then
-    # CodeReady Builder repository is enabled (Oracle Linux 8, 9)
-    echo "Detected OS: Oracle Linux ${OS_VERSION_MAJOR}"
-    $SUDO dnf install -y epel-release
-    $SUDO dnf config-manager --set-enabled "ol${OS_VERSION_MAJOR}_codeready_builder"
-elif [ "$OS_ID" = ol ] && [ "$OS_VERSION_MAJOR" = 10 ]; then
-    # CodeReady Builder repository is enabled (Oracle Linux 10)
-    echo "Detected OS: Oracle Linux 10"
-    $SUDO dnf install -y oracle-epel-release-el10
-    $SUDO dnf config-manager --set-enabled "ol10_codeready_builder"
-    # OL10 comes with gcc 14 by default, but misses libasan-static package
-    GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-15}
-    USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
-    INSTALL_UV=${INSTALL_UV-true}
-fi
-
-USE_LBR_REPOS=${USE_LBR_REPOS-false}
-if [ "$USE_LBR_REPOS" = true ]; then
-    echo
-    echo "*** Enabling extra repositories (liberouter) ***"
-    $SUDO dnf copr enable @CESNET/nfb-framework
-    $SUDO dnf config-manager --add-repo https://www.liberouter.org/repo/dcpro/liberouter-dcpro-extras.repo
-fi
-
-echo
-echo "*** Setting up CPP development tools ***"
-USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
-GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-14}
-GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-false}
-INSTALL_UV=${INSTALL_UV-false}
-
-$SUDO dnf install -y \
-    cmake make rpm-build \
-    gcc gcc-c++ \
-    clang-tools-extra \
-    doxygen
-
-if [ "$USE_GCC_TOOLSET" = true ]; then
-    $SUDO dnf install -y "gcc-toolset-${GCC_TOOLSET_VERSION}"
-fi
-
-if [ "$GCC_TOOLSET_AUTOENABLE" = true ]; then
-    if [ "$GCC_TOOLSET_VERSION" -lt 15 ]; then
-        echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" | $SUDO tee "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+    if [[ "$os_id" =~ fedora|rhel || "$os_id_like" =~ fedora|rhel ]] && [ "$os_version_major" = 8 ] && [ "$os_id" != ol ]; then
+        echo "rocky8"
+    elif [[ "$os_id" =~ fedora|rhel || "$os_id_like" =~ fedora|rhel ]] && [ "$os_version_major" = 9 ] && [ "$os_id" != ol ]; then
+        echo "rocky9"
+    elif [ "$os_id" = ol ] && [ "$os_version_major" = 8 ]; then
+        echo "ol8"
+    elif [ "$os_id" = ol ] && [ "$os_version_major" = 9 ]; then
+        echo "ol9"
+    elif [ "$os_id" = ol ] && [ "$os_version_major" = 10 ]; then
+        echo "ol10"
     else
-        echo "eval \"\$(gcc-toolset-${GCC_TOOLSET_VERSION}-env printenv | grep gcc-toolset)\"" | $SUDO tee "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+        echo "unknown"
+    fi
+}
+
+parse_args()
+{
+    local role
+    role=dev-machine
+
+    while [ $# != 0 ]; do
+        case "$1" in
+        dev-container)
+            role=dev-container
+            shift
+            ;;
+        dev-machine)
+            role=dev-machine
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        -v|--verbose)
+            set -x
+            shift
+            ;;
+        *)
+            echo "Unknown parameter '$1'"
+            usage
+            exit 1
+        esac
+    done
+
+    echo "Selected role: $role"
+
+    case "$role" in
+    dev-machine)
+        ;;
+    dev-container)
+        GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-true}
+        INSTALL_NIX=${INSTALL_NIX-true}
+        ;;
+    esac
+
+    if [ "$OS" = "ol10" ]; then
+        GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-15}
+        USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
+        INSTALL_UV=${INSTALL_UV-true}
     fi
 
-    $SUDO chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
-fi
+    USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
+    GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION-14}
+    GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-false}
+    INSTALL_UV=${INSTALL_UV-false}
+    USE_LBR_REPOS=${USE_LBR_REPOS-false}
+    INSTALL_DPDK_BUILDTOOLS=${INSTALL_DPDK_BUILDTOOLS-false}
+    INSTALL_NIX=${INSTALL_NIX-false}
+    NIX_VERSION=${NIX_VERSION-2.35.2}
 
-echo
-echo "*** Installing library dependencies ***"
-if [ "$USE_GCC_TOOLSET" = true ]; then
+    echo
+    echo "=== Setup parameters ==="
+    echo "USE_GCC_TOOLSET=${USE_GCC_TOOLSET}"
+    echo "GCC_TOOLSET_VERSION=${GCC_TOOLSET_VERSION}"
+    echo "GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE}"
+    echo "INSTALL_UV=${INSTALL_UV}"
+    echo "USE_LBR_REPOS=${USE_LBR_REPOS}"
+    echo "INSTALL_DPDK_BUILDTOOLS=${INSTALL_DPDK_BUILDTOOLS}"
+    echo "INSTALL_NIX=${INSTALL_NIX}"
+    echo "NIX_VERSION=${NIX_VERSION}"
+}
+
+enable_extra_repos()
+{
+    echo
+    echo "*** Enabling extra repositories ***"
+
+    $SUDO dnf install -y 'dnf-command(config-manager)'
+
+    case "$OS" in
+    rocky8)
+        $SUDO dnf install -y epel-release
+        $SUDO dnf config-manager --set-enabled powertools
+        ;;
+    rocky9)
+        $SUDO dnf install -y epel-release
+        $SUDO dnf config-manager --set-enabled crb
+        ;;
+    ol8|ol9)
+        $SUDO dnf install -y epel-release
+        $SUDO dnf config-manager --set-enabled "${OS}_codeready_builder"
+        ;;
+    ol10)
+        $SUDO dnf install -y oracle-epel-release-el10
+        $SUDO dnf config-manager --set-enabled "ol10_codeready_builder"
+        ;;
+    esac
+
+    if [ "$USE_LBR_REPOS" = true ]; then
+        $SUDO dnf copr enable @CESNET/nfb-framework
+        $SUDO dnf config-manager --add-repo https://www.liberouter.org/repo/dcpro/liberouter-dcpro-extras.repo
+    fi
+}
+
+install_common_tools()
+{
+    echo
+    echo "*** Installing common tools ***"
+    $SUDO dnf install -y sudo git
+}
+
+install_cpp_tools()
+{
+    echo
+    echo "*** Installing and setting up CPP development tools ***"
+
     $SUDO dnf install -y \
-        "gcc-toolset-${GCC_TOOLSET_VERSION}-libasan-devel" \
-        "gcc-toolset-${GCC_TOOLSET_VERSION}-libubsan-devel"
-else
-    $SUDO dnf install -y --enablerepo=devel \
-        libasan-static \
-        libubsan-static
-fi
+        cmake make rpm-build \
+        gcc gcc-c++ \
+        clang-tools-extra \
+        doxygen
 
-$SUDO dnf install -y \
-    libpcap-devel
+    if [ "$USE_GCC_TOOLSET" = true ]; then
+        $SUDO dnf install -y "gcc-toolset-${GCC_TOOLSET_VERSION}"
 
-echo
-echo "*** Installing DPDK ***"
-INSTALL_DPDK_BUILDTOOLS=${INSTALL_DPDK_BUILDTOOLS-false}
-if [ "$INSTALL_DPDK_BUILDTOOLS" = true ]; then
+        if [ "$GCC_TOOLSET_AUTOENABLE" = true ]; then
+            if [ "$GCC_TOOLSET_VERSION" -lt 15 ]; then
+                echo "source /opt/rh/gcc-toolset-${GCC_TOOLSET_VERSION}/enable" | $SUDO tee "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+            else
+                echo "eval \"\$(gcc-toolset-${GCC_TOOLSET_VERSION}-env printenv | grep gcc-toolset)\"" | $SUDO tee "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+            fi
+
+            $SUDO chmod 644 "/etc/profile.d/gcc-toolset-${GCC_TOOLSET_VERSION}-enable.sh"
+        fi
+    fi
+}
+
+install_library_deps()
+{
+    echo
+    echo "*** Installing library dependencies ***"
+    if [ "$USE_GCC_TOOLSET" = true ]; then
+        $SUDO dnf install -y \
+            "gcc-toolset-${GCC_TOOLSET_VERSION}-libasan-devel" \
+            "gcc-toolset-${GCC_TOOLSET_VERSION}-libubsan-devel"
+    else
+        $SUDO dnf install -y --enablerepo=devel \
+            libasan-static \
+            libubsan-static
+    fi
+
     $SUDO dnf install -y \
-        meson ninja-build python3-pyelftools numactl-devel rdma-core-devel \
-        libacl-devel bzip2-devel
-fi
+        libpcap-devel
+}
 
-if [ "$USE_LBR_REPOS" = true ]; then
-    $SUDO dnf install -y kernel-headers kernel-devel
-    $SUDO dnf install -y lbr_dpdk lbr_dpdk-devel
-else
-    $SUDO dnf install -y dpdk dpdk-devel
-fi
+install_dpdk()
+{
+    echo
+    echo "*** Installing DPDK ***"
+    if [ "$INSTALL_DPDK_BUILDTOOLS" = true ]; then
+        $SUDO dnf install -y \
+            meson ninja-build python3-pyelftools numactl-devel rdma-core-devel \
+            libacl-devel bzip2-devel
+    fi
 
+    if [ "$USE_LBR_REPOS" = true ]; then
+        $SUDO dnf install -y kernel-headers kernel-devel
+        $SUDO dnf install -y lbr_dpdk lbr_dpdk-devel
+    else
+        $SUDO dnf install -y dpdk dpdk-devel
+    fi
+}
 
-echo
-echo "*** Installing python tools ***"
-if [ "$INSTALL_UV" = true ]; then
-    $SUDO dnf install -y uv
-else
-    echo "WARNING: Package uv is not installed"
-fi
+install_python_tools()
+{
+    echo
+    echo "*** Installing python tools ***"
+    if [ "$INSTALL_UV" = true ]; then
+        $SUDO dnf install -y uv
+    else
+        echo "Skipped uv installation"
+    fi
+}
 
-
-if [ "$INSTALL_NIX" = true ]; then
+install_nix_shell()
+{
     echo
     echo "*** Installing nix shell ***"
-    if nix --version; then
-        echo "WARNING: Nix is already installed, skipping installation"
+    if [ "$INSTALL_NIX" = true ]; then
+        if nix --version; then
+            echo "WARNING: Nix is already installed, skipping installation"
+
+        else
+
+            local tmp
+            tmp="$(mktemp --tmpdir -d prepare-machine-XXXXXXXX)"
+            trap "rm -rf '$tmp'" EXIT
+            curl -Lo "$tmp/nix-${NIX_VERSION}-x86_64-linux.tar.xz" "https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-x86_64-linux.tar.xz"
+            tar xf "$tmp/nix-${NIX_VERSION}-x86_64-linux.tar.xz" -C "$tmp"
+
+            mkdir -p ~/.config/nix/
+            if [ -f ~/.config/nix/nix.conf ]; then
+                mv ~/.config/nix/nix.conf ~/.config/nix/nix.conf.bak
+            fi
+            touch ~/.config/nix/nix.conf
+            echo 'build-users-group =' >> ~/.config/nix/nix.conf
+            if [ -f /.dockerenv ]; then # Are we running in docker?
+                echo 'sandbox = false' >> ~/.config/nix/nix.conf
+            fi
+
+            NIX_BECOME="$SUDO" "$tmp/nix-${NIX_VERSION}-x86_64-linux/install"
+
+            # Prefetch nix-shell packages
+            (
+                . ~/.nix-profile/etc/profile.d/nix.sh
+                nix-shell --run echo
+            )
+        fi
 
     else
-        NIX_VERSION=2.35.2
-
-        tmp="$(mktemp --tmpdir -d prepare-machine-XXXXXXXX)"
-        trap "rm -rf '$tmp'" EXIT
-        curl -Lo "$tmp/nix-${NIX_VERSION}-x86_64-linux.tar.xz" "https://releases.nixos.org/nix/nix-${NIX_VERSION}/nix-${NIX_VERSION}-x86_64-linux.tar.xz"
-        tar xf "$tmp/nix-${NIX_VERSION}-x86_64-linux.tar.xz" -C "$tmp"
-
-        mkdir -p ~/.config/nix/
-        if [ -f ~/.config/nix/nix.conf ]; then
-            mv ~/.config/nix/nix.conf ~/.config/nix/nix.conf.bak
-        fi
-        touch ~/.config/nix/nix.conf
-        echo 'build-users-group =' >> ~/.config/nix/nix.conf
-        if [ -f /.dockerenv ]; then # Are we running in docker?
-            echo 'sandbox = false' >> ~/.config/nix/nix.conf
-        fi
-
-        NIX_BECOME="$SUDO" "$tmp/nix-${NIX_VERSION}-x86_64-linux/install"
-
-        # Prefetch nix-shell packages
-        (
-            . ~/.nix-profile/etc/profile.d/nix.sh
-            nix-shell --run echo
-        )
+        echo "Skipped nix-shell installation"
     fi
-fi
+}
 
-
-if [ -f ./adaptmon.spec ]; then
+install_rpm_builddeps()
+{
     echo
     echo "*** Installing RPM build dependencies ***"
-    $SUDO dnf builddep -y --define 'builddep_only 1' "./adaptmon.spec"
-fi
+    if [ -f ./adaptmon.spec ]; then
+        $SUDO dnf builddep -y --define 'builddep_only 1' "./adaptmon.spec"
+    else
+        echo "WARNING: Skipped installation of RPM build dependencies. Specfile not found."
+    fi
+}
+
+main()
+{
+    if [ "$EUID" = 0 ]; then
+        SUDO=${SUDO-}
+    else
+        SUDO=${SUDO-sudo}
+    fi
+
+    OS="$(detect_os)"
+    echo "Detected OS: $OS"
+    parse_args "$@"
+
+    enable_extra_repos
+    install_common_tools
+    install_cpp_tools
+    install_library_deps
+    install_dpdk
+    install_python_tools
+    install_nix_shell
+    install_rpm_builddeps
+}
+
+main "$@"
