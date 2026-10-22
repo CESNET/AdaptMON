@@ -34,7 +34,7 @@ RUN if [ "$TARGETARCH" = arm ] || [ "$TARGETARCH" = arm64 ]; then \
 COPY adaptmon.spec /adaptmon.spec
 COPY shell.nix /shell.nix
 
-RUN USE_LBR_REPOS=$USE_LBR_REPOS /prepare-machine dev-docker && \
+RUN USE_LBR_REPOS=$USE_LBR_REPOS /prepare-machine dev-container && \
     sudo dnf clean all && \
     sudo rm -rf /var/cache/dnf/
 

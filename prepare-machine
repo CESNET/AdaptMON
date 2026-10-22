@@ -8,14 +8,14 @@ usage() {
     echo "  -h, --help    ... Print help"
     echo "  -v, --verbose ... Verbose mode"
     echo
-    echo "ROLE: dev-docker | dev-machine"
+    echo "ROLE: dev-container | dev-machine"
 }
 
 ROLE=dev-machine
 while [ $# != 0 ]; do
     case "$1" in
-    dev-docker)
-        ROLE=dev-docker
+    dev-container)
+        ROLE=dev-container
         shift
         ;;
     dev-machine)
@@ -41,7 +41,7 @@ done
 case "$ROLE" in
 dev-machine)
     ;;
-dev-docker)
+dev-container)
     GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-true}
     INSTALL_NIX=${INSTALL_NIX-true}
     ;;
