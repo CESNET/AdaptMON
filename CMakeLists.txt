@@ -87,16 +87,14 @@ endif()
 if (AMON_ENABLE_SANITIZERS)
     add_compile_options(
         -fsanitize=address
-        -static-libasan
         -fsanitize=undefined
-        -static-libubsan
         -fno-sanitize-recover=all)
     add_link_options(
         -fsanitize=address
-        -static-libasan
         -fsanitize=undefined
-        -static-libubsan
-        -fno-sanitize-recover=all)
+        -fno-sanitize-recover=all
+        $<$<OR:$<LINK_LANG_AND_ID:C,GNU>,$<LINK_LANG_AND_ID:CXX,GNU>>:-static-libasan>
+        $<$<OR:$<LINK_LANG_AND_ID:C,GNU>,$<LINK_LANG_AND_ID:CXX,GNU>>:-static-libubsan>)
 endif()
 
 if (AMON_ENABLE_COVERAGE)
