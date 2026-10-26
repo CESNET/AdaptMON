@@ -9,12 +9,13 @@ ARG USER=root
 ARG GROUP=root
 ARG USERID=0
 ARG GROUPID=0
+ARG USE_LBR_REPOS=false
 
 RUN cp /etc/skel/.bash_profile /root && \
     cp /etc/skel/.bashrc /root
 
-
-RUN dnf install sudo; \
+RUN dnf upgrade --refresh; \
+    dnf install sudo; \
     if [ $USERID != 0 ]; then \
         groupadd -g $GROUPID $GROUP; \
         useradd -u $USERID -g $GROUP $USER; \
@@ -33,7 +34,7 @@ RUN if [ "$TARGETARCH" = arm ] || [ "$TARGETARCH" = arm64 ]; then \
 COPY adaptmon.spec /adaptmon.spec
 COPY shell.nix /shell.nix
 
-RUN /prepare-machine dev-docker && \
+RUN USE_LBR_REPOS=$USE_LBR_REPOS /prepare-machine dev-container && \
     sudo dnf clean all && \
     sudo rm -rf /var/cache/dnf/
 

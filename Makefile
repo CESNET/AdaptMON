@@ -119,7 +119,7 @@ dev-container:
 		.
 	@echo "Hint:"
 	@echo "  docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash"
-.PHONY: dev-docker
+.PHONY: dev-container
 
 enter-dev-container: dev-container
 	docker run --rm -it -v .:/adaptmon --workdir /adaptmon adaptmon-dev-container /bin/bash

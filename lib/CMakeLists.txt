@@ -98,7 +98,7 @@ if (AMON_ENABLE_DPDK)
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
         PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/private
     )
-    target_link_libraries(amon-dpdk PUBLIC amon-lib PkgConfig::libdpdk)
+    target_link_libraries(amon-dpdk PUBLIC amon-lib libdpdk)
 endif()
 
 target_include_directories(amon-lib

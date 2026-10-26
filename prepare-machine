@@ -8,14 +8,14 @@ usage() {
     echo "  -h, --help    ... Print help"
     echo "  -v, --verbose ... Verbose mode"
     echo
-    echo "ROLE: dev-docker | dev-machine"
+    echo "ROLE: dev-container | dev-machine"
 }
 
 ROLE=dev-machine
 while [ $# != 0 ]; do
     case "$1" in
-    dev-docker)
-        ROLE=dev-docker
+    dev-container)
+        ROLE=dev-container
         shift
         ;;
     dev-machine)
@@ -41,7 +41,7 @@ done
 case "$ROLE" in
 dev-machine)
     ;;
-dev-docker)
+dev-container)
     GCC_TOOLSET_AUTOENABLE=${GCC_TOOLSET_AUTOENABLE-true}
     INSTALL_NIX=${INSTALL_NIX-true}
     ;;
@@ -95,6 +95,14 @@ elif [ "$OS_ID" = ol ] && [ "$OS_VERSION_MAJOR" = 10 ]; then
     INSTALL_UV=${INSTALL_UV-true}
 fi
 
+USE_LBR_REPOS=${USE_LBR_REPOS-false}
+if [ "$USE_LBR_REPOS" = true ]; then
+    echo
+    echo "*** Enabling extra repositories (liberouter) ***"
+    $SUDO dnf copr enable @CESNET/nfb-framework
+    $SUDO dnf config-manager --add-repo https://www.liberouter.org/repo/dcpro/liberouter-dcpro-extras.repo
+fi
+
 echo
 echo "*** Setting up CPP development tools ***"
 USE_GCC_TOOLSET=${USE_GCC_TOOLSET-true}
@@ -135,8 +143,23 @@ else
 fi
 
 $SUDO dnf install -y \
-    libpcap-devel \
-    dpdk dpdk-devel dpdk-tools \
+    libpcap-devel
+
+echo
+echo "*** Installing DPDK ***"
+INSTALL_DPDK_BUILDTOOLS=${INSTALL_DPDK_BUILDTOOLS-false}
+if [ "$INSTALL_DPDK_BUILDTOOLS" = true ]; then
+    $SUDO dnf install -y \
+        meson ninja-build python3-pyelftools numactl-devel rdma-core-devel \
+        libacl-devel bzip2-devel
+fi
+
+if [ "$USE_LBR_REPOS" = true ]; then
+    $SUDO dnf install -y kernel-headers kernel-devel
+    $SUDO dnf install -y lbr_dpdk lbr_dpdk-devel
+else
+    $SUDO dnf install -y dpdk dpdk-devel
+fi
 
 
 echo
