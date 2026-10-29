@@ -191,3 +191,26 @@ if (AMON_ENABLE_TESTS)
     set_tests_properties(${amon_lib_test_list}
         PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
 endif()
+
+if (AMON_ENABLE_TESTS AND AMON_ENABLE_DPDK)
+    add_executable(amon-dpdk-tests)
+
+    target_compile_definitions(amon-dpdk-tests PRIVATE AMON_ENABLE_TESTS)
+
+    get_target_property(dpdkOpts amon-dpdk COMPILE_OPTIONS)
+    target_compile_options(amon-dpdk-tests PRIVATE ${dpdkOpts})
+    target_compile_definitions(amon-dpdk-tests PUBLIC AMON_ENABLE_ASSERTS=1)
+
+    get_target_property(dpdkSrcs amon-dpdk SOURCES)
+    target_sources(amon-dpdk-tests PRIVATE ${dpdkSrcs} src/dpdk/TestWithDpdk.cpp)
+
+    get_target_property(dpdkLibs amon-dpdk LINK_LIBRARIES)
+    target_link_libraries(amon-dpdk-tests PRIVATE ${dpdkLibs} GTest::gtest)
+
+    get_target_property(dpdkIncs amon-dpdk INCLUDE_DIRECTORIES)
+    target_include_directories(amon-dpdk-tests PRIVATE ${dpdkIncs})
+
+    gtest_add_tests(TARGET amon-dpdk-tests TEST_LIST amon_dpdk_test_list)
+    set_tests_properties(${amon_dpdk_test_list}
+        PROPERTIES ENVIRONMENT "ASAN_OPTIONS=detect_leaks=0")
+endif()

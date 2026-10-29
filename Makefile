@@ -34,6 +34,7 @@ coverage: coverage-build
 	uv tool run gcovr --root . $(BUILD_DIR) \
 		--filter 'lib/' \
 		--exclude 'lib/src/TestWithMain.cpp' \
+		--exclude 'lib/src/dpdk/TestWithDpdk.cpp' \
 		--exclude-function '/.*_Test.*/' \
 		--cobertura $(BUILD_DIR)/coverage.xml \
 		--html-details $(BUILD_DIR)/coverage-html/index.html \
