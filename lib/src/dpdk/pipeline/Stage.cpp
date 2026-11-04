@@ -20,10 +20,8 @@ void Stage::createStreams(std::vector<LCoreHandle>& lcores)
             .id = id,
         };
         lcore.start([=, this](const std::atomic_bool&) { createStream(ctx); });
-        ++id;
-    }
-    for (auto& lcore : lcores) {
         lcore.join();
+        ++id;
     }
 }
 
