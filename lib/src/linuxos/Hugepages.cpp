@@ -226,7 +226,8 @@ static void doReserve(
 
 static std::pair<bool, unsigned> checkMounted(const std::string& mountPath)
 {
-    for (auto line : util::string::split(util::io::readAll("/proc/mounts"), '\n')) {
+    const auto procMounts = util::io::readAll("/proc/mounts");
+    for (auto line : util::string::split(procMounts, '\n')) {
         auto parts = util::string::splitWhitespace(line);
         if (parts.size() >= 3 && parts[2] == "hugetlbfs" && parts[1] == mountPath) {
             unsigned pageSize = 0;
