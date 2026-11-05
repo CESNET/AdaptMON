@@ -32,7 +32,7 @@ Pipeline::Pipeline(Blueprint blueprint, PipelineConfig config)
     m_stages.reserve(blueprint.m_stageFactories.size());
     for (auto& factory : blueprint.m_stageFactories) {
         m_stages.emplace_back(factory());
-        m_stages.back()->createStreams(m_lcores);
+        m_stages.back()->build(m_lcores);
     }
 }
 

@@ -34,7 +34,7 @@ public:
      * @brief Create all per-worker streams for this stage.
      * @param lcores Lcores to create the streams on.
      */
-    void createStreams(std::vector<LCoreHandle>& lcores);
+    void build(std::vector<LCoreHandle>& lcores);
 
     /**
      * @brief Process a burst using a selected stream.

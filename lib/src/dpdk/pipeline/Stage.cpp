@@ -11,7 +11,7 @@
 
 namespace amon::dpdk::pipeline {
 
-void Stage::createStreams(std::vector<LCoreHandle>& lcores)
+void Stage::build(std::vector<LCoreHandle>& lcores)
 {
     uint16_t id = 0;
     for (auto& lcore : lcores) {
