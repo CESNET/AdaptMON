@@ -101,6 +101,12 @@ public:
     void join();
 
     /**
+     * @brief Get the config the pipeline was created with.
+     * @return The config.
+     */
+    const PipelineConfig& config() const { return m_config; }
+
+    /**
      * @brief Get the name of the pipeline.
      * @return The name.
      */
