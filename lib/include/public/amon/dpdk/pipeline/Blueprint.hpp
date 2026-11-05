@@ -44,11 +44,12 @@ public:
      * @brief Append a stage definition to the pipeline.
      *
      * The supplied arguments are retained until the stage is instantiated. Lvalues are retained
-     * by reference and rvalues are owned by the blueprint.
+     * by reference and rvalues are owned by the blueprint. The stage is constructed with a
+     * StageContext as its first argument, followed by the supplied arguments.
      *
      * @tparam StageType Stage implementation to instantiate. Must derive from Stage.
-     * @tparam StageArgs Constructor argument types.
-     * @param stageArgs Arguments passed to the stage constructor.
+     * @tparam StageArgs Constructor argument types following StageContext.
+     * @param stageArgs Remaining arguments passed to the stage constructor.
      * @return Self to allow chaining.
      *
      * @warning References to the supplied arguments must be valid until the blueprint is consumed
@@ -59,11 +60,13 @@ public:
     decltype(auto) add(this Self&& self, StageArgs&&... stageArgs)
     {
         self.m_stageFactories.emplace_back(
-            [args = std::tuple<CaptureArg<StageArgs>...>(
-                 std::forward<StageArgs>(stageArgs)...)]() mutable -> std::unique_ptr<Stage> {
+            [args = std::tuple<CaptureArg<StageArgs>...>(std::forward<StageArgs>(stageArgs)...)](
+                StageContext ctx) mutable -> std::unique_ptr<Stage> {
                 return std::apply(
-                    [](auto&&... args) -> std::unique_ptr<Stage> {
-                        return std::make_unique<StageType>(std::forward<decltype(args)>(args)...);
+                    [&](auto&&... args) -> std::unique_ptr<Stage> {
+                        return std::make_unique<StageType>(
+                            ctx,
+                            std::forward<decltype(args)>(args)...);
                     },
                     std::move(args));
             });
@@ -79,7 +82,7 @@ private:
         >;
 
     friend class Pipeline;
-    std::vector<std::function<std::unique_ptr<Stage>()>> m_stageFactories;
+    std::vector<std::function<std::unique_ptr<Stage>(StageContext)>> m_stageFactories;
 };
 
 } // namespace amon::dpdk::pipeline

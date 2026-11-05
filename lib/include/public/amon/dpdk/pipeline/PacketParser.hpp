@@ -47,10 +47,12 @@ class PacketParser : public Stage {
 public:
     /**
      * @brief Construct the stage.
+     * @param ctx Stage context.
      * @param config The config used for `amon::PacketParser` construction.
      * @param firstLayer The first layer of the packet (see `amon::PackerParser::parse` docs).
      */
     PacketParser(
+        StageContext ctx,
         PacketParserConfig config = PacketParserConfig {},
         layers::LayerType firstLayer = layers::LayerType::ETHERNET);
 

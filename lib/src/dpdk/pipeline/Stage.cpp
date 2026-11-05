@@ -11,6 +11,11 @@
 
 namespace amon::dpdk::pipeline {
 
+Stage::Stage(StageContext context)
+    : m_context(context)
+{
+}
+
 void Stage::build(std::vector<LCoreHandle>& lcores)
 {
     uint16_t id = 0;

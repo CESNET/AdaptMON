@@ -22,8 +22,9 @@ void PortWriterStream::process(PktBurst<DpdkPacket>& burst)
     m_queue.transmit(burst);
 }
 
-PortWriter::PortWriter(PortHandle port)
-    : m_port(std::move(port))
+PortWriter::PortWriter(StageContext ctx, PortHandle port)
+    : Stage(ctx)
+    , m_port(std::move(port))
 {
 }
 

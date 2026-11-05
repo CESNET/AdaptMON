@@ -22,8 +22,9 @@ void PortReaderStream::process(PktBurst<DpdkPacket>& burst)
     m_queue.receive(burst);
 }
 
-PortReader::PortReader(PortHandle port)
-    : m_port(std::move(port))
+PortReader::PortReader(StageContext ctx, PortHandle port)
+    : Stage(ctx)
+    , m_port(std::move(port))
 {
 }
 

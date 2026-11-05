@@ -24,8 +24,9 @@ void PcapWriterStream::process(PktBurst<DpdkPacket>& burst)
     }
 }
 
-PcapWriter::PcapWriter(std::string outputFilePattern)
-    : m_outputFilePattern(std::move(outputFilePattern))
+PcapWriter::PcapWriter(StageContext ctx, std::string outputFilePattern)
+    : Stage(ctx)
+    , m_outputFilePattern(std::move(outputFilePattern))
 {
 }
 

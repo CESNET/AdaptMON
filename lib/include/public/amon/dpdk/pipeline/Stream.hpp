@@ -56,6 +56,9 @@ struct StreamContext {
  * };
  *
  * class PacketSizeHistogram : public Stage {
+ * public:
+ *     using Stage::Stage;
+ *
  * protected:
  *     void createStream(StreamContext ctx) override
  *     {

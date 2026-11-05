@@ -42,9 +42,10 @@ class PortReader : public Stage {
 public:
     /**
      * @brief Construct a port reader stage.
+     * @param ctx Stage context.
      * @param port Port whose RX queues are used by the stage streams.
      */
-    PortReader(PortHandle port);
+    PortReader(StageContext ctx, PortHandle port);
 
     /**
      * @brief Create a reader backed by the RX queue matching the stream ID.
