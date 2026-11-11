@@ -45,10 +45,11 @@ class PcapWriter : public Stage {
 public:
     /**
      * @brief Construct a PCAP writer stage.
+     * @param ctx Stage context.
      * @param outputFilePattern Format string used to produce each stream's output filename. The
      * stream ID is supplied as the first formatting argument.
      */
-    PcapWriter(std::string outputFilePattern);
+    PcapWriter(StageContext ctx, std::string outputFilePattern);
 
     /**
      * @brief Create the PCAP writer for a stream.

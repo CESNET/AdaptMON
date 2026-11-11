@@ -19,14 +19,32 @@
 
 namespace amon::dpdk::pipeline {
 
+/// Forward decl.
+struct PipelineConfig;
+/// Forward decl.
+class Pipeline;
+
+/** @brief Context passed to a stage on construction. */
+struct StageContext {
+    /// Pipeline that owns the stage.
+    Pipeline& pipeline;
+};
+
 /**
  * @brief Collection of equivalent per-worker packet processing streams.
  *
  * Derived stages create one Stream instance for every pipeline worker. Packet bursts are routed to
- * the stream whose ID matches the worker ID.
+ * the stream whose ID matches the worker ID. Derived stages take a StageContext as their first
+ * constructor argument and pass it to the Stage constructor.
  */
 class Stage {
 public:
+    /**
+     * @brief Construct a stage.
+     * @param context Stage context.
+     */
+    Stage(StageContext context);
+
     /** @brief Destroy the stage and its streams. */
     virtual ~Stage() = default;
 
@@ -34,7 +52,7 @@ public:
      * @brief Create all per-worker streams for this stage.
      * @param lcores Lcores to create the streams on.
      */
-    void createStreams(std::vector<LCoreHandle>& lcores);
+    void build(std::vector<LCoreHandle>& lcores);
 
     /**
      * @brief Process a burst using a selected stream.
@@ -70,6 +88,7 @@ protected:
     }
 
 private:
+    StageContext m_context;
     std::vector<std::unique_ptr<Stream>> m_streams;
 };
 

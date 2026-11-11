@@ -31,8 +31,13 @@ Pipeline::Pipeline(Blueprint blueprint, PipelineConfig config)
     // Instantiate stages
     m_stages.reserve(blueprint.m_stageFactories.size());
     for (auto& factory : blueprint.m_stageFactories) {
-        m_stages.emplace_back(factory());
-        m_stages.back()->createStreams(m_lcores);
+        static_assert(
+            !std::is_move_constructible_v<Pipeline> && !std::is_move_assignable_v<Pipeline>);
+        const auto ctx = StageContext {
+            .pipeline = *this,
+        };
+        m_stages.emplace_back(factory(ctx));
+        m_stages.back()->build(m_lcores);
     }
 }
 

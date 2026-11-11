@@ -28,8 +28,12 @@ void PacketParserStream::process(PktBurst<DpdkPacket>& burst)
     }
 }
 
-PacketParser::PacketParser(PacketParserConfig config, layers::LayerType firstLayer)
-    : m_config(config)
+PacketParser::PacketParser(
+    StageContext ctx,
+    PacketParserConfig config,
+    layers::LayerType firstLayer)
+    : Stage(ctx)
+    , m_config(config)
     , m_firstLayer(firstLayer)
 {
 }

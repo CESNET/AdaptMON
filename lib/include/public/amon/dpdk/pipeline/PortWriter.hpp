@@ -48,9 +48,10 @@ class PortWriter : public Stage {
 public:
     /**
      * @brief Construct a port writer stage.
+     * @param ctx Stage context.
      * @param port Port whose TX queues are used by the stage streams.
      */
-    PortWriter(PortHandle port);
+    PortWriter(StageContext ctx, PortHandle port);
 
     /**
      * @brief Create a writer backed by the TX queue matching the stream ID.
